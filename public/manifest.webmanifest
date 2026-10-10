@@ -1,0 +1,17 @@
+{
+  "name": "BantayKalikasan - Binangonan MENRO",
+  "short_name": "BantayKalikasan",
+  "description": "Mobile-first environmental incident reporting system for Binangonan, Rizal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#064e3b",
+  "theme_color": "#047857",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

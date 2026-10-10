@@ -1,0 +1,77 @@
+{
+  "entities": {
+    "Report": {
+      "title": "IncidentReport",
+      "description": "Environmental incident report submitted by residents and triaged by Gemini AI for Binangonan MENRO",
+      "type": "object",
+      "properties": {
+        "referenceCode": {
+          "type": "string",
+          "maxLength": 16,
+          "pattern": "^BK-[A-Z0-9]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "resolved"]
+        },
+        "statusHistory": {
+          "type": "array"
+        },
+        "location": {
+          "type": "object"
+        },
+        "rawInput": {
+          "type": "object"
+        },
+        "triageStatus": {
+          "type": "string",
+          "enum": ["pending", "done", "failed"]
+        },
+        "aiTriage": {
+          "type": "object"
+        },
+        "final": {
+          "type": "object"
+        },
+        "duplicateClusterId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "referenceCode",
+        "createdAt",
+        "status",
+        "statusHistory",
+        "location",
+        "rawInput",
+        "triageStatus"
+      ]
+    },
+    "Official": {
+      "title": "OfficialUser",
+      "description": "Authorized MENRO / Barangay official profile",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["official", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Public submissions and official triaged environmental reports"
+    },
+    "/officials/{officialId}": {
+      "schema": "Official",
+      "description": "Authorized LGU/MENRO officials roster"
+    }
+  }
+}

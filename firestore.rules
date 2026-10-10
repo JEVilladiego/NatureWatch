@@ -1,0 +1,157 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOfficial() {
+      return isSignedIn() && (
+        request.auth.token.email == 'johnedwardvvilladiego@gmail.com' ||
+        request.auth.token.role == 'official' ||
+        request.auth.token.role == 'admin' ||
+        exists(/databases/$(database)/documents/officials/$(request.auth.uid))
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidCategory(cat) {
+      return cat in [
+        'solid_waste',
+        'water_pollution',
+        'air_pollution_burning',
+        'illegal_logging_vegetation',
+        'illegal_quarrying_extraction',
+        'wildlife',
+        'noise_other',
+        'other',
+        'not_environmental'
+      ];
+    }
+
+    function isValidStatus(status) {
+      return status in ['pending', 'in_progress', 'resolved'];
+    }
+
+    function isValidReportCreate(data) {
+      return data.keys().hasAll([
+        'referenceCode',
+        'createdAt',
+        'status',
+        'statusHistory',
+        'location',
+        'rawInput',
+        'triageStatus'
+      ]) &&
+      data.keys().hasOnly([
+        'referenceCode',
+        'createdAt',
+        'status',
+        'statusHistory',
+        'location',
+        'rawInput',
+        'triageStatus',
+        'aiTriage',
+        'final',
+        'duplicateClusterId'
+      ]) &&
+      data.referenceCode is string && data.referenceCode.size() <= 32 &&
+      data.status == 'pending' &&
+      data.triageStatus == 'pending' &&
+      (!('aiTriage' in data) || data.aiTriage == null) &&
+      (!('final' in data) || data.final == null) &&
+      (!('duplicateClusterId' in data) || data.duplicateClusterId == null) &&
+      data.rawInput is map &&
+      data.rawInput.description is string &&
+      data.rawInput.description.size() <= 500 &&
+      data.rawInput.imagePath is string &&
+      data.rawInput.imagePath.size() <= 256 &&
+      data.rawInput.imageStatus in ['pending', 'uploaded', 'failed'] &&
+      data.location is map &&
+      data.location.lat is number &&
+      data.location.lng is number &&
+      data.location.geohash is string &&
+      data.location.source in ['gps', 'manual_pin'] &&
+      data.statusHistory is list &&
+      data.statusHistory.size() <= 10;
+    }
+
+    function isValidReportUpdate() {
+      let diffKeys = incoming().diff(existing()).affectedKeys();
+      return isOfficial() &&
+        diffKeys.hasOnly(['status', 'statusHistory', 'final']) &&
+        incoming().referenceCode == existing().referenceCode &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().location == existing().location &&
+        incoming().rawInput == existing().rawInput &&
+        incoming().aiTriage == existing().aiTriage &&
+        incoming().triageStatus == existing().triageStatus &&
+        isValidStatus(incoming().status) &&
+        incoming().statusHistory is list &&
+        incoming().statusHistory.size() <= 25 &&
+        (
+          !('final' in incoming()) ||
+          incoming().final == null ||
+          (
+            incoming().final is map &&
+            isValidCategory(incoming().final.category) &&
+            incoming().final.severity is int &&
+            incoming().final.severity >= 1 &&
+            incoming().final.severity <= 5 &&
+            incoming().final.reviewedBy is string &&
+            incoming().final.reviewedBy.size() <= 128 &&
+            incoming().final.notes is string &&
+            incoming().final.notes.size() <= 1000
+          )
+        );
+    }
+
+    match /reports/{reportId} {
+      // Anyone (anonymous residents) can submit a report meeting strict constraints
+      allow create: if isValidId(reportId) && isValidReportCreate(incoming());
+
+      // Only officials can read all reports
+      allow get, list: if isOfficial();
+
+      // Only officials can update status, statusHistory, and final
+      allow update: if isValidId(reportId) && isValidReportUpdate();
+
+      // Nobody can delete reports from client
+      allow delete: if false;
+    }
+
+    match /officials/{officialId} {
+      allow get: if isSignedIn() && (request.auth.uid == officialId || isOfficial());
+      allow list: if isOfficial();
+      allow write: if isOfficial() && (
+        request.auth.token.email == 'johnedwardvvilladiego@gmail.com' ||
+        request.auth.token.role == 'admin'
+      );
+    }
+
+    // Public status lookup read-only collection for reference codes (does not contain photo or GPS coordinates)
+    match /public_status/{referenceCode} {
+      allow get: if referenceCode is string && referenceCode.size() <= 32;
+      allow list: if false;
+      allow write: if isOfficial();
+    }
+  }
+}
