@@ -23,6 +23,7 @@ interface StatusResult {
   referenceCode: string;
   status: 'pending' | 'in_progress' | 'resolved';
   createdAt: string;
+  municipality?: string;
   barangay: string;
   triageStatus: string;
   finalCategory?: string;
@@ -185,7 +186,9 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
               <Building className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
                 <span className="text-gray-400 font-semibold block text-[10px]">Municipality / Area</span>
-                <span className="font-bold text-gray-800">{result.barangay || 'Binangonan, Rizal'}</span>
+                <span className="font-bold text-gray-800">
+                  {[result.barangay, result.municipality || 'Rizal Province'].filter(Boolean).join(', ')}
+                </span>
               </div>
             </div>
 

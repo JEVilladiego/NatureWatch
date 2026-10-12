@@ -7,7 +7,7 @@
 4. Categories must be one of the 9 strictly defined enum values.
 5. Official-only updates: only authenticated officials may update 'status', 'statusHistory', and 'final'.
 6. Clients cannot write or modify 'aiTriage' or 'triageStatus' (reserved for the Vercel API using the Admin SDK).
-7. Location must contain valid geographic coordinates within Binangonan / Rizal bounds (latitude -90 to 90, longitude -180 to 180).
+7. Location must contain valid geographic coordinates within Rizal Province bounds (latitude -90 to 90, longitude -180 to 180).
 8. Photos are stored compressed (<= ~800KB data URL) in `report_images/{reportId}`, created only in the same batch as their report, readable only by officials, never updatable or deletable by clients.
 
 ## 2. The "Dirty Dozen" Payloads (Negative Tests)

@@ -1,6 +1,6 @@
 /**
  * BantayKalikasan: Environmental Incident Reporting & AI Triage
- * Binangonan, Rizal MENRO
+ * Rizal Province • PG-ENRO
  */
 
 import React, { useState, useEffect } from 'react';
@@ -115,10 +115,10 @@ export default function App() {
       <footer className="bg-emerald-950 text-emerald-200 py-6 border-t border-emerald-900 text-xs">
         <div className="max-w-7xl mx-auto px-4 text-center space-y-2">
           <p className="font-semibold text-white">
-            BantayKalikasan • Municipal Environment and Natural Resources Office (MENRO)
+            BantayKalikasan • Provincial Government of Rizal Environment and Natural Resources Office (PG-ENRO)
           </p>
           <p className="text-emerald-400 text-[11px]">
-            Pamahalaang Bayan ng Binangonan, Lalawigan ng Rizal • Republic of the Philippines
+            Pamahalaang Lalawigan ng Rizal • Republic of the Philippines
           </p>
           <div className="pt-2 text-[10px] text-emerald-500 border-t border-emerald-900/60 max-w-xl mx-auto">
             Protektado sa ilalim ng Republic Act No. 10173 (Data Privacy Act of 2012). Walang personal na datos ng mamamayan ang kinokolekta.

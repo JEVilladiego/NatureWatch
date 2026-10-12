@@ -1,7 +1,7 @@
 {
-  "name": "BantayKalikasan - Binangonan MENRO",
+  "name": "BantayKalikasan - Rizal PG-ENRO",
   "short_name": "BantayKalikasan",
-  "description": "Mobile-first environmental incident reporting system for Binangonan, Rizal",
+  "description": "Mobile-first environmental incident reporting system for the Province of Rizal",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#064e3b",

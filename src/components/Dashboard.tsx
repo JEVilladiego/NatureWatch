@@ -26,6 +26,7 @@ import {
   CATEGORIES,
   SEVERITY_LEVELS,
   ReportStatus,
+  RIZAL_MUNICIPALITIES,
 } from '../types/report';
 import { LeafletMap } from './LeafletMap';
 import { calculateDistanceMeters } from '../lib/geohash';
@@ -63,6 +64,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedReport, setSelectedReport] = useState<IncidentReport | null>(null);
 
   // Filters
+  const [municipalityFilter, setMunicipalityFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | ReportStatus>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
@@ -206,6 +208,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Filtered reports
   const filteredReports = useMemo(() => {
     return clusteredReports.filter((report) => {
+      // Municipality filter
+      if (municipalityFilter !== 'all' && report.location?.municipality !== municipalityFilter) return false;
+
       // Status filter
       if (statusFilter !== 'all' && report.status !== statusFilter) return false;
 
@@ -224,12 +229,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
         const matchesCode = report.referenceCode.toLowerCase().includes(term);
         const matchesDesc = report.rawInput.description.toLowerCase().includes(term);
         const matchesBrgy = (report.location.barangay || '').toLowerCase().includes(term);
-        if (!matchesCode && !matchesDesc && !matchesBrgy) return false;
+        const matchesMun = (report.location.municipality || '').toLowerCase().includes(term);
+        if (!matchesCode && !matchesDesc && !matchesBrgy && !matchesMun) return false;
       }
 
       return true;
     });
-  }, [clusteredReports, statusFilter, categoryFilter, severityFilter, searchTerm]);
+  }, [clusteredReports, municipalityFilter, statusFilter, categoryFilter, severityFilter, searchTerm]);
 
   // Statistics calculation
   const stats = useMemo(() => {
@@ -291,7 +297,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const notes = statusChangeNotes.trim();
     const newHistoryItem = {
       status: newStatus,
-      changedBy: officialUser.displayName || officialUser.email || 'MENRO Officer',
+      changedBy: officialUser.displayName || officialUser.email || 'PG-ENRO Officer',
       changedAt: new Date().toISOString(),
       // Firestore rejects `undefined`, so only include notes when present
       ...(notes ? { notes } : {}),
@@ -402,7 +408,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         <p className="text-xs text-gray-400 mt-6">
-          Authorized MENRO, Barangay Tanod, and Municipal Quick Response Team access only.
+          Authorized PG-ENRO, local MENRO, and Provincial Quick Response Team access only.
         </p>
       </div>
     );
@@ -421,14 +427,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-              MENRO Command Dashboard
+              PG-ENRO Rizal Command Dashboard
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
               Live GIS
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-0.5">
-            Municipality of Binangonan • Incident Triage & Human-in-the-Loop Management
+            Province of Rizal • Incident Triage & Human-in-the-Loop Management
           </p>
         </div>
 
@@ -497,6 +503,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
           />
         </div>
 
+        {/* Municipality Filter */}
+        <select
+          value={municipalityFilter}
+          onChange={(e) => setMunicipalityFilter(e.target.value)}
+          className="text-xs font-semibold px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none max-w-[180px] truncate"
+        >
+          <option value="all">{t.allMunicipalitiesFilter}</option>
+          {RIZAL_MUNICIPALITIES.map((mun) => (
+            <option key={mun} value={mun}>
+              {mun}
+            </option>
+          ))}
+        </select>
+
         {/* Status Filter */}
         <select
           value={statusFilter}
@@ -538,9 +558,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <option value="5">5 - Critical</option>
         </select>
 
-        {(statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
+        {(municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
           <button
             onClick={() => {
+              setMunicipalityFilter('all');
               setStatusFilter('all');
               setCategoryFilter('all');
               setSeverityFilter('all');
@@ -585,9 +606,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               center={
                 selectedReport
                   ? { lat: selectedReport.location.lat, lng: selectedReport.location.lng }
-                  : { lat: 14.4791, lng: 121.1895 }
+                  : { lat: 14.5800, lng: 121.2800 }
               }
-              zoom={13}
+              zoom={selectedReport ? 13 : 11}
               reports={filteredReports}
               selectedReportId={selectedReport?.id}
               onSelectReport={(r) => setSelectedReport(r)}
@@ -647,7 +668,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </p>
 
                         <div className="flex items-center gap-3 text-[10px] text-gray-400">
-                          <span>{report.location.barangay || 'Binangonan'}</span>
+                          <span>{[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}</span>
                           <span>•</span>
                           <span>{new Date(report.createdAt).toLocaleDateString()}</span>
                         </div>
@@ -762,7 +783,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   "{selectedReport.rawInput.description}"
                 </p>
                 <div className="text-[10px] text-gray-400 pt-0.5">
-                  Location: {selectedReport.location.lat.toFixed(4)}, {selectedReport.location.lng.toFixed(4)} • {selectedReport.location.barangay || 'Binangonan'}
+                  Location: {selectedReport.location.lat.toFixed(4)}, {selectedReport.location.lng.toFixed(4)} • {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
                 </div>
               </div>
 
@@ -950,7 +971,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </span>
                   </div>
                   <p className="text-[11px] text-red-700">
-                    Triggers high-priority notification to Binangonan Quick Response Team.
+                    Triggers high-priority notification to Rizal Environmental Quick Response Team.
                   </p>
                   <button
                     type="button"

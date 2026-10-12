@@ -16,7 +16,9 @@ import {
 import {
   IncidentCategory,
   CATEGORIES,
-  BINANGONAN_BARANGAYS,
+  RIZAL_LGUS,
+  RIZAL_MUNICIPALITIES,
+  MUNICIPALITY_COORDINATES,
   IncidentReport,
 } from '../types/report';
 import { compressIncidentImage, fileToDataUrl, CompressionResult } from '../lib/imageCompression';
@@ -27,8 +29,8 @@ import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { LeafletMap } from './LeafletMap';
 import { Language, translations } from '../lib/i18n';
 
-// Default Binangonan center
-const BINANGONAN_COORDS = { lat: 14.4791, lng: 121.1895 };
+// Default Rizal Province center
+const RIZAL_COORDS = { lat: 14.5800, lng: 121.2800 };
 
 interface ResidentReporterProps {
   lang: Language;
@@ -51,9 +53,10 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
 
   // Location states
-  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number }>(BINANGONAN_COORDS);
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number }>(RIZAL_COORDS);
   const [accuracyMeters, setAccuracyMeters] = useState<number | null>(null);
   const [locationSource, setLocationSource] = useState<'gps' | 'manual_pin'>('manual_pin');
+  const [selectedMunicipality, setSelectedMunicipality] = useState<string>('');
   const [selectedBarangay, setSelectedBarangay] = useState<string>('');
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -166,7 +169,8 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           accuracyMeters,
           geohash,
           source: locationSource,
-          barangay: selectedBarangay || 'Binangonan',
+          municipality: selectedMunicipality || 'Rizal Province',
+          barangay: selectedBarangay || '',
         },
         rawInput: {
           description: description.trim().slice(0, 500),
@@ -220,6 +224,8 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
     setCompressionInfo(null);
     setDescription('');
     setCategoryHint('');
+    setSelectedMunicipality('');
+    setSelectedBarangay('');
     setSubmittedReport(null);
     acquireGpsLocation();
   };
@@ -393,7 +399,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         </div>
 
         {/* Step 2: Location & Draggable Map */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
               <span>2. {t.locationTitle}</span>
@@ -407,17 +413,74 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               type="button"
               onClick={acquireGpsLocation}
               disabled={isLocating}
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1"
+              className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer"
             >
               <RefreshCw className={`w-3 h-3 ${isLocating ? 'animate-spin' : ''}`} />
               <span>GPS</span>
             </button>
           </div>
 
-          <p className="text-xs text-gray-500">{t.dragPinHint}</p>
+          {/* Municipality & Barangay manual selector */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                {t.manualMunicipalityLabel}
+              </label>
+              <select
+                value={selectedMunicipality}
+                onChange={(e) => {
+                  const mun = e.target.value;
+                  setSelectedMunicipality(mun);
+                  setSelectedBarangay('');
+                  if (mun && MUNICIPALITY_COORDINATES[mun]) {
+                    setCoordinates(MUNICIPALITY_COORDINATES[mun]);
+                    setLocationSource('manual_pin');
+                  }
+                }}
+                className="w-full text-xs font-medium px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              >
+                <option value="">{t.selectMunicipality}</option>
+                {RIZAL_MUNICIPALITIES.map((mun) => (
+                  <option key={mun} value={mun}>
+                    {mun}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Leaflet Picker Map */}
-          <div className="relative">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                {t.manualBarangayLabel}
+              </label>
+              <select
+                value={selectedBarangay}
+                onChange={(e) => setSelectedBarangay(e.target.value)}
+                disabled={!selectedMunicipality}
+                className="w-full text-xs font-medium px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                <option value="">
+                  {selectedMunicipality ? t.selectBarangayActive : t.selectBarangay}
+                </option>
+                {selectedMunicipality &&
+                  RIZAL_LGUS[selectedMunicipality]?.map((brgy) => (
+                    <option key={brgy} value={brgy}>
+                      Brgy. {brgy}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Map guidance and coordinates display */}
+          <div className="flex items-center justify-between text-xs text-gray-500 pt-0.5">
+            <span>{t.dragPinHint}</span>
+            <span className="text-[10px] text-stone-400 font-mono">
+              {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
+            </span>
+          </div>
+
+          {/* Leaflet Picker Map with isolated stacking context */}
+          <div className="relative isolate z-0 rounded-xl overflow-hidden border border-gray-300 shadow-xs">
             <LeafletMap
               mode="picker"
               center={coordinates}
@@ -427,33 +490,14 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 setCoordinates({ lat, lng });
                 setLocationSource('manual_pin');
               }}
-              className="h-56 w-full rounded-xl border border-gray-300 shadow-sm overflow-hidden"
+              className="h-56 w-full"
             />
             {isLocating && (
-              <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center text-xs font-bold text-emerald-800 gap-2">
+              <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center text-xs font-bold text-emerald-800 gap-2 z-10">
                 <RefreshCw className="w-4 h-4 animate-spin" />
                 <span>{t.locating}</span>
               </div>
             )}
-          </div>
-
-          {/* Barangay manual fallback selector */}
-          <div className="pt-1">
-            <label className="block text-xs font-semibold text-gray-600 mb-1">
-              {t.manualBarangayLabel}
-            </label>
-            <select
-              value={selectedBarangay}
-              onChange={(e) => setSelectedBarangay(e.target.value)}
-              className="w-full text-xs font-medium px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-            >
-              <option value="">{t.selectBarangay}</option>
-              {BINANGONAN_BARANGAYS.map((brgy) => (
-                <option key={brgy} value={brgy}>
-                  Brgy. {brgy}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 

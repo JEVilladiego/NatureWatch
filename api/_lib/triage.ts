@@ -23,17 +23,22 @@ const TriageSchema = z.object({
   reasoning: z.string().min(5).max(600),
 });
 
-const SYSTEM_INSTRUCTION = `You are an expert environmental officer for the Municipal Environment and Natural Resources Office (MENRO) of Binangonan, Rizal, Philippines.
-Your duty is to triage incident reports submitted by local residents.
+const SYSTEM_INSTRUCTION = `You are an expert environmental officer for the Provincial Environment and Natural Resources Office (PG-ENRO / PENRO) of the Province of Rizal, Philippines.
+Your duty is to triage incident reports submitted by residents across all 14 Local Government Units (LGUs) of Rizal:
+Antipolo City, and the municipalities of Angono, Baras, Binangonan, Cainta, Cardona, Jalajala, Morong, Pililla, Rodriguez (Montalban), San Mateo, Tanay, Taytay, and Teresa.
 
-Binangonan is situated along the shores of Laguna de Bay, comprising mainland lakeside and upland barangays (e.g. Tagpos, Darangan, Calumpang, Batingan, Pantok) and island barangays on Talim Island.
+RIZAL PROVINCE GEOGRAPHIC CONTEXT:
+- Upland Sierra Madre mountain ranges and protected watersheds (Tanay, Rodriguez, San Mateo, Antipolo): Risks of illegal tree cutting/logging, watershed encroachment, slash-and-burn (kaingin), and unauthorized quarrying/land extraction.
+- Major river systems and Marikina/Pasig river basin tributaries (Rodriguez, San Mateo, Cainta, Taytay): Clogged waterways, urban flash flooding, industrial waste discharges.
+- Coastal and island communities along Laguna de Bay (Angono, Binangonan, Cardona, Morong, Baras, Tanay, Pililla, Jalajala, and Talim Island): Heavy plastic waste clogging shores, fish kill risks, toxic chemical runoff into the lake.
+- Densely populated urban centers (Antipolo, Cainta, Taytay, San Mateo): Open burning (siga) of plastics/leaves, commercial solid waste accumulation, and industrial noise pollution.
 
 CATEGORIES (Single Source of Truth):
-- solid_waste: Illegal dumping, uncollected trash, trash clogging canals/esteros or floating on lakeshore.
-- water_pollution: Chemical waste, murky or foul discharge into canals or Laguna de Bay, oily runoff.
+- solid_waste: Illegal dumping, uncollected trash, trash clogging canals/esteros/rivers or floating on lakeshore.
+- water_pollution: Chemical waste, murky or foul discharge into canals, rivers, or Laguna de Bay, oily runoff.
 - air_pollution_burning: Open burning ("siga") of dried leaves, plastics, electronic wires, toxic smoke.
-- illegal_logging_vegetation: Cutting of protected trees, clearing of watershed vegetation in hills.
-- illegal_quarrying_extraction: Unauthorized gravel/sand/soil excavation on slopes, quarry runoff.
+- illegal_logging_vegetation: Cutting of protected trees, clearing of watershed vegetation in upland hills/Sierra Madre.
+- illegal_quarrying_extraction: Unauthorized gravel/sand/soil excavation on slopes, hillside stripping, quarry runoff.
 - wildlife: Trapping, selling, or hurting wild birds/reptiles/aquatic species, endangered wildlife.
 - noise_other: Chronic industrial generator or heavy machinery noise disrupting community.
 - other: Legitimate environmental issue not fitting the above.
@@ -43,8 +48,8 @@ SEVERITY SCALE (1 to 5):
 1 = Minor / cosmetic litter, isolated dry trash, very low impact.
 2 = Low concern, minor nuisance, localized dust.
 3 = Moderate concern, clogged drainage risking flood, persistent garbage pile, action needed within 3-5 days.
-4 = Urgent hazard, active burning of plastics near houses, sewage flow to water supply, steep slope soil loosening.
-5 = Immediate critical hazard, toxic chemical spill into lake, massive landslide threat, severe public health emergency.
+4 = Urgent hazard, active burning of plastics near houses, sewage flow to water supply/lake, steep slope soil loosening.
+5 = Immediate critical hazard, toxic chemical spill into lake/river, massive landslide threat, severe public health emergency.
 
 CONFIDENCE (0.0 to 1.0):
 Be completely honest. Assign low confidence (<0.5) if the image and text contradict each other, if the image is too blurry, or if it is not an environmental issue.
@@ -68,7 +73,7 @@ async function callGemini(description: string, imageDataUrl: string | null, mode
     if (match) contents.push({ inlineData: { mimeType: match[1], data: match[2] } });
   }
   contents.push({
-    text: `Analyze this environmental incident report for Binangonan MENRO.
+    text: `Analyze this environmental incident report for Rizal PG-ENRO / PENRO.
 <untrusted_resident_description>
 ${description.slice(0, 500) || 'No description provided'}
 </untrusted_resident_description>

@@ -2,8 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { IncidentReport } from '../types/report';
 
-// Binangonan, Rizal default center
-const BINANGONAN_DEFAULT = { lat: 14.4791, lng: 121.1895 };
+// Rizal Province default center (encompassing Sierra Madre, central corridor & Laguna de Bay shore)
+const RIZAL_DEFAULT = { lat: 14.5800, lng: 121.2800 };
 
 interface LeafletMapProps {
   mode: 'picker' | 'dashboard';
@@ -19,8 +19,8 @@ interface LeafletMapProps {
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
   mode,
-  center = BINANGONAN_DEFAULT,
-  zoom = 13,
+  center = RIZAL_DEFAULT,
+  zoom = 11,
   accuracyMeters = null,
   onLocationChange,
   reports = [],
@@ -46,7 +46,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Binangonan MENRO',
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Rizal PG-ENRO',
       maxZoom: 19,
     }).addTo(map);
 
@@ -258,7 +258,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             ${statusBadge}
           </div>
           <div style="margin-bottom: 4px; color: #475569;">
-            ${report.location.barangay || 'Binangonan'}
+            ${[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
           </div>
           <div style="font-size: 11px; color: #1e293b; margin-bottom: 6px;">
             ${report.aiTriage?.summary || report.rawInput.description.slice(0, 70)}...
@@ -280,5 +280,5 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     });
   }, [mode, reports, selectedReportId, onSelectReport]);
 
-  return <div ref={mapContainerRef} className={className} />;
+  return <div ref={mapContainerRef} className={`relative isolate z-0 ${className || ''}`} />;
 };

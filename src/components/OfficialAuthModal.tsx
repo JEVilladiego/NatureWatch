@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Lock, Mail, X, Check, AlertCircle } from 'lucide-react';
 import { auth } from '../lib/firebase';
-import { isOfficialUser } from '../lib/auth';
+import { isOfficialUser, checkOfficialStatus } from '../lib/auth';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
 interface OfficialAuthModalProps {
@@ -29,9 +29,10 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
 
     try {
       const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
-      if (!(await isOfficialUser(cred.user))) {
+      const check = await checkOfficialStatus(cred.user);
+      if (!check.isOfficial) {
         await signOut(auth);
-        setError('This account is not authorized as a MENRO official. Contact your administrator.');
+        setError(check.error || 'This account is not authorized as a MENRO official. Contact your administrator.');
         return;
       }
       onLoginSuccess(cred.user);
@@ -60,8 +61,8 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-gray-900">MENRO Official Login</h2>
-            <p className="text-xs text-gray-500">Municipality of Binangonan, Rizal</p>
+            <h2 className="text-lg font-black text-gray-900">PG-ENRO / MENRO Login</h2>
+            <p className="text-xs text-gray-500">Provincial Government of Rizal</p>
           </div>
         </div>
 
@@ -82,7 +83,7 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="officer@binangonan.gov.ph"
+                placeholder="officer@rizal.gov.ph"
                 required
                 className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />

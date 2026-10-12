@@ -4,6 +4,13 @@ import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Automatically load local .env in Node 20+ when running locally
+if (typeof process.loadEnvFile === 'function') {
+  try {
+    process.loadEnvFile();
+  } catch {}
+}
+
 /**
  * Shared Firebase Admin setup for the Vercel serverless routes.
  * Credentials come from environment variables (never committed):
@@ -76,7 +83,7 @@ export async function sendUrgentAlert(params: {
       topic: 'officials_urgent_alerts',
       notification: {
         title: `[URGENT SEVERITY ${params.severity}] ${params.category.toUpperCase()}`,
-        body: `${params.summary} (${params.barangay || 'Binangonan'})`,
+        body: `${params.summary} (${params.barangay || 'Rizal Province'})`,
       },
       data: {
         reportId: params.reportId,

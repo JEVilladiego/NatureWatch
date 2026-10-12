@@ -12,7 +12,7 @@ export default route('POST', async (req, res) => {
 
   const severity = r.final?.severity || r.aiTriage?.severity || 4;
   const category = r.final?.category || r.aiTriage?.category || 'incident';
-  const barangay = r.location?.barangay || 'Binangonan';
+  const barangay = r.location?.barangay || r.location?.municipality || 'Rizal Province';
 
   const sent = await sendUrgentAlert({
     reportId,

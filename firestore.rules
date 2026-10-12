@@ -55,12 +55,13 @@ service cloud.firestore {
     function isValidLocation(loc) {
       return loc is map &&
         loc.keys().hasAll(['lat', 'lng', 'geohash', 'source']) &&
-        loc.keys().hasOnly(['lat', 'lng', 'accuracyMeters', 'geohash', 'source', 'barangay', 'landmark']) &&
+        loc.keys().hasOnly(['lat', 'lng', 'accuracyMeters', 'geohash', 'source', 'municipality', 'barangay', 'landmark']) &&
         loc.lat is number && loc.lat >= -90 && loc.lat <= 90 &&
         loc.lng is number && loc.lng >= -180 && loc.lng <= 180 &&
         loc.geohash is string && loc.geohash.size() <= 12 &&
         loc.source in ['gps', 'manual_pin'] &&
         (!('accuracyMeters' in loc) || loc.accuracyMeters == null || loc.accuracyMeters is number) &&
+        (!('municipality' in loc) || (loc.municipality is string && loc.municipality.size() <= 64)) &&
         (!('barangay' in loc) || (loc.barangay is string && loc.barangay.size() <= 64)) &&
         (!('landmark' in loc) || (loc.landmark is string && loc.landmark.size() <= 128));
     }

@@ -1,8 +1,8 @@
 # BantayKalikasan
 
-**BantayKalikasan** is a mobile-first environmental incident reporting and AI triage system for the Municipal Environment and Natural Resources Office (MENRO) of **Binangonan, Rizal, Philippines**.
+**BantayKalikasan** is a mobile-first environmental incident reporting and AI triage system for the Provincial Government of Rizal - Environment and Natural Resources Office (**PG-ENRO**) and local MENROs across **Rizal Province, Philippines** (Antipolo City and 13 municipalities).
 
-Residents report illegal dumping, open burning, water pollution, illegal tree cutting, quarrying and wildlife issues **without an account**. Each report is triaged by Google Gemini, and MENRO officers manage cases on a live map dashboard with duplicate clustering and human-in-the-loop overrides.
+Residents report illegal dumping, open burning, water pollution, illegal tree cutting, quarrying, and wildlife issues **without an account**. Each report is triaged by Google Gemini, and environmental officers manage cases on a live map dashboard with duplicate clustering and human-in-the-loop overrides.
 
 ---
 

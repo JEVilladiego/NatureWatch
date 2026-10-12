@@ -2,7 +2,7 @@
   "entities": {
     "Report": {
       "title": "IncidentReport",
-      "description": "Environmental incident report submitted by residents and triaged by Gemini AI for Binangonan MENRO",
+      "description": "Environmental incident report submitted by residents and triaged by Gemini AI for Rizal PG-ENRO",
       "type": "object",
       "properties": {
         "referenceCode": {
@@ -53,7 +53,7 @@
     },
     "Official": {
       "title": "OfficialUser",
-      "description": "Authorized MENRO / Barangay official profile",
+      "description": "Authorized PG-ENRO / MENRO official profile",
       "type": "object",
       "properties": {
         "email": { "type": "string" },
@@ -71,7 +71,7 @@
     },
     "/officials/{officialId}": {
       "schema": "Official",
-      "description": "Authorized LGU/MENRO officials roster"
+      "description": "Authorized PG-ENRO/MENRO officials roster"
     }
   }
 }
