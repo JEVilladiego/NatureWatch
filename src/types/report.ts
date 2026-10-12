@@ -11,7 +11,7 @@ export type IncidentCategory =
 
 export type ReportStatus = 'pending' | 'in_progress' | 'resolved';
 
-export type TriageStatus = 'pending' | 'done' | 'failed';
+export type TriageStatus = 'pending' | 'processing' | 'done' | 'failed';
 
 export interface LocationInfo {
   lat: number;
@@ -24,10 +24,9 @@ export interface LocationInfo {
 }
 
 export interface RawInput {
-  imagePath: string;
-  imageStatus: 'pending' | 'uploaded' | 'failed';
   description: string;
-  imageUrl?: string; // Optional direct local preview or mock URL
+  /** True when a compressed photo exists in the `report_images/{reportId}` document. */
+  hasImage: boolean;
 }
 
 export interface AITriage {

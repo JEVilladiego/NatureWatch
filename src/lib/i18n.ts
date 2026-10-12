@@ -63,7 +63,6 @@ export const translations = {
     duplicateClusterDetected: 'Natukoy na Posibleng Kaparehong Ulat',
     duplicateClusterDesc: 'May iba pang ulat sa parehong lugar (~100m) sa loob ng 48 oras.',
     dispatchAlertBtn: 'Magpadala ng Alerto sa Quick Response Team',
-    seedBtn: 'Mag-load ng 15 Demo Reports (Binangonan)',
   },
   en: {
     appTitle: 'BantayKalikasan',
@@ -127,6 +126,5 @@ export const translations = {
     duplicateClusterDetected: 'Duplicate Spatial Cluster Detected',
     duplicateClusterDesc: 'Another report was logged within ~100m and 48 hours in this category.',
     dispatchAlertBtn: 'Dispatch Emergency Alert to QRT',
-    seedBtn: 'Load 15 Binangonan Demo Reports',
   },
 };

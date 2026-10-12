@@ -19,11 +19,11 @@ import {
   BINANGONAN_BARANGAYS,
   IncidentReport,
 } from '../types/report';
-import { compressIncidentImage, CompressionResult } from '../lib/imageCompression';
-import { queueImageUpload } from '../lib/offlineQueue';
+import { compressIncidentImage, fileToDataUrl, CompressionResult } from '../lib/imageCompression';
+import { trackSubmission } from '../lib/offlineQueue';
 import { encodeGeohash, generateReferenceCode } from '../lib/geohash';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { LeafletMap } from './LeafletMap';
 import { Language, translations } from '../lib/i18n';
 
@@ -69,6 +69,8 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
     offlineSaved: boolean;
   } | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -106,16 +108,24 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
 
     setSelectedFile(file);
     setIsCompressing(true);
+    setImageError(null);
 
     try {
       const result = await compressIncidentImage(file);
       setCompressionInfo(result);
     } catch (err) {
       console.error('Image compression failed:', err);
+      setSelectedFile(null);
+      setImageError(
+        lang === 'fil'
+          ? 'Hindi maproseso ang larawan. Pumili ng ibang larawan.'
+          : 'This photo could not be processed. Please choose a different photo.'
+      );
     } finally {
       setIsCompressing(false);
     }
@@ -126,138 +136,73 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
     if (!description.trim() && !compressionInfo) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
     const reportId = `report_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const referenceCode = generateReferenceCode();
     const geohash = encodeGeohash(coordinates.lat, coordinates.lng, 8);
-    const imagePath = `reports/${reportId}/incident.jpg`;
-
-    // Convert compressed blob to base64 for local storage / fast transmission
-    let imageBase64: string | undefined;
-    if (compressionInfo) {
-      try {
-        const reader = new FileReader();
-        imageBase64 = await new Promise((resolve) => {
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(compressionInfo.compressedFile);
-        });
-      } catch {}
-    }
-
-    const newReport: IncidentReport = {
-      id: reportId,
-      referenceCode,
-      createdAt: new Date().toISOString(),
-      status: 'pending',
-      statusHistory: [
-        {
-          status: 'pending',
-          changedBy: 'resident_submission',
-          changedAt: new Date().toISOString(),
-        },
-      ],
-      location: {
-        lat: coordinates.lat,
-        lng: coordinates.lng,
-        accuracyMeters,
-        geohash,
-        source: locationSource,
-        barangay: selectedBarangay || 'Binangonan',
-      },
-      rawInput: {
-        imagePath,
-        imageStatus: compressionInfo ? 'pending' : 'uploaded',
-        description: description.trim(),
-        imageUrl: compressionInfo?.previewUrl,
-      },
-      triageStatus: 'pending',
-      aiTriage: null,
-      final: null,
-      duplicateClusterId: null,
-    };
 
     try {
-      // 1. Write doc to Firestore immediately (offline cached via persistentLocalCache)
-      try {
-        const reportRef = doc(db, 'reports', reportId);
-        await setDoc(reportRef, {
-          referenceCode,
+      const imageDataUrl = compressionInfo
+        ? await fileToDataUrl(compressionInfo.compressedFile)
+        : null;
+
+      // Report + photo are written in ONE atomic batch. Firestore's persistent local cache
+      // queues the batch while offline and sends it when the device reconnects.
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'reports', reportId), {
+        referenceCode,
+        createdAt: serverTimestamp(),
+        status: 'pending',
+        statusHistory: [
+          {
+            status: 'pending',
+            changedBy: 'resident',
+            changedAt: new Date().toISOString(),
+          },
+        ],
+        location: {
+          lat: coordinates.lat,
+          lng: coordinates.lng,
+          accuracyMeters,
+          geohash,
+          source: locationSource,
+          barangay: selectedBarangay || 'Binangonan',
+        },
+        rawInput: {
+          description: description.trim().slice(0, 500),
+          hasImage: !!imageDataUrl,
+        },
+        triageStatus: 'pending',
+      });
+      if (imageDataUrl) {
+        batch.set(doc(db, 'report_images', reportId), {
+          data: imageDataUrl,
+          mimeType: 'image/jpeg',
           createdAt: serverTimestamp(),
-          status: 'pending',
-          statusHistory: [
-            {
-              status: 'pending',
-              changedBy: 'resident',
-              changedAt: new Date().toISOString(),
-            },
-          ],
-          location: {
-            lat: coordinates.lat,
-            lng: coordinates.lng,
-            accuracyMeters,
-            geohash,
-            source: locationSource,
-          },
-          rawInput: {
-            imagePath,
-            imageStatus: compressionInfo ? 'pending' : 'uploaded',
-            description: description.trim().slice(0, 500),
-          },
-          triageStatus: 'pending',
-          aiTriage: null,
-          final: null,
-          duplicateClusterId: null,
         });
-      } catch (firestoreErr) {
-        // Log Firestore error using required format
-        console.warn('Firestore write warning:', firestoreErr);
       }
 
-      // 2. Queue image in IndexedDB for resilient background upload
-      if (compressionInfo) {
-        await queueImageUpload(reportId, imagePath, compressionInfo.compressedFile);
-      }
+      // Not awaited when offline (the commit only resolves once the server confirms).
+      // Once confirmed, AI triage is requested automatically.
+      const commit = batch.commit();
+      trackSubmission(reportId, commit);
 
-      // 3. Sync to server API in background (non-blocking for resident)
-      try {
-        fetch('/api/reports/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...newReport,
-            rawInput: {
-              ...newReport.rawInput,
-              imageBase64,
-            },
-          }),
-        }).catch(() => {});
-
-        // Trigger Gemini triage asynchronously on server
-        fetch('/api/triage', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            reportId,
-            description: description.trim(),
-            imageBase64,
-          }),
-        }).catch(() => {});
-      } catch {}
-
-      if (onReportCreated) {
-        onReportCreated(newReport);
+      if (navigator.onLine) {
+        // Surface rule/validation rejections instead of showing a false success
+        await Promise.race([commit, new Promise<void>((resolve) => setTimeout(resolve, 8000))]);
       }
 
       setSubmittedReport({
         referenceCode,
-        offlineSaved: !isOnline,
+        offlineSaved: !navigator.onLine,
       });
     } catch (err) {
       console.error('Submission error:', err);
-      // Even on local error, preserve user's generated reference
-      setSubmittedReport({
-        referenceCode,
-        offlineSaved: true,
-      });
+      setSubmitError(
+        lang === 'fil'
+          ? 'Hindi naipadala ang ulat. Pakisubukang muli.'
+          : 'Your report could not be submitted. Please try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -439,6 +384,12 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               <span>{t.compressing}</span>
             </p>
           )}
+
+          {imageError && (
+            <p role="alert" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2">
+              {imageError}
+            </p>
+          )}
         </div>
 
         {/* Step 2: Location & Draggable Map */}
@@ -572,6 +523,12 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           <span className="font-bold">RA 10173 Compliance: </span>
           {t.privacyNotice}
         </div>
+
+        {submitError && (
+          <p role="alert" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2.5">
+            {submitError}
+          </p>
+        )}
 
         {/* Submit Button */}
         <button

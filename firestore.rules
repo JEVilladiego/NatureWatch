@@ -7,7 +7,7 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Helper functions
+    // ---------- Helpers ----------
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
@@ -16,12 +16,13 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // An official has an officials/{uid} document (created by an admin in the Console)
+    // or a custom role claim. Email addresses are NEVER trusted.
     function isOfficial() {
       return isSignedIn() && (
-        request.auth.token.email == 'johnedwardvvilladiego@gmail.com' ||
+        exists(/databases/$(database)/documents/officials/$(request.auth.uid)) ||
         request.auth.token.role == 'official' ||
-        request.auth.token.role == 'admin' ||
-        exists(/databases/$(database)/documents/officials/$(request.auth.uid))
+        request.auth.token.role == 'admin'
       );
     }
 
@@ -51,6 +52,20 @@ service cloud.firestore {
       return status in ['pending', 'in_progress', 'resolved'];
     }
 
+    function isValidLocation(loc) {
+      return loc is map &&
+        loc.keys().hasAll(['lat', 'lng', 'geohash', 'source']) &&
+        loc.keys().hasOnly(['lat', 'lng', 'accuracyMeters', 'geohash', 'source', 'barangay', 'landmark']) &&
+        loc.lat is number && loc.lat >= -90 && loc.lat <= 90 &&
+        loc.lng is number && loc.lng >= -180 && loc.lng <= 180 &&
+        loc.geohash is string && loc.geohash.size() <= 12 &&
+        loc.source in ['gps', 'manual_pin'] &&
+        (!('accuracyMeters' in loc) || loc.accuracyMeters == null || loc.accuracyMeters is number) &&
+        (!('barangay' in loc) || (loc.barangay is string && loc.barangay.size() <= 64)) &&
+        (!('landmark' in loc) || (loc.landmark is string && loc.landmark.size() <= 128));
+    }
+
+    // ---------- Reports ----------
     function isValidReportCreate(data) {
       return data.keys().hasAll([
         'referenceCode',
@@ -68,56 +83,42 @@ service cloud.firestore {
         'statusHistory',
         'location',
         'rawInput',
-        'triageStatus',
-        'aiTriage',
-        'final',
-        'duplicateClusterId'
+        'triageStatus'
       ]) &&
-      data.referenceCode is string && data.referenceCode.size() <= 32 &&
+      data.referenceCode is string && data.referenceCode.matches('^BK-[A-Z0-9]{5}$') &&
+      data.createdAt == request.time &&
       data.status == 'pending' &&
       data.triageStatus == 'pending' &&
-      (!('aiTriage' in data) || data.aiTriage == null) &&
-      (!('final' in data) || data.final == null) &&
-      (!('duplicateClusterId' in data) || data.duplicateClusterId == null) &&
       data.rawInput is map &&
+      data.rawInput.keys().hasOnly(['description', 'hasImage']) &&
       data.rawInput.description is string &&
       data.rawInput.description.size() <= 500 &&
-      data.rawInput.imagePath is string &&
-      data.rawInput.imagePath.size() <= 256 &&
-      data.rawInput.imageStatus in ['pending', 'uploaded', 'failed'] &&
-      data.location is map &&
-      data.location.lat is number &&
-      data.location.lng is number &&
-      data.location.geohash is string &&
-      data.location.source in ['gps', 'manual_pin'] &&
+      data.rawInput.hasImage is bool &&
+      isValidLocation(data.location) &&
       data.statusHistory is list &&
-      data.statusHistory.size() <= 10;
+      data.statusHistory.size() == 1 &&
+      data.statusHistory[0].status == 'pending';
     }
 
     function isValidReportUpdate() {
       let diffKeys = incoming().diff(existing()).affectedKeys();
       return isOfficial() &&
         diffKeys.hasOnly(['status', 'statusHistory', 'final']) &&
-        incoming().referenceCode == existing().referenceCode &&
-        incoming().createdAt == existing().createdAt &&
-        incoming().location == existing().location &&
-        incoming().rawInput == existing().rawInput &&
-        incoming().aiTriage == existing().aiTriage &&
-        incoming().triageStatus == existing().triageStatus &&
         isValidStatus(incoming().status) &&
         incoming().statusHistory is list &&
+        incoming().statusHistory.size() >= existing().statusHistory.size() &&
         incoming().statusHistory.size() <= 25 &&
         (
           !('final' in incoming()) ||
           incoming().final == null ||
           (
             incoming().final is map &&
+            incoming().final.keys().hasOnly(['category', 'severity', 'reviewedBy', 'reviewedAt', 'notes']) &&
             isValidCategory(incoming().final.category) &&
             incoming().final.severity is int &&
             incoming().final.severity >= 1 &&
             incoming().final.severity <= 5 &&
-            incoming().final.reviewedBy is string &&
-            incoming().final.reviewedBy.size() <= 128 &&
+            incoming().final.reviewedBy == request.auth.uid &&
             incoming().final.notes is string &&
             incoming().final.notes.size() <= 1000
           )
@@ -128,30 +129,40 @@ service cloud.firestore {
       // Anyone (anonymous residents) can submit a report meeting strict constraints
       allow create: if isValidId(reportId) && isValidReportCreate(incoming());
 
-      // Only officials can read all reports
+      // Only officials can read reports (public lookups go through /api/status)
       allow get, list: if isOfficial();
 
       // Only officials can update status, statusHistory, and final
       allow update: if isValidId(reportId) && isValidReportUpdate();
 
-      // Nobody can delete reports from client
       allow delete: if false;
     }
 
-    match /officials/{officialId} {
-      allow get: if isSignedIn() && (request.auth.uid == officialId || isOfficial());
-      allow list: if isOfficial();
-      allow write: if isOfficial() && (
-        request.auth.token.email == 'johnedwardvvilladiego@gmail.com' ||
-        request.auth.token.role == 'admin'
-      );
+    // ---------- Report photos (compressed base64, separate from the report) ----------
+    match /report_images/{reportId} {
+      // Must be written in the same batch as its report
+      allow create: if isValidId(reportId) &&
+        existsAfter(/databases/$(database)/documents/reports/$(reportId)) &&
+        !exists(/databases/$(database)/documents/report_images/$(reportId)) &&
+        incoming().keys().hasOnly(['data', 'mimeType', 'createdAt']) &&
+        incoming().keys().hasAll(['data', 'mimeType', 'createdAt']) &&
+        incoming().data is string &&
+        incoming().data.size() <= 800000 &&
+        incoming().data.matches('^data:image/jpeg;base64,.*') &&
+        incoming().mimeType == 'image/jpeg' &&
+        incoming().createdAt == request.time;
+
+      allow get: if isOfficial();
+      allow list: if false;
+      allow update, delete: if false;
     }
 
-    // Public status lookup read-only collection for reference codes (does not contain photo or GPS coordinates)
-    match /public_status/{referenceCode} {
-      allow get: if referenceCode is string && referenceCode.size() <= 32;
-      allow list: if false;
-      allow write: if isOfficial();
+    // ---------- Officials ----------
+    // Managed only from the Firebase Console / Admin SDK.
+    match /officials/{officialId} {
+      allow get: if isSignedIn() && request.auth.uid == officialId;
+      allow list: if isOfficial();
+      allow write: if false;
     }
   }
 }

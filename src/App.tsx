@@ -10,9 +10,10 @@ import { PublicStatusPage } from './components/PublicStatusPage';
 import { Dashboard } from './components/Dashboard';
 import { OfficialAuthModal } from './components/OfficialAuthModal';
 import { Language } from './lib/i18n';
-import { processOfflineQueue, getPendingUploads } from './lib/offlineQueue';
-import { testFirestoreConnection, auth } from './lib/firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onPendingSyncChange } from './lib/offlineQueue';
+import { auth } from './lib/firebase';
+import { isOfficialUser } from './lib/auth';
+import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<'report' | 'status' | 'dashboard'>('report');
@@ -20,43 +21,37 @@ export default function App() {
   const [statusLookupCode, setStatusLookupCode] = useState<string>('');
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
-  const [officialUser, setOfficialUser] = useState<any | null>(null);
+  const [officialUser, setOfficialUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   // Initialize and check connectivity
   useEffect(() => {
-    testFirestoreConnection();
-
-    const handleOnline = () => {
-      setIsOnline(true);
-      processOfflineQueue((remaining) => setPendingSyncCount(remaining));
-    };
-
-    const handleOffline = () => {
-      setIsOnline(false);
-    };
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Initial check of offline queue
-    getPendingUploads().then((items) => {
-      setPendingSyncCount(items.length);
-      if (items.length > 0 && navigator.onLine) {
-        processOfflineQueue((remaining) => setPendingSyncCount(remaining));
-      }
-    });
+    // Count report submissions Firestore has not yet acknowledged (offline queue)
+    const unsubscribePending = onPendingSyncChange(setPendingSyncCount);
 
-    // Check Firebase Auth state for officials
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
+    // Only users verified as officials get dashboard access
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (user && (await isOfficialUser(user))) {
         setOfficialUser(user);
+      } else {
+        setOfficialUser(null);
+        if (user) {
+          // Signed in but not an official: do not keep the session around
+          signOut(auth).catch(() => {});
+        }
       }
     });
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      unsubscribePending();
       unsubscribeAuth();
     };
   }, []);

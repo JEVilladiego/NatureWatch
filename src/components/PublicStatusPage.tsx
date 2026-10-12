@@ -54,7 +54,7 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
     setError(null);
 
     try {
-      const res = await fetch(`/api/reports/status/${encodeURIComponent(cleanCode)}`);
+      const res = await fetch(`/api/status?code=${encodeURIComponent(cleanCode)}`);
       if (!res.ok) {
         if (res.status === 404) {
           setError(

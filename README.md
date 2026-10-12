@@ -1,119 +1,97 @@
 # BantayKalikasan
 
-**BantayKalikasan** is a mobile-first environmental incident reporting and AI triage system developed for local government units (LGUs), specifically designed for the Municipal Environment and Natural Resources Office (MENRO) of **Binangonan, Rizal, Philippines**.
+**BantayKalikasan** is a mobile-first environmental incident reporting and AI triage system for the Municipal Environment and Natural Resources Office (MENRO) of **Binangonan, Rizal, Philippines**.
 
-It empowers residents to report illegal dumping, open burning, water pollution, illegal tree cutting, or unauthorized quarrying without creating an account. Each report is automatically triaged by a Google Gemini Flash model, while MENRO officers monitor a live GIS dashboard with duplicate spatial clustering and human-in-the-loop overrides.
-
----
-
-## Key Architecture Decisions
-
-1. **Offline-First & AI-Decoupled**:
-   - The resident client **never waits on Gemini**. Reports are written to Firestore immediately with `triageStatus: "pending"` and queued locally via `persistentLocalCache` with multi-tab support.
-   - Images are compressed client-side (~500KB, max 1600px) and uploaded via an IndexedDB retry queue with exponential backoff.
-   - Triage runs asynchronously on the backend / Cloud Function, passing inline bytes to Gemini rather than public URLs.
-2. **Failure-Tolerant AI**:
-   - Gemini responses are strictly constrained to JSON schemas and validated server-side using **Zod**.
-   - If Gemini fails or times out after 2 retries, `triageStatus` transitions to `"failed"`. The report still appears on the dashboard with a `"Needs manual review"` badge.
-3. **Human in the Loop**:
-   - AI outputs are recommendations. Officials can adjust category and severity in `final`. The dashboard presents `final` when available, falling back to `aiTriage`.
-4. **Untrusted Input Protection**:
-   - Resident descriptions are treated strictly as untrusted data enclosed within delimiters (`<untrusted_resident_description>`). System prompts instruct Gemini to ignore prompt injection attempts.
-5. **Philippine Data Privacy Act (RA 10173) Compliance**:
-   - Zero resident Personally Identifiable Information (PII) is captured.
-   - Evidence photos are kept in non-public Cloud Storage and loaded via authenticated signed URLs / secure proxies.
-   - Public reference status lookups (`/status/[referenceCode]`) display solely the municipal action status, never exposing photos or exact coordinates.
-   - Data retention: Reports are retained for 90 days after case resolution before archiving.
+Residents report illegal dumping, open burning, water pollution, illegal tree cutting, quarrying and wildlife issues **without an account**. Each report is triaged by Google Gemini, and MENRO officers manage cases on a live map dashboard with duplicate clustering and human-in-the-loop overrides.
 
 ---
 
-## Tech Stack
+## Architecture
 
-- **Frontend**: React 19 + TypeScript + Tailwind CSS v4, Progressive Web App (PWA) with Service Worker and Web App Manifest
-- **Map & GIS**: Leaflet with OpenStreetMap tiles, draggable pin picker, and severity marker clustering
-- **Database & Auth**: Firebase Firestore (Enterprise free tier) & Firebase Authentication
-- **AI**: Gemini (`@google/genai` TypeScript SDK, defaulting to `gemini-3.8-flash`)
-- **Validation**: Zod schema validation
-- **Backend / Cloud Functions**: Express.js dev & production server (`server.ts`) + standalone Firebase Cloud Function (`functions/src/index.ts`)
+| Layer | Technology | Cost |
+|---|---|---|
+| Frontend (PWA) | React 19, TypeScript, Tailwind v4, Leaflet | Vercel Hobby (free) |
+| API | Vercel serverless functions in `api/` (`firebase-admin`, Gemini, Zod) | Vercel Hobby (free) |
+| Database | Firebase **Firestore** (reports **and** compressed photos) | Firebase Spark (free) |
+| Auth | Firebase Authentication (email/password, officials only) | Free |
+
+There is **no Firebase Cloud Functions and no Firebase Storage**: nothing here requires the Blaze plan.
+
+### Data flow
+
+1. The resident fills in the form. The photo is compressed in the browser to roughly 100-250KB.
+2. The client writes the report (`reports/{id}`) and the photo (`report_images/{id}`) in **one atomic Firestore batch**. Firestore's persistent cache queues it while offline and syncs it automatically when the connection returns.
+3. Once the server confirms the write, the client calls `POST /api/triage { reportId }`.
+4. `api/triage` claims the report (`pending` to `processing`) in a transaction, reads the description and photo **from Firestore** (never from the request), calls Gemini with a JSON schema, validates with Zod, and writes `aiTriage` and `triageStatus`. After two failed attempts the report is marked `failed` ("Needs manual review").
+5. Officials sign in, see reports live (`onSnapshot`), override category/severity, and move cases through `pending`, `in_progress` and `resolved`.
+6. Residents check progress with their reference code via `GET /api/status?code=BK-XXXXX`, which returns only the municipal action status.
+
+If a resident closes the app before step 3, the report stays `pending`. Officials can press **Run AI triage again**, and a daily Vercel Cron job (`/api/cron-triage`) sweeps leftovers.
+
+### API routes
+
+| Route | Access | Purpose |
+|---|---|---|
+| `POST /api/triage` | public (only affects `pending` reports) | Run Gemini triage |
+| `GET /api/status?code=` | public, rate limited | Safe status lookup |
+| `POST /api/retry-triage` | officials | Re-run triage for a failed report |
+| `POST /api/alert` | officials | Push alert for urgent reports (FCM topic `officials_urgent_alerts`) |
+| `GET /api/cron-triage` | `CRON_SECRET` | Daily sweep of untriaged reports |
+
+### Security and privacy (RA 10173)
+
+- No resident personal data is collected.
+- Photos and exact coordinates are readable only by officials (Firestore rules); the public lookup never returns them, and official names are hidden.
+- An **official** is a user with a document at `officials/{uid}` (or a `role: official` custom claim). Email addresses are never trusted.
+- Resident text is treated as untrusted data inside delimiters in the Gemini prompt.
+- Clients can never write `aiTriage`, `triageStatus`, or delete anything. See [firestore.rules](firestore.rules) and [security_spec.md](security_spec.md).
 
 ---
 
-## Category & Severity Standards
+## Categories and severity
 
-### 9 Core Categories (Single Source of Truth)
-- `solid_waste`: Illegal dumping, uncollected trash, estero / creek clogging
-- `water_pollution`: Sewage discharge, chemical sludge, Laguna de Bay runoff
-- `air_pollution_burning`: Open burning (*siga*), burning of rubber/plastics, toxic smoke
-- `illegal_logging_vegetation`: Unauthorized tree cutting, watershed clearing in upland hills
-- `illegal_quarrying_extraction`: Unauthorized gravel/soil extraction, slope stripping
-- `wildlife`: Poaching, endangered raptor / bird selling, distressed wildlife
-- `noise_other`: Heavy generator noise, industrial vibration
-- `other`: Legitimate environmental hazards not listed above
-- `not_environmental`: Potholes, parking, civil disputes, or irrelevant photos
-
-### Severity Scale (1 - 5)
-- **1**: Minor / cosmetic litter, isolated dry trash
-- **2**: Low concern, localized dust or nuisance
-- **3**: Moderate hazard, clogged creek, action needed within 3-5 days
-- **4**: Urgent hazard, active plastic burning, water supply pollution
-- **5**: Critical emergency, toxic chemical discharge into Laguna de Bay, massive landslide risk
+Nine categories: `solid_waste`, `water_pollution`, `air_pollution_burning`, `illegal_logging_vegetation`, `illegal_quarrying_extraction`, `wildlife`, `noise_other`, `other`, `not_environmental`. Severity runs from 1 (cosmetic) to 5 (critical emergency). Definitions live in `src/types/report.ts` and the Gemini prompt in `api/_lib/triage.ts`.
 
 ---
 
-## Firebase Deployment & Setup
+## Setup
 
-### 1. Deploy Firestore & Storage Security Rules
-The rules have already been provisioned and deployed via the AI Studio Firebase Fax service:
+### 1. Firebase (console.firebase.google.com)
+1. Create a project (stay on the free **Spark** plan; do **not** enable Storage).
+2. **Build > Firestore Database** > Create database (production mode, region `asia-southeast1`).
+3. **Build > Authentication** > Sign-in method > enable **Email/Password**. Then Settings > User actions: **disable "Enable create (sign-up)"** so nobody can self-register. Add each MENRO officer under Users.
+4. Project settings > General > add a **Web app** and paste its config into [firebase-applet-config.json](firebase-applet-config.json) (set `firestoreDatabaseId` to `(default)` unless you named it).
+5. Make someone an official: in Firestore create collection `officials`, with a document whose **ID is the user's UID** (from Authentication > Users). Any field works, e.g. `name`.
+6. Project settings > Service accounts > **Generate new private key**. Use it only for the Vercel environment variables below. **Never commit it.**
+
+### 2. Deploy the security rules
 ```bash
-firebase deploy --only firestore:rules,storage:rules
+npm i -g firebase-tools
+firebase login
+# put your project ID in .firebaserc, then:
+firebase deploy --only firestore:rules
 ```
 
-### 2. Deploy Cloud Functions
-To deploy the automated asynchronous triage Cloud Function:
+### 3. Vercel
+1. Import the repo (Framework: Vite).
+2. Add the environment variables from [.env.example](.env.example): `GEMINI_API_KEY`, `GEMINI_MODEL`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `CRON_SECRET` (and `FIREBASE_DATABASE_ID` if not `(default)`).
+3. In Firebase Authentication > Settings > **Authorized domains**, add your `*.vercel.app` domain.
+
+### Local development
 ```bash
-cd functions
 npm install
-npm run build
-firebase deploy --only functions
+cp .env.example .env     # fill in the values
+npm run dev:api          # vercel dev: serves the app and the /api routes together
+npm run dev              # frontend only (no /api)
+npm run lint
 ```
-
-### 3. Grant Custom Claims to Officials
-Authorized MENRO staff require the `role: "official"` custom claim or can sign in via their registered official email:
-```javascript
-// admin-script.js
-const admin = require('firebase-admin');
-admin.initializeApp();
-
-async function setOfficialRole(uid) {
-  await admin.auth().setCustomUserClaims(uid, { role: 'official' });
-  console.log(`Granted official role to ${uid}`);
-}
-
-setOfficialRole('OFFICIAL_UID_HERE');
-```
-
-### 4. Firebase App Check (reCAPTCHA v3 / Turnstile)
-In the Firebase Console:
-1. Navigate to **App Check** -> **Apps**.
-2. Register your web app domain with **reCAPTCHA v3** or **Cloudflare Turnstile**.
-3. Enforce App Check on **Cloud Firestore** and **Cloud Storage**.
 
 ---
 
-## Seed Data for Binangonan, Rizal
+## Known limitations
 
-The application includes 15 realistic seed incident reports spanning lakeside and upland barangays (Batingan, Calumpang, Tagpos, Pantok, Darangan, Talim Island, Layunan, Libis, Pag-asa).
-
-- You can click **"Load 15 Demo Reports"** on the MENRO Dashboard to immediately populate and test map clustering, filters, and human overrides.
-- Or trigger programmatically:
-  ```bash
-  curl -X POST http://localhost:3000/api/seed
-  ```
-
----
-
-## Known Limitations
-
-- **Browser Geolocation**: Mobile browsers require HTTPS and user permission to acquire high-accuracy GPS. The app provides a draggable map pin and a barangay selector as fallbacks.
-- **Client Offline Storage**: IndexedDB offline image queues depend on device storage limits.
-- **Gemini Rate Limits**: In production, configure Google Cloud billing alerts and rate limits on the Gemini API key.
+- Triage depends on the resident's device reaching `/api/triage` after the write is confirmed; the retry button and the daily cron are the safety nets.
+- Firestore Spark limits (1 GiB storage, 20k writes/day) apply. Photos are the main storage cost; prune resolved reports after the 90-day retention period.
+- Vercel Hobby functions are limited in duration (60s is configured). Gemini rate limits apply: configure billing alerts on the API key.
+- Browser geolocation needs HTTPS and permission; the draggable pin and barangay selector are the fallbacks.
+- The service worker file (`public/sw.js`) exists but is not registered yet.

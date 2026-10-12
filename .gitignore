@@ -1,8 +1,35 @@
+# Dependencies
 node_modules/
-build/
+
+# Production builds
 dist/
+build/
 coverage/
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Logs
 *.log
-.env*
-!.env.example
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment and secrets (NEVER commit these!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Firebase / GCP Service account credentials
+*.pem
+*.key
+*-firebase-adminsdk-*.json
+serviceAccount*.json
+
+# Deployment tool metadata
+.vercel/
+.firebase/

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Lock, Mail, X, Check, AlertCircle } from 'lucide-react';
 import { auth } from '../lib/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { isOfficialUser } from '../lib/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
 interface OfficialAuthModalProps {
   isOpen: boolean;
@@ -27,34 +28,21 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
     setError(null);
 
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      if (!(await isOfficialUser(cred.user))) {
+        await signOut(auth);
+        setError('This account is not authorized as a MENRO official. Contact your administrator.');
+        return;
+      }
       onLoginSuccess(cred.user);
+      setPassword('');
       onClose();
     } catch (err: any) {
-      console.warn('Sign-in failed:', err);
-      // If user doesn't exist, try creating for official demo access
-      try {
-        const newCred = await createUserWithEmailAndPassword(auth, email, password);
-        onLoginSuccess(newCred.user);
-        onClose();
-      } catch (createErr: any) {
-        setError(createErr.message || 'Invalid official credentials');
-      }
+      console.warn('Sign-in failed:', err?.code || err);
+      setError('Invalid email or password.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemoOfficialLogin = () => {
-    // Quick official access for testing/demonstration
-    const demoOfficial = {
-      uid: 'official_demo_menro',
-      email: 'menro.binangonan@rizal.gov.ph',
-      displayName: 'Officer Santos (MENRO Binangonan)',
-      role: 'official',
-    };
-    onLoginSuccess(demoOfficial);
-    onClose();
   };
 
   return (
@@ -127,25 +115,6 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
             {loading ? 'Authenticating...' : 'Sign In with Firebase Auth'}
           </button>
         </form>
-
-        <div className="relative my-5">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-gray-400 font-semibold">Or Quick Demo</span>
-          </div>
-        </div>
-
-        {/* 1-Click Demo Login */}
-        <button
-          onClick={handleDemoOfficialLogin}
-          type="button"
-          className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-amber-950 font-extrabold text-xs rounded-xl transition shadow flex items-center justify-center gap-2"
-        >
-          <Check className="w-4 h-4" />
-          <span>Demo as MENRO Officer (Instant Access)</span>
-        </button>
       </div>
     </div>
   );

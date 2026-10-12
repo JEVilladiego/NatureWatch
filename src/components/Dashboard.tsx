@@ -39,8 +39,10 @@ import {
   onSnapshot,
   doc,
   updateDoc,
+  getDoc,
 } from 'firebase/firestore';
 import { Language, translations } from '../lib/i18n';
+import { authHeaders } from '../lib/auth';
 
 interface DashboardProps {
   lang: Language;
@@ -78,12 +80,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [statusChangeNotes, setStatusChangeNotes] = useState<string>('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<boolean>(false);
 
-  // Alert simulation state
+  // Alert state
   const [isDispatchingAlert, setIsDispatchingAlert] = useState<boolean>(false);
   const [alertSuccessMessage, setAlertSuccessMessage] = useState<string | null>(null);
 
-  // Seeding state
-  const [isSeeding, setIsSeeding] = useState<boolean>(false);
+  // Errors, photo and triage retry
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [isRetryingTriage, setIsRetryingTriage] = useState<boolean>(false);
 
   // Sync selected report inputs when selection changes
   useEffect(() => {
@@ -97,115 +102,75 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setStatusChangeNotes('');
       setOverrideSuccess(false);
     }
-  }, [selectedReport]);
+  }, [selectedReport?.id]);
 
-  // Firestore live listener on reports filtered by status with limit(50)
+  // Firestore live listener: newest 100 reports. Status filtering happens client-side.
   useEffect(() => {
-    let unsubscribe: () => void = () => {};
+    setLoading(true);
+    setLoadError(null);
 
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const reportsRef = collection(db, 'reports');
-        let q = query(reportsRef, orderBy('createdAt', 'desc'), limit(50));
+    const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(100));
 
-        if (statusFilter !== 'all') {
-          q = query(reportsRef, where('status', '==', statusFilter), limit(50));
-        }
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const list: IncidentReport[] = snapshot.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            referenceCode: data.referenceCode,
+            createdAt: data.createdAt?.toDate
+              ? data.createdAt.toDate().toISOString()
+              : data.createdAt || new Date().toISOString(),
+            status: data.status || 'pending',
+            statusHistory: data.statusHistory || [],
+            location: data.location || { lat: 14.4791, lng: 121.1895, accuracyMeters: null, geohash: '', source: 'gps' },
+            rawInput: data.rawInput || { description: '', hasImage: false },
+            triageStatus: data.triageStatus || 'pending',
+            aiTriage: data.aiTriage || null,
+            final: data.final || null,
+            duplicateClusterId: data.duplicateClusterId || null,
+          };
+        });
 
-        unsubscribe = onSnapshot(
-          q,
-          (snapshot) => {
-            const firestoreReports: IncidentReport[] = [];
-            snapshot.forEach((d) => {
-              const data = d.data();
-              firestoreReports.push({
-                id: d.id,
-                referenceCode: data.referenceCode,
-                createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt || new Date().toISOString(),
-                status: data.status || 'pending',
-                statusHistory: data.statusHistory || [],
-                location: data.location || { lat: 14.4791, lng: 121.1895, accuracyMeters: null, geohash: '', source: 'gps' },
-                rawInput: data.rawInput || { imagePath: '', imageStatus: 'uploaded', description: '' },
-                triageStatus: data.triageStatus || 'pending',
-                aiTriage: data.aiTriage || null,
-                final: data.final || null,
-                duplicateClusterId: data.duplicateClusterId || null,
-              });
-            });
-
-            if (firestoreReports.length > 0) {
-              setReports(firestoreReports);
-              if (!selectedReport && firestoreReports.length > 0) {
-                setSelectedReport(firestoreReports[0]);
-              }
-              setLoading(false);
-            } else {
-              // Fallback to server API store
-              fetchServerReports();
-            }
-          },
-          (err) => {
-            console.warn('Firestore live listener warning, using API sync:', err);
-            fetchServerReports();
-          }
+        setReports(list);
+        // Keep the current selection (refreshed) or fall back to the newest report
+        setSelectedReport((prev) =>
+          prev ? list.find((r) => r.id === prev.id) ?? prev : list[0] ?? null
         );
-      } catch (err) {
-        console.warn('Firestore setup error, using API store:', err);
-        fetchServerReports();
-      }
-    };
-
-    const fetchServerReports = async () => {
-      try {
-        const res = await fetch('/api/reports');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.reports && data.reports.length > 0) {
-            setReports(data.reports);
-            if (!selectedReport) {
-              setSelectedReport(data.reports[0]);
-            }
-          }
-        }
-      } catch (e) {
-        console.error('API fetch reports error:', e);
-      } finally {
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Firestore reports listener failed:', err);
+        setLoadError(
+          'Could not load reports. Make sure your account is registered as an official and Firestore rules are deployed.'
+        );
         setLoading(false);
       }
-    };
+    );
 
-    loadData();
+    return () => unsubscribe();
+  }, []);
 
+  // Load the (compressed) photo for the selected report from Firestore
+  useEffect(() => {
+    setPhotoDataUrl(null);
+    if (!selectedReport?.rawInput.hasImage) return;
+    let cancelled = false;
+    getDoc(doc(db, 'report_images', selectedReport.id))
+      .then((snap) => {
+        if (!cancelled && snap.exists()) setPhotoDataUrl(snap.data().data as string);
+      })
+      .catch((err) => console.error('Photo load failed:', err));
     return () => {
-      unsubscribe();
+      cancelled = true;
     };
-  }, [statusFilter]);
-
-  // Seeding realistic reports
-  const handleSeedReports = async () => {
-    setIsSeeding(true);
-    try {
-      const res = await fetch('/api/seed', { method: 'POST' });
-      if (res.ok) {
-        const refreshRes = await fetch('/api/reports');
-        const data = await refreshRes.json();
-        setReports(data.reports || []);
-        if (data.reports && data.reports.length > 0) {
-          setSelectedReport(data.reports[0]);
-        }
-      }
-    } catch (err) {
-      console.error('Seeding error:', err);
-    } finally {
-      setIsSeeding(false);
-    }
-  };
+  }, [selectedReport?.id]);
 
   // Duplicate spatial clustering calculation
   // Reports within ~100m, same category, within 48 hours grouped under duplicateClusterId
   const clusteredReports = useMemo(() => {
-    const list = [...reports];
+    const list = reports.map((r) => ({ ...r }));
     for (let i = 0; i < list.length; i++) {
       for (let j = i + 1; j < list.length; j++) {
         const r1 = list[i];
@@ -287,48 +252,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Human-in-the-loop override submission
   const handleSaveOverride = async () => {
-    if (!selectedReport) return;
+    if (!selectedReport || !officialUser) return;
     setIsSavingOverride(true);
     setOverrideSuccess(false);
+    setActionError(null);
 
-    const reviewerUid = officialUser?.uid || 'official_menro';
     const finalData = {
       category: overrideCategory,
       severity: overrideSeverity,
-      reviewedBy: reviewerUid,
+      reviewedBy: officialUser.uid,
       reviewedAt: new Date().toISOString(),
       notes: officerNotes.trim(),
     };
 
     try {
-      // 1. Update Firestore
-      try {
-        const docRef = doc(db, 'reports', selectedReport.id);
-        await updateDoc(docRef, { final: finalData });
-      } catch (e) {
-        console.warn('Firestore update warning:', e);
-      }
+      await updateDoc(doc(db, 'reports', selectedReport.id), { final: finalData });
 
-      // 2. Update local & server state
-      const updated = {
-        ...selectedReport,
-        final: finalData,
-      };
-
+      const updated = { ...selectedReport, final: finalData };
       setReports((prev) => prev.map((r) => (r.id === selectedReport.id ? updated : r)));
       setSelectedReport(updated);
-
-      // Sync with server API
-      fetch('/api/reports/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
-      }).catch(() => {});
 
       setOverrideSuccess(true);
       setTimeout(() => setOverrideSuccess(false), 3000);
     } catch (err) {
       console.error('Override update failed:', err);
+      setActionError('Could not save the review. You may not have permission, or you are offline.');
     } finally {
       setIsSavingOverride(false);
     }
@@ -336,86 +284,99 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Status transition handler (automatically records statusHistory)
   const handleUpdateStatus = async () => {
-    if (!selectedReport) return;
+    if (!selectedReport || !officialUser) return;
     setIsUpdatingStatus(true);
+    setActionError(null);
 
-    const reviewerName = officialUser?.displayName || 'MENRO Officer';
+    const notes = statusChangeNotes.trim();
     const newHistoryItem = {
       status: newStatus,
-      changedBy: reviewerName,
+      changedBy: officialUser.displayName || officialUser.email || 'MENRO Officer',
       changedAt: new Date().toISOString(),
-      notes: statusChangeNotes.trim() || undefined,
+      // Firestore rejects `undefined`, so only include notes when present
+      ...(notes ? { notes } : {}),
     };
 
     const updatedHistory = [...(selectedReport.statusHistory || []), newHistoryItem];
 
     try {
-      // 1. Update Firestore
-      try {
-        const docRef = doc(db, 'reports', selectedReport.id);
-        await updateDoc(docRef, {
-          status: newStatus,
-          statusHistory: updatedHistory,
-        });
-      } catch (e) {
-        console.warn('Firestore status update warning:', e);
-      }
+      await updateDoc(doc(db, 'reports', selectedReport.id), {
+        status: newStatus,
+        statusHistory: updatedHistory,
+      });
 
-      // 2. Update state
       const updated = {
         ...selectedReport,
         status: newStatus,
         statusHistory: updatedHistory,
       };
-
       setReports((prev) => prev.map((r) => (r.id === selectedReport.id ? updated : r)));
       setSelectedReport(updated);
       setStatusChangeNotes('');
-
-      fetch('/api/reports/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
-      }).catch(() => {});
     } catch (err) {
       console.error('Status transition failed:', err);
+      setActionError('Could not update the status. You may not have permission, or you are offline.');
     } finally {
       setIsUpdatingStatus(false);
     }
   };
 
-  // Dispatch Emergency QRT alert (Notification hook simulation)
+  // Re-run AI triage for a failed/stuck report (official-only API)
+  const handleRetryTriage = async () => {
+    if (!selectedReport) return;
+    setIsRetryingTriage(true);
+    setActionError(null);
+    try {
+      const res = await fetch('/api/retry-triage', {
+        method: 'POST',
+        headers: await authHeaders(),
+        body: JSON.stringify({ reportId: selectedReport.id }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      console.error('Retry triage failed:', err);
+      setActionError('Could not start AI triage. Try again in a moment.');
+    } finally {
+      setIsRetryingTriage(false);
+    }
+  };
+
+  // Dispatch emergency alert (official-only API; report data is read server-side)
   const handleDispatchAlert = async () => {
     if (!selectedReport) return;
     setIsDispatchingAlert(true);
     setAlertSuccessMessage(null);
-
-    const activeSev = selectedReport.final?.severity || selectedReport.aiTriage?.severity || 4;
-    const activeCat = selectedReport.final?.category || selectedReport.aiTriage?.category || 'Incident';
+    setActionError(null);
 
     try {
-      const res = await fetch('/api/notifications/alert', {
+      const res = await fetch('/api/alert', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reportId: selectedReport.id,
-          severity: activeSev,
-          category: activeCat,
-          summary: selectedReport.aiTriage?.summary || selectedReport.rawInput.description,
-          barangay: selectedReport.location.barangay || 'Binangonan',
-        }),
+        headers: await authHeaders(),
+        body: JSON.stringify({ reportId: selectedReport.id }),
       });
-
       const data = await res.json();
-      setAlertSuccessMessage(data.message || 'Alert dispatched to Quick Response Team!');
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setAlertSuccessMessage(data.message);
       setTimeout(() => setAlertSuccessMessage(null), 5000);
-    } catch {
-      setAlertSuccessMessage('Emergency alert dispatched via SMS gateway to MENRO field supervisor.');
-      setTimeout(() => setAlertSuccessMessage(null), 5000);
+    } catch (err) {
+      console.error('Alert dispatch failed:', err);
+      setActionError('Could not dispatch the alert.');
     } finally {
       setIsDispatchingAlert(false);
     }
   };
+
+  const retryTriageButton = (
+    <button
+      type="button"
+      onClick={handleRetryTriage}
+      disabled={isRetryingTriage}
+      className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 disabled:bg-gray-300 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition"
+    >
+      <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
+      <span>{isRetryingTriage ? 'Running AI triage...' : 'Run AI triage again'}</span>
+    </button>
+  );
 
   // If user is not authenticated as official, display access gate
   if (!officialUser) {
@@ -471,18 +432,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
         </div>
 
-        {/* Demo Seed Button */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleSeedReports}
-            disabled={isSeeding}
-            className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
-          >
-            <Database className="w-3.5 h-3.5" />
-            <span>{isSeeding ? 'Loading...' : t.seedBtn}</span>
-          </button>
-        </div>
       </div>
+
+      {(loadError || actionError) && (
+        <div role="alert" className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{loadError || actionError}</span>
+        </div>
+      )}
 
       {/* Stats Summary Strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -757,7 +714,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* Duplicate Cluster Notice */}
-              {selectedReport.duplicateClusterId && (
+              {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId && (
                 <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800 space-y-1">
                   <div className="font-bold flex items-center gap-1.5 text-amber-900">
                     <Layers className="w-4 h-4 text-amber-700" />
@@ -775,16 +732,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   Incident Photo (Secured Access)
                 </label>
                 <div className="relative rounded-xl overflow-hidden bg-gray-900 aspect-video flex items-center justify-center border border-gray-200">
-                  {selectedReport.rawInput.imageUrl ? (
+                  {photoDataUrl ? (
                     <img
-                      src={selectedReport.rawInput.imageUrl}
+                      src={photoDataUrl}
                       alt="Incident evidence"
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="text-center p-4 text-gray-400 text-xs">
                       <Eye className="w-6 h-6 mx-auto mb-1 text-gray-500" />
-                      <span>Evidence storage path: {selectedReport.rawInput.imagePath}</span>
+                      <span>{selectedReport.rawInput.hasImage ? 'Loading photo...' : 'No photo was submitted'}</span>
                     </div>
                   )}
                   <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-xs text-[10px] font-mono text-emerald-300 rounded">
@@ -824,9 +781,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
 
                 {selectedReport.triageStatus === 'failed' ? (
-                  <div className="p-2.5 bg-rose-100/80 rounded-lg text-rose-800 text-xs font-bold flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>{t.needsReviewBadge}</span>
+                  <div className="space-y-2">
+                    <div className="p-2.5 bg-rose-100/80 rounded-lg text-rose-800 text-xs font-bold flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>{t.needsReviewBadge}</span>
+                    </div>
+                    {retryTriageButton}
                   </div>
                 ) : selectedReport.aiTriage ? (
                   <div className="space-y-2 text-xs">
@@ -853,7 +813,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-500 italic">Triage in progress...</p>
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-500 italic">Triage in progress...</p>
+                    {retryTriageButton}
+                  </div>
                 )}
               </div>
 
