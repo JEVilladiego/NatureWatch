@@ -1,5 +1,5 @@
 /**
- * BantayKalikasan: Environmental Incident Reporting & AI Triage
+ * NatureWatch: Environmental Incident Reporting & AI Triage
  * Rizal Province • PG-ENRO
  */
 
@@ -129,7 +129,7 @@ export default function App() {
         <footer className="bg-tagapo-950 text-tagapo-200 py-8 border-t border-tagapo-900 text-xs">
           <div className="max-w-7xl mx-auto px-4 text-center space-y-2">
             <p className="font-display font-bold tracking-wide uppercase text-white text-sm">
-              BantayKalikasan • Provincial Government of Rizal Environment and Natural Resources Office (PG-ENRO)
+              NatureWatch • Provincial Government of Rizal Environment and Natural Resources Office (PG-ENRO)
             </p>
             <p className="text-tagapo-300 text-[11px] tracking-wide">
               Pamahalaang Lalawigan ng Rizal • Republic of the Philippines

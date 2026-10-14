@@ -22,6 +22,7 @@ import {
   ArrowLeft,
   Layout,
   Maximize2,
+  Crosshair,
 } from 'lucide-react';
 import {
   IncidentReport,
@@ -789,7 +790,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     }`}
                     title="Municipal vector boundaries & active focus"
                   >
-                    <span>⛶ Boundaries</span>
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Boundaries</span>
                   </button>
                   <button
                     type="button"
@@ -799,7 +801,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     }`}
                     title="Thematic incident density volume"
                   >
-                    <span>⬡ Density Choropleth</span>
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    <span>Density Choropleth</span>
                   </button>
 
                   <div className="h-4 w-px bg-stone-200/80 mx-0.5" />
@@ -814,7 +817,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     }`}
                     title={isMaskActive ? "Click to disable non-Rizal dimming mask" : "Click to gray out non-Rizal regions"}
                   >
-                    <span>🎯 Focus: Rizal</span>
+                    <Crosshair className="w-3.5 h-3.5" />
+                    <span>Focus: Rizal</span>
                   </button>
                 </div>
 
@@ -1454,13 +1458,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="pt-1 space-y-1.5 text-[10px]">
                     {mapLayerMode === 'choropleth' ? (
                       <div>
-                        <div className="flex items-center justify-between text-stone-500 font-mono mb-1">
-                          <span>0 reports</span>
-                          <span>5+ reports</span>
+                        <div className="flex items-center justify-between text-stone-500 font-mono mb-1 text-[9px]">
+                          <span>0</span>
+                          <span>1 (20%)</span>
+                          <span>2 (40%)</span>
+                          <span>3 (60%)</span>
+                          <span>4 (80%)</span>
+                          <span>5+ (100%)</span>
                         </div>
-                        <div className="h-2 rounded-full w-full bg-gradient-to-r from-emerald-100 via-emerald-400 to-emerald-800 border border-stone-200" />
+                        <div className="grid grid-cols-5 gap-0.5 h-2 w-full rounded-full overflow-hidden border border-stone-200 bg-stone-100">
+                          <div className="h-full bg-emerald-600 opacity-20" title="1 report: 20% opacity" />
+                          <div className="h-full bg-emerald-600 opacity-40" title="2 reports: 40% opacity" />
+                          <div className="h-full bg-emerald-600 opacity-60" title="3 reports: 60% opacity" />
+                          <div className="h-full bg-emerald-600 opacity-80" title="4 reports: 80% opacity" />
+                          <div className="h-full bg-emerald-800 opacity-100" title="5+ reports: 100% opacity" />
+                        </div>
                         <div className="text-stone-400 text-[9px] mt-1 text-center font-display font-medium">
-                          Provincial Incident Density
+                          Incident Density Scale (20% – 100% Opacity)
                         </div>
                       </div>
                     ) : (

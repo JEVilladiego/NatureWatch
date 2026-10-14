@@ -56,12 +56,19 @@
 
 /* Maintain internal Leaflet pane layering hierarchy while keeping container isolated */
 .leaflet-tile-pane    { z-index: 200 !important; }
+.leaflet-maskPane-pane,
 .leaflet-mask-pane    { z-index: 350 !important; pointer-events: none !important; }
 .leaflet-overlay-pane { z-index: 400 !important; }
 .leaflet-shadow-pane  { z-index: 500 !important; }
 .leaflet-marker-pane  { z-index: 600 !important; }
 .leaflet-tooltip-pane { z-index: 650 !important; }
 .leaflet-popup-pane   { z-index: 700 !important; }
+
+/* Non-Rizal Out-of-Jurisdiction Mask: Warm Brownish-Stone Cartographic Treatment */
+.non-rizal-jurisdiction-mask {
+  mix-blend-mode: multiply;
+  transition: fill 0.3s ease, fill-opacity 0.3s ease;
+}
 
 /* Tactical Cartography: Gentle calming of raw tile saturation */
 .leaflet-tile-pane {

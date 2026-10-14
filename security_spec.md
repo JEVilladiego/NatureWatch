@@ -1,4 +1,4 @@
-# Security Specification: BantayKalikasan
+# Security Specification: NatureWatch
 
 ## 1. Data Invariants
 1. Reports may only be created anonymously by residents with initial status 'pending', triageStatus 'pending', a server-set `createdAt`, a single 'pending' history entry, a `BK-XXXXX` reference code, and no aiTriage/final fields.

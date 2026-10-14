@@ -1,5 +1,5 @@
 {
-  "name": "BantayKalikasan",
+  "name": "NatureWatch",
   "description": "Mobile-first environmental incident reporting and AI triage system for Rizal Province PG-ENRO",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

@@ -2,7 +2,7 @@ export type Language = 'fil' | 'en';
 
 export const translations = {
   fil: {
-    appTitle: 'BantayKalikasan',
+    appTitle: 'NatureWatch',
     lguSubtitle: 'Lalawigan ng Rizal • PG-ENRO',
     navReport: 'Magsumbong',
     navStatus: 'Suriin ang Status',
@@ -22,8 +22,8 @@ export const translations = {
     compressing: 'Ipinoproseso at pinapaliit ang larawan...',
     compressedTo: 'Laki ng file',
     locationTitle: 'Lokasyon ng Insidente',
-    locationTabGps: '📍 Kasalukuyang Lokasyon (GPS)',
-    locationTabManual: '🗺️ Pumili sa Mapa o Barangay',
+    locationTabGps: 'Kasalukuyang Lokasyon (GPS)',
+    locationTabManual: 'Pumili sa Mapa o Barangay',
     gpsAcquiredBadge: 'Eksaktong Lokasyon (GPS)',
     gpsFallbackNotice: 'Hindi makuha ang GPS. Pwede kang pumili sa mapa o pumili ng barangay sa ibaba.',
     tapToPinHint: 'Mag-tap kahit saan sa mapa o i-drag ang pin para ituro ang eksaktong lokasyon.',
@@ -78,7 +78,7 @@ export const translations = {
     dispatchAlertBtn: 'Magpadala ng Alerto sa Quick Response Team',
   },
   en: {
-    appTitle: 'BantayKalikasan',
+    appTitle: 'NatureWatch',
     lguSubtitle: 'Rizal Province • PG-ENRO',
     navReport: 'Report Incident',
     navStatus: 'Check Status',
@@ -98,8 +98,8 @@ export const translations = {
     compressing: 'Compressing and optimizing image...',
     compressedTo: 'Compressed size',
     locationTitle: 'Incident Location',
-    locationTabGps: '📍 Use Current Location (GPS)',
-    locationTabManual: '🗺️ Pick on Map / Choose Barangay',
+    locationTabGps: 'Use Current Location (GPS)',
+    locationTabManual: 'Pick on Map / Choose Barangay',
     gpsAcquiredBadge: 'Verified On-Site Location (GPS)',
     gpsFallbackNotice: 'GPS could not be acquired. You can choose a barangay or tap on the map below.',
     tapToPinHint: 'Tap anywhere on the map or drag the pin to pinpoint the exact location.',

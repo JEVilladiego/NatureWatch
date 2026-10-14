@@ -17,7 +17,7 @@ Provide a zero-friction, reliable environmental incident intake and automated tr
 
 ## Positioning
 
-Unlike generic civic reporting tools or bureaucratic hotline queues, BantayKalikasan is an unauthenticated, mobile-first PWA backed by serverless Google Gemini multimodal triage and strict privacy boundaries. It allows citizens to submit evidence without barriers while providing provincial and municipal environmental officers with instantaneous structured incident intelligence—all sustained on a zero-cost serverless infrastructure.
+Unlike generic civic reporting tools or bureaucratic hotline queues, NatureWatch is an unauthenticated, mobile-first PWA backed by serverless Google Gemini multimodal triage and strict privacy boundaries. It allows citizens to submit evidence without barriers while providing provincial and municipal environmental officers with instantaneous structured incident intelligence—all sustained on a zero-cost serverless infrastructure.
 
 ## Operating Context
 
@@ -42,7 +42,7 @@ Unlike generic civic reporting tools or bureaucratic hotline queues, BantayKalik
 ## Brand Commitments
 
 - Entity: Provincial Government - Environment and Natural Resources Office (PG-ENRO), Lalawigan ng Rizal, in coordination with local municipal MENROs.
-- Voice: Civic, vigilant, community-protective, trustworthy, and authoritative ("Bantay Kalikasan").
+- Voice: Civic, vigilant, community-protective, trustworthy, and authoritative ("NatureWatch").
 - Language: Authentic everyday Filipino / Tagalog terminology paired with clean English.
 
 ## Evidence on Hand

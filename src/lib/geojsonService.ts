@@ -197,44 +197,52 @@ export function getGeometryBounds(geometry: GeoJSONGeometry): [[number, number],
 }
 
 /**
- * Generates choropleth style based on active complaint density
+ * Generates choropleth style based on active complaint density.
+ * Opacity steps:
+ *   - 0 reports: 0% opacity (dashed border)
+ *   - 1 report:  20% opacity
+ *   - 2 reports: 40% opacity
+ *   - 3 reports: 60% opacity
+ *   - 4 reports: 80% opacity
+ *   - 5+ reports: 100% opacity
  */
 export function getChoroplethStyle(count: number, maxCount: number, isHovered = false) {
   if (count === 0) {
     return {
-      fillColor: '#94a3b8',
-      fillOpacity: isHovered ? 0.35 : 0.15,
+      fillColor: '#059669',
+      fillOpacity: isHovered ? 0.08 : 0,
       weight: isHovered ? 2 : 1,
-      color: isHovered ? '#1c382c' : '#64748b',
+      color: isHovered ? '#047857' : '#059669',
       dashArray: '3, 4',
     };
   }
 
-  const ratio = maxCount > 0 ? count / maxCount : 0;
+  // Exact opacity steps per user specification
+  let fillOpacity = 0.20;
+  let fillColor = '#059669';
 
-  let fillColor = '#86efac'; // Low density (green)
-  let fillOpacity = 0.35;
-
-  if (ratio > 0.75 || count >= 10) {
-    fillColor = '#ef4444'; // Critical density (red)
-    fillOpacity = 0.65;
-  } else if (ratio > 0.5 || count >= 6) {
-    fillColor = '#f97316'; // High density (orange)
-    fillOpacity = 0.55;
-  } else if (ratio > 0.25 || count >= 3) {
-    fillColor = '#eab308'; // Medium density (amber)
-    fillOpacity = 0.45;
-  }
-
-  if (isHovered) {
-    fillOpacity = Math.min(0.85, fillOpacity + 0.2);
+  if (count >= 5) {
+    fillOpacity = 1.00;
+    fillColor = '#064e3b'; // Deep emerald pine
+  } else if (count === 4) {
+    fillOpacity = 0.80;
+    fillColor = '#047857'; // Deep emerald
+  } else if (count === 3) {
+    fillOpacity = 0.60;
+    fillColor = '#047857';
+  } else if (count === 2) {
+    fillOpacity = 0.40;
+    fillColor = '#059669'; // Rich emerald
+  } else {
+    fillOpacity = 0.20;
+    fillColor = '#059669'; // 1 report: 20% opacity
   }
 
   return {
     fillColor,
     fillOpacity,
     weight: isHovered ? 2.5 : 1.5,
-    color: isHovered ? '#1c382c' : '#334155',
+    color: isHovered ? '#022c22' : '#064e3b',
     dashArray: undefined,
   };
 }

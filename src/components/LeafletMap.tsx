@@ -20,6 +20,12 @@ export const RIZAL_PROVINCE_BOUNDS: [[number, number], [number, number]] = [
   [14.83480, 121.45105], // NE (Sierra Madre / Rodriguez / Tanay)
 ];
 
+// Exact territorial bounds of the Philippines archipelago [SW, NE]
+export const PHILIPPINES_BOUNDS: [[number, number], [number, number]] = [
+  [4.5, 116.0],  // South-West (Tawi-Tawi / Celebes Sea border)
+  [21.5, 127.0], // North-East (Batanes / Babuyan / Philippine Sea)
+];
+
 export type MapLayerMode = 'standard' | 'boundaries' | 'choropleth';
 
 interface LeafletMapProps {
@@ -104,12 +110,14 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       center: [center.lat, center.lng],
       zoom,
       zoomControl: false,
-      zoomSnap: 0.5,            // Fractional zoom levels for smooth, non-jarring transitions
-      zoomDelta: 0.5,           // +/- zoom buttons step in 0.5 increments
-      wheelPxPerZoomLevel: 140, // 2.3x lower wheel sensitivity (default: 60) for calm scrolling
-      wheelDebounceTime: 60,    // Dampens high-frequency trackpad bursts (default: 40ms)
-      minZoom: 9.5,             // Prevents zooming out to planetary view
+      zoomSnap: 0.5,                 // Fractional zoom levels for smooth, non-jarring transitions
+      zoomDelta: 0.5,                // +/- zoom buttons step in 0.5 increments
+      wheelPxPerZoomLevel: 140,      // 2.3x lower wheel sensitivity (default: 60) for calm scrolling
+      wheelDebounceTime: 60,         // Dampens high-frequency trackpad bursts (default: 40ms)
+      minZoom: 5.5,                  // Restricts zoom-out strictly to the Philippines archipelago
       maxZoom: 18,
+      maxBounds: PHILIPPINES_BOUNDS, // Strictly un-navigable to other countries
+      maxBoundsViscosity: 1.0,       // 100% solid barrier: impossible to drag outside the Philippines
     });
 
     L.control.zoom({ position: 'topright' }).addTo(map);
@@ -192,11 +200,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       pane: 'maskPane',
       interactive: false,
       style: {
-        fillColor: '#070a0eff',
-        fillOpacity: 0.6,
-        color: '#047857',
+        className: 'non-rizal-jurisdiction-mask',
+        fillColor: '#54473b', // Warm earthy brownish-stone indicating non-clickable reference land
+        fillOpacity: 0.52,    // Balanced opacity to eliminate gray-washout
+        color: '#15803d',     // Crisp emerald provincial boundary line
         weight: 2,
-        opacity: 1,
+        opacity: 0.95,
       },
     }).addTo(map);
 
@@ -367,8 +376,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             return {
               ...choropleth,
               weight: 3,
-              color: '#0e2019',
-              fillOpacity: Math.min(choropleth.fillOpacity + 0.25, 0.9),
+              color: '#022c22',
             };
           }
           return choropleth;
@@ -613,8 +621,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               <strong style="font-family: monospace; font-size: 13px;">${report.referenceCode}</strong>
               ${statusBadge}
             </div>
-            <div style="margin-bottom: 5px; color: #64748b; font-size: 11px;">
-              📍 ${locationLabel}
+            <div style="margin-bottom: 5px; color: #64748b; font-size: 11px; display: flex; items-center: center;">
+              <svg style="width: 12px; height: 12px; margin-right: 4px; flex-shrink: 0; color: #0f766e;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>${locationLabel}</span>
             </div>
             <div style="font-size: 11px; color: #1e293b; margin-bottom: 6px;">
               ${report.aiTriage?.summary || report.rawInput.description.slice(0, 80)}...
@@ -654,8 +663,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               <strong style="color: #0f172a; font-size: 13px;">${count} Incidents</strong>
               <span style="font-weight: 800; color: ${color}; font-size: 11px;">Max Sev ${group.maxSeverity}</span>
             </div>
-            <div style="color: #64748b; font-size: 11px; margin-bottom: 6px;">
-              📍 ${locationLabel}
+            <div style="color: #64748b; font-size: 11px; margin-bottom: 6px; display: flex; align-items: center;">
+              <svg style="width: 12px; height: 12px; margin-right: 4px; flex-shrink: 0; color: #0f766e;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>${locationLabel}</span>
             </div>
             <div style="margin-bottom: 4px;">
               ${reportItems}

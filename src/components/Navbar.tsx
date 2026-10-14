@@ -194,13 +194,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             onClick={() => goTo(officialUser ? 'dashboard' : 'report')}
             className={`flex items-center gap-2.5 select-none cursor-pointer rounded-md ${FOCUS_RING}`}
-            title="BantayKalikasan"
+            title="NatureWatch"
           >
             <span className="w-7 h-7 rounded-lg bg-tagapo-900 text-tagapo-50 flex items-center justify-center">
               <ShieldCheck className="w-4 h-4" strokeWidth={2.2} />
             </span>
             <span className="font-display font-extrabold text-[16px] tracking-wide text-stone-950 uppercase">
-              BantayKalikasan
+              NatureWatch
             </span>
             {officialUser && (
               <span className="hidden md:flex items-center gap-2.5 text-xs text-stone-500">

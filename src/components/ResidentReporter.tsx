@@ -4,14 +4,17 @@ import {
   Upload,
   MapPin,
   CheckCircle,
-  AlertTriangle,
   Copy,
   Info,
   Clock,
   ArrowRight,
   RefreshCw,
-  Shield,
   FileText,
+  Navigation,
+  Map,
+  ShieldCheck,
+  Check,
+  AlertCircle,
 } from 'lucide-react';
 import {
   IncidentCategory,
@@ -296,102 +299,108 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   // SUCCESS VIEW
   if (submittedReport) {
     return (
-      <div className="max-w-2xl mx-auto p-6 sm:p-8 my-6 bg-white rounded-2xl border border-stone-200 shadow-sm">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-tagapo-100 text-tagapo-900 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle className="w-10 h-10" />
-          </div>
+      <div className="max-w-xl mx-auto px-4 py-12 text-center space-y-6">
+        <div className="w-14 h-14 rounded-full bg-tagapo-50 text-tagapo-900 border border-tagapo-200 flex items-center justify-center mx-auto">
+          <CheckCircle className="w-7 h-7 text-tagapo-800" strokeWidth={2} />
+        </div>
 
-          <h2 className="font-display font-extrabold text-2xl sm:text-3xl text-stone-900 tracking-tight uppercase">
+        <div className="space-y-1.5">
+          <h2 className="font-display font-extrabold text-2xl sm:text-3xl text-stone-950 tracking-tight uppercase">
             {t.successTitle}
           </h2>
-
           <p className="text-sm text-stone-600 max-w-md mx-auto leading-relaxed">
             {t.successSubtitle}
           </p>
+        </div>
 
-          {submittedReport.offlineSaved && (
-            <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs flex items-center gap-2 text-left">
-              <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>{t.offlineSaved}</span>
-            </div>
-          )}
+        {submittedReport.offlineSaved && (
+          <div className="flex items-center justify-center gap-2 text-xs text-amber-800 font-medium py-1">
+            <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>{t.offlineSaved}</span>
+          </div>
+        )}
 
-          {/* Reference Code Card */}
-          <div className="bg-stone-50 border border-stone-200 rounded-xl p-6 my-6 text-center">
-            <span className="font-display text-xs font-bold uppercase tracking-wider text-tagapo-900">
-              {t.referenceCodeLabel}
-            </span>
-            <div className="text-3xl sm:text-4xl font-mono font-bold text-stone-950 mt-1.5 tracking-widest">
+        {/* Reference Code Sheet */}
+        <div className="py-6 border-y border-stone-200 max-w-md mx-auto">
+          <span className="text-[11px] font-mono uppercase tracking-widest text-stone-500 block mb-1">
+            {t.referenceCodeLabel}
+          </span>
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-3xl sm:text-4xl font-mono font-bold text-stone-950 tracking-wider">
               {submittedReport.referenceCode}
-            </div>
-
+            </span>
             <button
+              type="button"
               onClick={handleCopyCode}
-              className="mt-3.5 inline-flex items-center gap-1.5 px-4 py-2 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 text-white font-display font-bold text-xs uppercase tracking-wide rounded-lg shadow-xs hover:shadow transition cursor-pointer"
+              className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold rounded-md transition cursor-pointer flex items-center gap-1.5"
             >
-              <Copy className="w-3.5 h-3.5" />
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Copy className="w-3.5 h-3.5 text-stone-600" />}
               <span>{copied ? t.copied : t.copyCode}</span>
             </button>
           </div>
+        </div>
 
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <button
-              onClick={() => onViewStatus(submittedReport.referenceCode)}
-              className="flex-1 py-3 px-4 bg-tagapo-900 hover:bg-tagapo-800 text-white font-display font-bold uppercase tracking-wider rounded-xl text-sm flex items-center justify-center gap-2 shadow-xs transition cursor-pointer"
-            >
-              <FileText className="w-4 h-4" />
-              <span>{t.trackStatusBtn}</span>
-            </button>
+        {/* Action Controls */}
+        <div className="flex flex-col sm:flex-row gap-2.5 max-w-md mx-auto pt-2">
+          <button
+            type="button"
+            onClick={() => onViewStatus(submittedReport.referenceCode)}
+            className="flex-1 py-3 px-4 bg-tagapo-900 hover:bg-tagapo-800 text-white font-display font-bold uppercase tracking-wider rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition cursor-pointer"
+          >
+            <FileText className="w-4 h-4" />
+            <span>{t.trackStatusBtn}</span>
+          </button>
 
-            <button
-              onClick={resetForm}
-              className="py-3 px-4 border border-stone-300 hover:bg-stone-50 text-stone-700 font-display font-bold uppercase tracking-wider rounded-xl text-sm transition cursor-pointer"
-            >
-              {t.reportAnotherBtn}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={resetForm}
+            className="py-3 px-4 border border-stone-200 hover:bg-stone-50 text-stone-700 font-display font-bold uppercase tracking-wider rounded-lg text-xs transition cursor-pointer"
+          >
+            {t.reportAnotherBtn}
+          </button>
+        </div>
 
-          {/* Privacy footer */}
-          <div className="pt-4 border-t border-stone-100 text-[11px] text-stone-400 flex items-center justify-center gap-1">
-            <Shield className="w-3.5 h-3.5 text-tagapo-800" />
-            <span>{t.retentionNote}</span>
-          </div>
+        {/* Footnote */}
+        <div className="pt-6 text-[11px] text-stone-400 flex items-center justify-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5 text-tagapo-800" />
+          <span>{t.retentionNote}</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6">
-      {/* Title & Tactical Status Header */}
+    <div className="max-w-2xl mx-auto px-4 sm:px-6">
+      {/* Editorial Header */}
       <div className="pb-6 border-b border-stone-200">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
           <div>
-            <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-stone-950 tracking-tight uppercase leading-none">
+            <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-stone-950 tracking-tight uppercase leading-none">
               {t.appTitle}
             </h1>
-            <p className="text-sm text-stone-600 mt-2 max-w-xl leading-relaxed">
+            <p className="text-sm text-stone-600 mt-1.5 max-w-xl leading-relaxed">
               {t.tagline}
             </p>
           </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 border border-stone-200 text-stone-700 text-xs font-semibold rounded-md shrink-0">
-            <Shield className="w-3.5 h-3.5 text-tagapo-800 shrink-0" />
+          <div className="flex items-center gap-1.5 text-xs text-stone-500 font-medium shrink-0">
+            <ShieldCheck className="w-4 h-4 text-tagapo-800 shrink-0" />
             <span>{t.anonymousNotice}</span>
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="py-6 space-y-8">
+      <form onSubmit={handleSubmit} className="divide-y divide-stone-100">
         {/* Step 1: Photo Capture */}
-        <div className="space-y-3">
-          <div className="flex items-baseline justify-between border-b border-stone-100 pb-2">
-            <h2 className="font-display font-bold text-base sm:text-lg text-stone-900 tracking-wide uppercase flex items-center gap-2">
-              <span className="w-5 h-5 rounded bg-tagapo-900 text-white text-xs font-bold flex items-center justify-center font-mono">1</span>
-              <span>{t.photoCaptureTitle}</span>
-            </h2>
-            <span className="text-xs text-stone-400 font-medium">{t.photoCaptureHint}</span>
+        <div className="py-6 space-y-3">
+          <div className="flex items-baseline justify-between">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-stone-400">01</span>
+              <span className="text-stone-300 font-mono">/</span>
+              <h2 className="font-display font-bold text-sm sm:text-base text-stone-950 uppercase tracking-wide">
+                {t.photoCaptureTitle}
+              </h2>
+            </div>
+            <span className="text-xs text-stone-400">{t.photoCaptureHint}</span>
           </div>
 
           {/* Hidden inputs */}
@@ -412,51 +421,33 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           />
 
           {!compressionInfo ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
-                className="group flex items-center gap-4 p-4 sm:p-5 bg-white border border-stone-200 hover:border-tagapo-800/50 rounded-xl shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-xs transition-all duration-150 cursor-pointer text-left"
+                className="flex-1 py-3 px-4 bg-tagapo-900 hover:bg-tagapo-800 text-white rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition cursor-pointer shadow-2xs"
               >
-                <div className="w-12 h-12 rounded-xl bg-tagapo-50 group-hover:bg-tagapo-100 text-tagapo-900 flex items-center justify-center shrink-0 transition-colors">
-                  <Camera className="w-6 h-6 text-tagapo-800" strokeWidth={2.2} />
-                </div>
-                <div>
-                  <div className="font-display font-bold text-sm sm:text-base text-stone-900 tracking-wide uppercase">
-                    {t.cameraBtn}
-                  </div>
-                  <div className="text-xs text-stone-500 mt-0.5">
-                    {lang === 'fil' ? 'Kumuha ng litrato gamit ang kamera' : 'Capture photo directly from camera'}
-                  </div>
-                </div>
+                <Camera className="w-4 h-4" />
+                <span>{t.cameraBtn}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="group flex items-center gap-4 p-4 sm:p-5 bg-white border border-stone-200 hover:border-navy-800/50 rounded-xl shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-xs transition-all duration-150 cursor-pointer text-left"
+                className="flex-1 py-3 px-4 bg-white hover:bg-stone-50 text-stone-800 border border-stone-200 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition cursor-pointer shadow-2xs"
               >
-                <div className="w-12 h-12 rounded-xl bg-navy-50 group-hover:bg-navy-100 text-navy-900 flex items-center justify-center shrink-0 transition-colors">
-                  <Upload className="w-6 h-6 text-navy-800" strokeWidth={2.2} />
-                </div>
-                <div>
-                  <div className="font-display font-bold text-sm sm:text-base text-stone-900 tracking-wide uppercase">
-                    {t.galleryBtn}
-                  </div>
-                  <div className="text-xs text-stone-500 mt-0.5">
-                    {lang === 'fil' ? 'Mag-upload mula sa album / storage' : 'Upload photo from file gallery'}
-                  </div>
-                </div>
+                <Upload className="w-4 h-4 text-stone-600" />
+                <span>{t.galleryBtn}</span>
               </button>
             </div>
           ) : (
-            <div className="relative rounded-xl overflow-hidden border border-stone-200 bg-stone-900 shadow-sm">
+            <div className="relative rounded-lg overflow-hidden border border-stone-200 bg-stone-900">
               <img
                 src={compressionInfo.previewUrl}
                 alt="Incident capture"
-                className="w-full h-64 sm:h-72 object-cover"
+                className="w-full h-56 sm:h-64 object-cover"
               />
-              <div className="absolute bottom-3 left-3 right-3 bg-stone-950/85 backdrop-blur-md text-white px-4 py-2.5 rounded-lg flex items-center justify-between text-xs border border-white/10">
+              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-stone-950/90 via-stone-950/60 to-transparent p-3 flex items-center justify-between text-xs text-white">
                 <span className="font-mono text-stone-300">
                   {t.compressedTo}: {(compressionInfo.compressedSize / 1024).toFixed(0)} KB
                 </span>
@@ -466,7 +457,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                     setSelectedFile(null);
                     setCompressionInfo(null);
                   }}
-                  className="text-stone-300 hover:text-white font-display font-bold uppercase tracking-wider text-xs underline cursor-pointer"
+                  className="px-2.5 py-1 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded text-white font-display font-bold text-xs uppercase tracking-wider transition cursor-pointer"
                 >
                   Change
                 </button>
@@ -482,103 +473,103 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           )}
 
           {imageError && (
-            <p role="alert" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2.5">
-              {imageError}
-            </p>
+            <div className="flex items-center gap-1.5 text-xs text-rose-700 py-1">
+              <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+              <span>{imageError}</span>
+            </div>
           )}
         </div>
 
-        {/* Step 2: Location (Dual-Mode: GPS On-Site vs Pick on Map) */}
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 pb-2">
-            <h2 className="font-display font-bold text-base sm:text-lg text-stone-900 tracking-wide uppercase flex items-center gap-2">
-              <span className="w-5 h-5 rounded bg-tagapo-900 text-white text-xs font-bold flex items-center justify-center font-mono">2</span>
-              <span>{t.locationTitle}</span>
-            </h2>
+        {/* Step 2: Location */}
+        <div className="py-6 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-stone-400">02</span>
+              <span className="text-stone-300 font-mono">/</span>
+              <h2 className="font-display font-bold text-sm sm:text-base text-stone-950 uppercase tracking-wide">
+                {t.locationTitle}
+              </h2>
+            </div>
 
-            {/* Tactical Location Mode Segmented Tabs */}
-            <div className="bg-stone-100 p-0.5 rounded-lg border border-stone-200 flex items-center gap-1 self-start sm:self-auto">
+            {/* Segmented Mode Switcher */}
+            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-lg self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => handleTabSwitch('gps')}
-                className={`px-3 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
+                className={`px-3 py-1 rounded text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
                   locationTab === 'gps'
-                    ? 'bg-tagapo-900 text-white shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/50'
+                    ? 'bg-white text-stone-950 shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
+                <Navigation className="w-3.5 h-3.5 text-tagapo-800" />
                 <span>{t.locationTabGps}</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleTabSwitch('manual')}
-                className={`px-3 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
+                className={`px-3 py-1 rounded text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
                   locationTab === 'manual'
-                    ? 'bg-tagapo-900 text-white shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/50'
+                    ? 'bg-white text-stone-950 shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
+                <Map className="w-3.5 h-3.5 text-stone-600" />
                 <span>{t.locationTabManual}</span>
               </button>
             </div>
           </div>
 
-          {/* Fallback Notice if GPS failed */}
           {locationError && (
-            <div role="alert" className="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl flex items-center gap-2.5 shadow-2xs">
-              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
-              <span>{locationError}</span>
+            <div className="border-l-2 border-amber-500 pl-3 py-1 text-xs text-amber-900">
+              {locationError}
             </div>
           )}
 
-          {/* TAB 1: GPS (On-site reporting) */}
+          {/* TAB 1: GPS */}
           {locationTab === 'gps' && (
-            <div className="space-y-2.5">
-              {/* GPS Verified Status Banner */}
-              <div className="p-3 bg-tagapo-50/70 border border-tagapo-200 rounded-xl flex items-center justify-between gap-2 shadow-2xs">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-tagapo-900">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>{locationSource === 'gps' ? t.gpsAcquiredBadge : t.locating}</span>
-                  </div>
-                  <div className="text-xs text-stone-600 font-medium">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between py-1 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span className="font-semibold text-stone-900">
                     {selectedBarangay && selectedMunicipality
                       ? `Brgy. ${selectedBarangay}, ${selectedMunicipality}`
                       : 'Rizal Province'}
-                    {accuracyMeters !== null && ` • ±${accuracyMeters}m radius`}
-                  </div>
+                  </span>
+                  {accuracyMeters !== null && (
+                    <span className="text-stone-400 font-mono text-[11px]">
+                      (±{accuracyMeters}m)
+                    </span>
+                  )}
                 </div>
 
                 <button
                   type="button"
                   onClick={acquireGpsLocation}
                   disabled={isLocating}
-                  className="px-2.5 py-1 bg-white hover:bg-stone-50 border border-stone-200 text-stone-700 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1 transition cursor-pointer shrink-0 shadow-2xs"
+                  className="text-stone-500 hover:text-stone-900 font-display font-bold uppercase tracking-wider text-[11px] flex items-center gap-1 cursor-pointer"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
-                  <span>GPS Sync</span>
+                  <RefreshCw className={`w-3 h-3 ${isLocating ? 'animate-spin' : ''}`} />
+                  <span>Sync GPS</span>
                 </button>
               </div>
 
-              {/* Out of Jurisdiction Warning Banner */}
               {isOutOfJurisdiction && (
-                <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 shadow-2xs">
-                  <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                  <div className="leading-snug">
-                    <span className="font-display font-bold uppercase tracking-wider block text-amber-950 mb-0.5">
-                      {lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}
-                    </span>
-                    <span>
-                      {lang === 'fil'
-                        ? 'Ang napiling lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal (PG-ENRO). Pakisuyong ilagay ang pin sa loob ng Rizal.'
-                        : 'The selected location is outside the jurisdiction of Rizal Province (PG-ENRO). Please place the pin inside Rizal.'}
-                    </span>
+                <div className="text-xs text-amber-900 py-1 space-y-0.5">
+                  <div className="flex items-center gap-1.5 font-display font-bold uppercase tracking-wider text-amber-950">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>{lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}</span>
                   </div>
+                  <p className="text-stone-600 pl-5 leading-normal">
+                    {lang === 'fil'
+                      ? 'Ang napiling lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal (PG-ENRO). Pakisuyong ilagay ang pin sa loob ng Rizal.'
+                      : 'The selected location is outside the jurisdiction of Rizal Province (PG-ENRO). Please place the pin inside Rizal.'}
+                  </p>
                 </div>
               )}
 
-              {/* Map Preview with accuracy circle */}
-              <div className="relative isolate z-0 rounded-xl overflow-hidden border border-stone-300 shadow-sm">
+              <div className="relative isolate z-0 rounded-lg overflow-hidden border border-stone-200">
                 <LeafletMap
                   mode="picker"
                   center={coordinates}
@@ -603,13 +594,12 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             </div>
           )}
 
-          {/* TAB 2: Pick on Map / Choose Barangay (for reporting seen elsewhere) */}
+          {/* TAB 2: Manual */}
           {locationTab === 'manual' && (
-            <div className="space-y-2.5">
-              {/* Municipality & Barangay selector */}
+            <div className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block font-display text-xs font-bold uppercase tracking-wide text-stone-600 mb-1">
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">
                     {t.manualMunicipalityLabel}
                   </label>
                   <select
@@ -623,7 +613,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                         setLocationSource('manual_pin');
                       }
                     }}
-                    className="w-full text-xs font-medium px-3 py-2 bg-white border border-stone-300 rounded-xl focus:ring-1 focus:ring-tagapo-800 focus:outline-none shadow-2xs"
+                    className="w-full text-xs font-medium px-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-1 focus:ring-tagapo-800 focus:outline-none"
                   >
                     <option value="">{t.selectMunicipality}</option>
                     {RIZAL_MUNICIPALITIES.map((mun) => (
@@ -635,7 +625,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-display text-xs font-bold uppercase tracking-wide text-stone-600 mb-1">
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">
                     {t.manualBarangayLabel}
                   </label>
                   <select
@@ -655,7 +645,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                       }
                     }}
                     disabled={!selectedMunicipality}
-                    className="w-full text-xs font-medium px-3 py-2 bg-white border border-stone-300 rounded-xl focus:ring-1 focus:ring-tagapo-800 focus:outline-none disabled:bg-stone-100 disabled:text-stone-400 shadow-2xs"
+                    className="w-full text-xs font-medium px-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-1 focus:ring-tagapo-800 focus:outline-none disabled:bg-stone-50 disabled:text-stone-400"
                   >
                     <option value="">
                       {selectedMunicipality ? t.selectBarangayActive : t.selectBarangay}
@@ -680,36 +670,31 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 </div>
               </div>
 
-              {/* Out of Jurisdiction Warning Banner */}
               {isOutOfJurisdiction && (
-                <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 shadow-2xs">
-                  <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                  <div className="leading-snug">
-                    <span className="font-display font-bold uppercase tracking-wider block text-amber-950 mb-0.5">
-                      {lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}
-                    </span>
-                    <span>
-                      {lang === 'fil'
-                        ? 'Ang napiling lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal (PG-ENRO). Pakisuyong ilagay ang pin sa loob ng Rizal.'
-                        : 'The selected location is outside the jurisdiction of Rizal Province (PG-ENRO). Please place the pin inside Rizal.'}
-                    </span>
+                <div className="text-xs text-amber-900 py-1 space-y-0.5">
+                  <div className="flex items-center gap-1.5 font-display font-bold uppercase tracking-wider text-amber-950">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>{lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}</span>
                   </div>
+                  <p className="text-stone-600 pl-5 leading-normal">
+                    {lang === 'fil'
+                      ? 'Ang napiling lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal (PG-ENRO). Pakisuyong ilagay ang pin sa loob ng Rizal.'
+                      : 'The selected location is outside the jurisdiction of Rizal Province (PG-ENRO). Please place the pin inside Rizal.'}
+                  </p>
                 </div>
               )}
 
-              {/* Tap to Pin Instruction Bar */}
-              <div className="flex items-center justify-between text-xs text-stone-500 pt-0.5">
-                <span className="flex items-center gap-1 text-[11px] text-stone-600 font-medium">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span className="flex items-center gap-1 text-[11px] text-stone-600">
                   <MapPin className="w-3.5 h-3.5 text-tagapo-800 shrink-0" />
                   {t.tapToPinHint}
                 </span>
-                <span className="text-[11px] text-stone-500 font-mono bg-stone-100 px-2 py-0.5 rounded border border-stone-200 shrink-0">
+                <span className="text-[11px] text-stone-400 font-mono">
                   {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
                 </span>
               </div>
 
-              {/* Interactive Click-to-Pin Map */}
-              <div className="relative isolate z-0 rounded-xl overflow-hidden border border-stone-300 shadow-sm">
+              <div className="relative isolate z-0 rounded-lg overflow-hidden border border-stone-200">
                 <LeafletMap
                   mode="picker"
                   center={coordinates}
@@ -730,12 +715,15 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         </div>
 
         {/* Step 3: Description */}
-        <div className="space-y-3">
-          <div className="flex items-baseline justify-between border-b border-stone-100 pb-2">
-            <h2 className="font-display font-bold text-base sm:text-lg text-stone-900 tracking-wide uppercase flex items-center gap-2">
-              <span className="w-5 h-5 rounded bg-tagapo-900 text-white text-xs font-bold flex items-center justify-center font-mono">3</span>
-              <span>{t.descriptionTitle}</span>
-            </h2>
+        <div className="py-6 space-y-3">
+          <div className="flex items-baseline justify-between">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-stone-400">03</span>
+              <span className="text-stone-300 font-mono">/</span>
+              <h2 className="font-display font-bold text-sm sm:text-base text-stone-950 uppercase tracking-wide">
+                {t.descriptionTitle}
+              </h2>
+            </div>
             <span
               className={`text-xs font-mono ${
                 description.length > 450 ? 'text-amber-700 font-bold' : 'text-stone-400'
@@ -751,21 +739,26 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             rows={3}
             required
             placeholder={t.descriptionPlaceholder}
-            className="w-full px-4 py-3 text-sm bg-white border border-stone-300 rounded-xl focus:ring-2 focus:ring-tagapo-800 focus:border-tagapo-800 focus:outline-none transition shadow-2xs placeholder:text-stone-400"
+            className="w-full px-3.5 py-2.5 text-sm bg-stone-50/50 hover:bg-stone-50 focus:bg-white border border-stone-200 rounded-lg focus:ring-1 focus:ring-tagapo-800 focus:border-tagapo-800 focus:outline-none transition placeholder:text-stone-400 text-stone-900"
           />
 
-          <p className="text-[11px] text-stone-500 italic flex items-center gap-1.5">
-            <Info className="w-3.5 h-3.5 text-tagapo-800 shrink-0" />
+          <p className="text-[11px] text-stone-400 flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-stone-400 shrink-0" />
             <span>{t.untrustedInputNotice}</span>
           </p>
         </div>
 
         {/* Step 4: Optional Category Hint */}
-        <div className="space-y-2">
-          <label className="block font-display text-xs font-bold uppercase tracking-wide text-stone-600">
-            {t.categoryHintLabel}
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+        <div className="py-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs font-semibold text-stone-400">04</span>
+            <span className="text-stone-300 font-mono">/</span>
+            <label className="font-display font-bold text-sm sm:text-base text-stone-950 uppercase tracking-wide">
+              {t.categoryHintLabel}
+            </label>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 pt-1">
             {(Object.keys(CATEGORIES) as IncidentCategory[])
               .filter((cat) => cat !== 'not_environmental')
               .map((catKey) => {
@@ -776,54 +769,51 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                     key={catKey}
                     type="button"
                     onClick={() => setCategoryHint(isSelected ? '' : catKey)}
-                    className={`p-2.5 text-left rounded-lg text-xs font-semibold transition border cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-full text-xs transition cursor-pointer ${
                       isSelected
-                        ? 'bg-tagapo-900 text-white border-tagapo-950 shadow-xs'
-                        : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50 hover:border-stone-300'
+                        ? 'bg-tagapo-950 text-white font-semibold shadow-2xs'
+                        : 'bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium'
                     }`}
                   >
-                    <div className="truncate">
-                      {lang === 'fil' ? cat.labelFil : cat.labelEn}
-                    </div>
+                    <span>{lang === 'fil' ? cat.labelFil : cat.labelEn}</span>
                   </button>
                 );
               })}
           </div>
         </div>
 
-        {/* Privacy Act Compliance Notice */}
-        <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 text-xs text-stone-700 leading-relaxed flex items-start gap-3">
-          <Shield className="w-4 h-4 text-tagapo-800 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-display font-bold uppercase tracking-wider text-stone-900">RA 10173 Compliance: </span>
+        {/* Submit & Compliance */}
+        <div className="pt-6 space-y-3">
+          {submitError && (
+            <div className="flex items-center gap-1.5 text-xs text-rose-700 py-1">
+              <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+              <span>{submitError}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isSubmitting || isCompressing || !description.trim() || isOutOfJurisdiction}
+            className="w-full py-3.5 px-6 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 disabled:bg-stone-200 disabled:text-stone-400 text-white font-display font-bold tracking-wider uppercase text-sm rounded-lg shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            {isSubmitting ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>{t.submitting}</span>
+              </>
+            ) : (
+              <>
+                <span>{t.submitBtn}</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+
+          <div className="text-[11px] text-stone-400 text-center leading-relaxed">
+            <span className="font-semibold text-stone-600">RA 10173 Protected: </span>
             {t.privacyNotice}
           </div>
         </div>
-
-        {submitError && (
-          <p role="alert" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-3">
-            {submitError}
-          </p>
-        )}
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isSubmitting || isCompressing || !description.trim() || isOutOfJurisdiction}
-          className="w-full py-4 px-6 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 disabled:bg-stone-200 disabled:text-stone-400 text-white font-display font-bold tracking-wider uppercase text-base rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-        >
-          {isSubmitting ? (
-            <>
-              <RefreshCw className="w-5 h-5 animate-spin" />
-              <span>{t.submitting}</span>
-            </>
-          ) : (
-            <>
-              <span>{t.submitBtn}</span>
-              <ArrowRight className="w-5 h-5" />
-            </>
-          )}
-        </button>
       </form>
     </div>
   );
