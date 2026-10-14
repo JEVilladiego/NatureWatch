@@ -80,6 +80,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const viewMode = controlledViewMode !== undefined ? controlledViewMode : internalViewMode;
 
   const handleViewModeChange = (mode: 'workbench' | 'full_map') => {
+    if (mode === 'full_map') {
+      setSelectedReport(null);
+      setMunicipalityFilter('all');
+      setFitProvinceKey((prev) => prev + 1);
+    }
     if (onViewModeChange) {
       onViewModeChange(mode);
     } else {
@@ -129,6 +134,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [mapZoom, setMapZoom] = useState<number>(11);
   const [mapLayerMode, setMapLayerMode] = useState<MapLayerMode>('boundaries');
   const [isMaskActive, setIsMaskActive] = useState<boolean>(true);
+  const [fitProvinceKey, setFitProvinceKey] = useState<number>(0);
 
   // Aggregated incident counts per municipality for real-time choropleth shading
   const choroplethCounts = useMemo(() => {
@@ -146,6 +152,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleQuickJump = (munKey: string) => {
     if (munKey === 'all') {
       setMunicipalityFilter('all');
+      setSelectedReport(null);
+      setFitProvinceKey((prev) => prev + 1);
       setMapCenter({ lat: 14.5800, lng: 121.2800 });
       setMapZoom(11);
     } else {
@@ -835,6 +843,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   mode="dashboard"
                   center={mapCenter}
                   zoom={mapZoom}
+                  fitProvinceKey={fitProvinceKey}
                   reports={filteredReports}
                   selectedReportId={selectedReport?.id}
                   layerMode={mapLayerMode}
@@ -1352,6 +1361,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 mode="dashboard"
                 center={mapCenter}
                 zoom={mapZoom}
+                fitProvinceKey={fitProvinceKey}
                 reports={filteredReports}
                 selectedReportId={selectedReport?.id}
                 layerMode={mapLayerMode}

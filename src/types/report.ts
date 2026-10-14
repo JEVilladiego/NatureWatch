@@ -271,7 +271,7 @@ export const MUNICIPALITY_COORDINATES: Record<string, { lat: number; lng: number
   'Cardona': { lat: 14.4842, lng: 121.2294 },
   'Jalajala': { lat: 14.3542, lng: 121.3250 },
   'Morong': { lat: 14.5111, lng: 121.2389 },
-  'Pililla': { lat: 14.4833, lng: 121.3000 },
+  'Pililla': { lat: 14.4814, lng: 121.3354 },
   'Rodriguez (Montalban)': { lat: 14.7333, lng: 121.1500 },
   'San Mateo': { lat: 14.6972, lng: 121.1219 },
   'Tanay': { lat: 14.4981, lng: 121.2858 },

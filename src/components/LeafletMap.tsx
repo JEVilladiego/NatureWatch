@@ -12,7 +12,13 @@ import {
 } from '../lib/geojsonService';
 
 // Rizal Province default center (encompassing Sierra Madre, central corridor & Laguna de Bay shore)
-const RIZAL_DEFAULT = { lat: 14.5800, lng: 121.2800 };
+export const RIZAL_DEFAULT = { lat: 14.5800, lng: 121.2800 };
+
+// Exact bounding box of Rizal Province [SW, NE] encompassing all 14 LGUs and Laguna de Bay islands
+export const RIZAL_PROVINCE_BOUNDS: [[number, number], [number, number]] = [
+  [14.27838, 121.09595], // SW (Jalajala in Laguna de Bay)
+  [14.83480, 121.45105], // NE (Sierra Madre / Rodriguez / Tanay)
+];
 
 export type MapLayerMode = 'standard' | 'boundaries' | 'choropleth';
 
@@ -32,6 +38,7 @@ interface LeafletMapProps {
   onMunicipalityClick?: (municipalityName: string) => void;
   choroplethCounts?: Record<string, number>;
   maskNonRizal?: boolean;
+  fitProvinceKey?: number | string;
 }
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
@@ -49,6 +56,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   onMunicipalityClick,
   choroplethCounts = {},
   maskNonRizal,
+  fitProvinceKey,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -96,6 +104,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       center: [center.lat, center.lng],
       zoom,
       zoomControl: false,
+      zoomSnap: 0.5,            // Fractional zoom levels for smooth, non-jarring transitions
+      zoomDelta: 0.5,           // +/- zoom buttons step in 0.5 increments
+      wheelPxPerZoomLevel: 140, // 2.3x lower wheel sensitivity (default: 60) for calm scrolling
+      wheelDebounceTime: 60,    // Dampens high-frequency trackpad bursts (default: 40ms)
+      minZoom: 9.5,             // Prevents zooming out to planetary view
+      maxZoom: 18,
     });
 
     L.control.zoom({ position: 'topright' }).addTo(map);
@@ -113,9 +127,24 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     mapInstanceRef.current = map;
 
+    // In dashboard mode, frame all of Rizal Province on initial mount if not focused on a report/LGU
+    if (mode === 'dashboard' && !selectedReportId && (!activeMunicipality || activeMunicipality === 'all')) {
+      setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+          mapInstanceRef.current.fitBounds(RIZAL_PROVINCE_BOUNDS, {
+            padding: [28, 28],
+            animate: false,
+          });
+        }
+      }, 40);
+    }
+
     // Automatically recalculate Leaflet tiles on container size changes
     const resizeObserver = new ResizeObserver(() => {
-      map.invalidateSize();
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
     });
     if (mapContainerRef.current) {
       resizeObserver.observe(mapContainerRef.current);
@@ -127,6 +156,24 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       mapInstanceRef.current = null;
     };
   }, []);
+
+  // Frame full Rizal Province when fitProvinceKey changes
+  useEffect(() => {
+    if (!mapInstanceRef.current || mode !== 'dashboard') return;
+    if (selectedReportId || (activeMunicipality && activeMunicipality !== 'all')) return;
+
+    const timer = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+        mapInstanceRef.current.fitBounds(RIZAL_PROVINCE_BOUNDS, {
+          padding: [28, 28],
+          animate: true,
+        });
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [fitProvinceKey, mode, selectedReportId, activeMunicipality]);
 
   // Non-Rizal Inverted Mask Rendering & Toggling
   useEffect(() => {
