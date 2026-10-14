@@ -32,6 +32,15 @@ export interface GeoJSONFeatureCollection<P = any> {
 // In-memory singletons to avoid re-fetching
 let cachedProvince: GeoJSONFeatureCollection<ProvinceFeatureProperties> | null = null;
 let cachedMunicipalities: GeoJSONFeatureCollection<MunicipalityFeatureProperties> | null = null;
+let cachedInvertedMask: GeoJSONFeature | null = null;
+
+const WORLD_MASK_RING: [number, number][] = [
+  [-180, 85],
+  [180, 85],
+  [180, -85],
+  [-180, -85],
+  [-180, 85],
+];
 
 export async function fetchRizalProvinceGeoJSON(): Promise<GeoJSONFeatureCollection<ProvinceFeatureProperties>> {
   if (cachedProvince) return cachedProvince;
@@ -47,6 +56,27 @@ export async function fetchRizalMunicipalitiesGeoJSON(): Promise<GeoJSONFeatureC
   if (!res.ok) throw new Error(`Failed to load rizal-municipalities.geojson: ${res.statusText}`);
   cachedMunicipalities = await res.json();
   return cachedMunicipalities!;
+}
+
+/**
+ * Generates an inverted polygon GeoJSON feature covering the entire world
+ * with interior holes cut out precisely for Rizal Province mainland and islands.
+ * Rendered with SVG evenodd fill-rule, this grays out everything outside Rizal.
+ */
+export async function fetchRizalInvertedMaskGeoJSON(): Promise<GeoJSONFeature> {
+  if (cachedInvertedMask) return cachedInvertedMask;
+  const province = await fetchRizalProvinceGeoJSON();
+  const feature = province.features[0];
+  const holes = feature.geometry.coordinates.map((poly: any) => poly[0]);
+  cachedInvertedMask = {
+    type: 'Feature',
+    properties: { name: 'Non-Rizal Inverted Mask' },
+    geometry: {
+      type: 'Polygon',
+      coordinates: [WORLD_MASK_RING, ...holes],
+    },
+  };
+  return cachedInvertedMask;
 }
 
 /**

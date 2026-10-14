@@ -4,6 +4,8 @@ import { IncidentReport } from '../types/report';
 import { resolveReportCoordinates } from '../lib/barangayCoordinates';
 import {
   fetchRizalMunicipalitiesGeoJSON,
+  fetchRizalInvertedMaskGeoJSON,
+  GeoJSONFeature,
   GeoJSONFeatureCollection,
   MunicipalityFeatureProperties,
   getChoroplethStyle,
@@ -29,6 +31,7 @@ interface LeafletMapProps {
   activeMunicipality?: string | null;
   onMunicipalityClick?: (municipalityName: string) => void;
   choroplethCounts?: Record<string, number>;
+  maskNonRizal?: boolean;
 }
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
@@ -45,6 +48,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   activeMunicipality = null,
   onMunicipalityClick,
   choroplethCounts = {},
+  maskNonRizal,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -52,9 +56,13 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const dashboardMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
+  const maskLayerRef = useRef<L.GeoJSON | null>(null);
   const [geoJsonData, setGeoJsonData] = useState<GeoJSONFeatureCollection<MunicipalityFeatureProperties> | null>(null);
+  const [maskData, setMaskData] = useState<GeoJSONFeature | null>(null);
 
-  // Load GeoJSON data once
+  const shouldMask = maskNonRizal !== undefined ? maskNonRizal : mode === 'dashboard';
+
+  // Load GeoJSON municipality data once
   useEffect(() => {
     let isMounted = true;
     fetchRizalMunicipalitiesGeoJSON()
@@ -62,6 +70,19 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         if (isMounted) setGeoJsonData(data);
       })
       .catch((err) => console.warn('[LeafletMap] GeoJSON load error:', err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Load Inverted Non-Rizal Mask GeoJSON once
+  useEffect(() => {
+    let isMounted = true;
+    fetchRizalInvertedMaskGeoJSON()
+      .then((data) => {
+        if (isMounted) setMaskData(data);
+      })
+      .catch((err) => console.warn('[LeafletMap] Inverted mask load error:', err));
     return () => {
       isMounted = false;
     };
@@ -85,6 +106,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       maxZoom: 19,
     }).addTo(map);
 
+    // Dedicated non-Rizal mask pane: above base tiles (zIndex: 200), below vectors (zIndex: 400)
+    const maskPane = map.createPane('maskPane');
+    maskPane.style.zIndex = '350';
+    maskPane.style.pointerEvents = 'none';
+
     mapInstanceRef.current = map;
 
     // Automatically recalculate Leaflet tiles on container size changes
@@ -101,6 +127,41 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       mapInstanceRef.current = null;
     };
   }, []);
+
+  // Non-Rizal Inverted Mask Rendering & Toggling
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    // Clean up prior mask layer
+    if (maskLayerRef.current) {
+      maskLayerRef.current.remove();
+      maskLayerRef.current = null;
+    }
+
+    if (!shouldMask || !maskData) return;
+
+    const layer = L.geoJSON(maskData as any, {
+      pane: 'maskPane',
+      interactive: false,
+      style: {
+        fillColor: '#070a0eff',
+        fillOpacity: 0.6,
+        color: '#047857',
+        weight: 2,
+        opacity: 1,
+      },
+    }).addTo(map);
+
+    maskLayerRef.current = layer;
+
+    return () => {
+      if (maskLayerRef.current) {
+        maskLayerRef.current.remove();
+        maskLayerRef.current = null;
+      }
+    };
+  }, [shouldMask, maskData]);
 
   // Update Center & Zoom
   useEffect(() => {
@@ -156,6 +217,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       const marker = L.marker([center.lat, center.lng], {
         draggable: true,
         icon: pinIcon,
+        pane: 'markerPane',
+        zIndexOffset: 1000,
       }).addTo(map);
 
       marker.on('dragend', () => {
@@ -223,21 +286,21 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       return;
     }
 
-function isMunMatch(a?: string | null, b?: string | null): boolean {
-  if (!a || !b) return false;
-  if (a === b) return true;
-  const cleanA = a.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const cleanB = b.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
-}
+    function isMunMatch(a?: string | null, b?: string | null): boolean {
+      if (!a || !b) return false;
+      if (a === b) return true;
+      const cleanA = a.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const cleanB = b.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
+    }
 
-function getMunCount(name: string, counts: Record<string, number>): number {
-  if (counts[name] !== undefined) return counts[name];
-  for (const [key, val] of Object.entries(counts)) {
-    if (isMunMatch(name, key)) return val;
-  }
-  return 0;
-}
+    function getMunCount(name: string, counts: Record<string, number>): number {
+      if (counts[name] !== undefined) return counts[name];
+      for (const [key, val] of Object.entries(counts)) {
+        if (isMunMatch(name, key)) return val;
+      }
+      return 0;
+    }
 
     // Compute max incident count for choropleth normalizing
     const counts = Object.values(choroplethCounts);
@@ -440,9 +503,8 @@ function getMunCount(name: string, counts: Record<string, number>): number {
           align-items: center;
           justify-content: center;
         ">
-          ${
-            group.maxSeverity >= 4
-              ? `<div style="
+          ${group.maxSeverity >= 4
+          ? `<div style="
                   position: absolute;
                   width: ${pulseSize}px;
                   height: ${pulseSize}px;
@@ -451,8 +513,8 @@ function getMunCount(name: string, counts: Record<string, number>): number {
                   opacity: 0.38;
                   animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
                 "></div>`
-              : ''
-          }
+          : ''
+        }
           <div style="
             width: ${dotSize}px;
             height: ${dotSize}px;
@@ -482,6 +544,8 @@ function getMunCount(name: string, counts: Record<string, number>): number {
 
       const marker = L.marker([group.lat, group.lng], {
         icon: markerIcon,
+        pane: 'markerPane',
+        zIndexOffset: isSelected ? 2000 : 1000,
       }).addTo(map);
 
       // Popup Content
@@ -493,8 +557,8 @@ function getMunCount(name: string, counts: Record<string, number>): number {
           report.status === 'resolved'
             ? '<span style="color:#059669; font-weight:bold; font-size:10px;">RESOLVED</span>'
             : report.status === 'in_progress'
-            ? '<span style="color:#d97706; font-weight:bold; font-size:10px;">IN PROGRESS</span>'
-            : '<span style="color:#dc2626; font-weight:bold; font-size:10px;">PENDING</span>';
+              ? '<span style="color:#d97706; font-weight:bold; font-size:10px;">IN PROGRESS</span>'
+              : '<span style="color:#dc2626; font-weight:bold; font-size:10px;">PENDING</span>';
 
         marker.bindPopup(`
           <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; max-width: 220px;">

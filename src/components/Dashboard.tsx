@@ -128,6 +128,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 14.5800, lng: 121.2800 });
   const [mapZoom, setMapZoom] = useState<number>(11);
   const [mapLayerMode, setMapLayerMode] = useState<MapLayerMode>('boundaries');
+  const [isMaskActive, setIsMaskActive] = useState<boolean>(true);
 
   // Aggregated incident counts per municipality for real-time choropleth shading
   const choroplethCounts = useMemo(() => {
@@ -792,6 +793,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   >
                     <span>⬡ Density Choropleth</span>
                   </button>
+
+                  <div className="h-4 w-px bg-stone-200/80 mx-0.5" />
+
+                  <button
+                    type="button"
+                    onClick={() => setIsMaskActive(!isMaskActive)}
+                    className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
+                      isMaskActive
+                        ? 'bg-tagapo-800 text-white shadow-xs'
+                        : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                    }`}
+                    title={isMaskActive ? "Click to disable non-Rizal dimming mask" : "Click to gray out non-Rizal regions"}
+                  >
+                    <span>🎯 Focus: Rizal</span>
+                  </button>
                 </div>
 
                 {/* Bottom-right In-Map HUD: Tactical Severity Legend */}
@@ -825,6 +841,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
                   onMunicipalityClick={(mun) => handleQuickJump(mun)}
                   choroplethCounts={choroplethCounts}
+                  maskNonRizal={isMaskActive}
                   onSelectReport={(r) => {
                     setSelectedReport(r);
                     const coords = resolveReportCoordinates(r);
@@ -1341,6 +1358,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
                 onMunicipalityClick={(mun) => handleQuickJump(mun)}
                 choroplethCounts={choroplethCounts}
+                maskNonRizal={isMaskActive}
                 onSelectReport={(r) => {
                   setSelectedReport(r);
                   setIsSidebarOpen(true);
@@ -1400,6 +1418,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     Choropleth
                   </button>
                 </div>
+
+                {/* Jurisdiction Focus (Mask Non-Rizal) Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setIsMaskActive(!isMaskActive)}
+                  className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider flex items-center justify-between transition cursor-pointer border ${
+                    isMaskActive
+                      ? 'bg-tagapo-50 text-tagapo-950 border-tagapo-300'
+                      : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                  }`}
+                  title={isMaskActive ? "Click to disable non-Rizal dimming mask" : "Click to gray out non-Rizal regions"}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full ${isMaskActive ? 'bg-tagapo-700 animate-pulse' : 'bg-stone-400'}`} />
+                    <span>Focus: Rizal Only</span>
+                  </span>
+                  <span className={`text-[9px] font-mono px-1 py-0.2 rounded font-bold ${isMaskActive ? 'bg-tagapo-200/80 text-tagapo-900' : 'bg-stone-100 text-stone-500'}`}>
+                    {isMaskActive ? 'ON' : 'OFF'}
+                  </span>
+                </button>
 
                 {/* Legend Scale */}
                 {isLegendExpanded && (
