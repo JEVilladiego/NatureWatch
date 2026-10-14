@@ -1,10 +1,18 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { IncidentReport } from '../types/report';
 import { resolveReportCoordinates } from '../lib/barangayCoordinates';
+import {
+  fetchRizalMunicipalitiesGeoJSON,
+  GeoJSONFeatureCollection,
+  MunicipalityFeatureProperties,
+  getChoroplethStyle,
+} from '../lib/geojsonService';
 
 // Rizal Province default center (encompassing Sierra Madre, central corridor & Laguna de Bay shore)
 const RIZAL_DEFAULT = { lat: 14.5800, lng: 121.2800 };
+
+export type MapLayerMode = 'standard' | 'boundaries' | 'choropleth';
 
 interface LeafletMapProps {
   mode: 'picker' | 'dashboard';
@@ -16,6 +24,11 @@ interface LeafletMapProps {
   selectedReportId?: string | null;
   onSelectReport?: (report: IncidentReport) => void;
   className?: string;
+  // GeoJSON enhancement props
+  layerMode?: MapLayerMode;
+  activeMunicipality?: string | null;
+  onMunicipalityClick?: (municipalityName: string) => void;
+  choroplethCounts?: Record<string, number>;
 }
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
@@ -28,12 +41,31 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   selectedReportId = null,
   onSelectReport,
   className = 'h-72 w-full rounded-xl overflow-hidden shadow-inner',
+  layerMode = 'standard',
+  activeMunicipality = null,
+  onMunicipalityClick,
+  choroplethCounts = {},
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const pickerMarkerRef = useRef<L.Marker | null>(null);
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const dashboardMarkersRef = useRef<Map<string, L.Marker>>(new Map());
+  const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
+  const [geoJsonData, setGeoJsonData] = useState<GeoJSONFeatureCollection<MunicipalityFeatureProperties> | null>(null);
+
+  // Load GeoJSON data once
+  useEffect(() => {
+    let isMounted = true;
+    fetchRizalMunicipalitiesGeoJSON()
+      .then((data) => {
+        if (isMounted) setGeoJsonData(data);
+      })
+      .catch((err) => console.warn('[LeafletMap] GeoJSON load error:', err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Initialize Map
   useEffect(() => {
@@ -42,8 +74,10 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     const map = L.map(mapContainerRef.current, {
       center: [center.lat, center.lng],
       zoom,
-      zoomControl: true,
+      zoomControl: false,
     });
+
+    L.control.zoom({ position: 'topright' }).addTo(map);
 
     L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
       attribution:
@@ -173,6 +207,155 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     };
   }, [mode, center.lat, center.lng, accuracyMeters, onLocationChange]);
 
+  // GeoJSON Layer Rendering (Boundaries & Choropleth)
+  useEffect(() => {
+    if (!mapInstanceRef.current || !geoJsonData) return;
+    const map = mapInstanceRef.current;
+
+    // Clean up prior geojson layer
+    if (geoJsonLayerRef.current) {
+      geoJsonLayerRef.current.remove();
+      geoJsonLayerRef.current = null;
+    }
+
+    // If layerMode is 'standard' and no activeMunicipality in picker, do not render full polygons
+    if (layerMode === 'standard' && (!activeMunicipality || activeMunicipality === 'all')) {
+      return;
+    }
+
+function isMunMatch(a?: string | null, b?: string | null): boolean {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const cleanA = a.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const cleanB = b.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
+}
+
+function getMunCount(name: string, counts: Record<string, number>): number {
+  if (counts[name] !== undefined) return counts[name];
+  for (const [key, val] of Object.entries(counts)) {
+    if (isMunMatch(name, key)) return val;
+  }
+  return 0;
+}
+
+    // Compute max incident count for choropleth normalizing
+    const counts = Object.values(choroplethCounts);
+    const maxCount = counts.length > 0 ? Math.max(...counts, 1) : 1;
+
+    let targetBoundsLayer: L.Layer | null = null;
+
+    const layer = L.geoJSON(geoJsonData as any, {
+      style: (feature: any) => {
+        const name = feature?.properties?.name;
+        const isActive = isMunMatch(activeMunicipality, name);
+
+        if (layerMode === 'choropleth') {
+          const munCount = getMunCount(name, choroplethCounts);
+          const choropleth = getChoroplethStyle(munCount, maxCount, isActive);
+          if (isActive) {
+            return {
+              ...choropleth,
+              weight: 3,
+              color: '#0e2019',
+              fillOpacity: Math.min(choropleth.fillOpacity + 0.25, 0.9),
+            };
+          }
+          return choropleth;
+        }
+
+        // Boundaries mode or active single municipality outline
+        if (isActive) {
+          return {
+            color: '#1c382c',
+            weight: 3,
+            fillColor: '#2a5342',
+            fillOpacity: 0.18,
+            dashArray: undefined,
+          };
+        }
+
+        return {
+          color: '#2a5342',
+          weight: 1.5,
+          fillColor: '#2a5342',
+          fillOpacity: 0.04,
+          dashArray: '4, 4',
+        };
+      },
+      onEachFeature: (feature: any, featureLayer: L.Layer) => {
+        const name = feature?.properties?.name || 'LGU';
+        const munCount = getMunCount(name, choroplethCounts);
+
+        if (isMunMatch(activeMunicipality, name)) {
+          targetBoundsLayer = featureLayer;
+        }
+
+        // Tooltip
+        const tooltipHtml =
+          layerMode === 'choropleth'
+            ? `<div style="font-family: system-ui, sans-serif;">
+                <div style="font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #f8fafc;">${name}</div>
+                <div style="font-size: 10px; color: #94a3b8; font-family: monospace;">${munCount} active report${munCount === 1 ? '' : 's'}</div>
+              </div>`
+            : `<div style="font-family: system-ui, sans-serif; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">${name}</div>`;
+
+        featureLayer.bindTooltip(tooltipHtml, {
+          sticky: true,
+          direction: 'auto',
+          className: 'tactical-map-tooltip',
+        });
+
+        // Hover & Click listeners
+        const pathLayer = featureLayer as L.Path;
+        pathLayer.on('mouseover', () => {
+          if (layerMode === 'choropleth') {
+            const munStyle = getChoroplethStyle(munCount, maxCount, true);
+            pathLayer.setStyle(munStyle);
+          } else {
+            pathLayer.setStyle({
+              weight: 2.5,
+              color: '#1c382c',
+              fillOpacity: 0.15,
+            });
+          }
+        });
+
+        pathLayer.on('mouseout', () => {
+          layer.resetStyle(pathLayer);
+        });
+
+        pathLayer.on('click', (e: L.LeafletMouseEvent) => {
+          if (mode === 'picker' && onLocationChange) {
+            onLocationChange(e.latlng.lat, e.latlng.lng);
+          }
+          if (onMunicipalityClick) {
+            onMunicipalityClick(name);
+          }
+        });
+      },
+    }).addTo(map);
+
+    geoJsonLayerRef.current = layer;
+
+    // Zoom/fit camera if active municipality was targeted
+    if (targetBoundsLayer && typeof (targetBoundsLayer as any).getBounds === 'function') {
+      try {
+        const bounds = (targetBoundsLayer as any).getBounds();
+        map.fitBounds(bounds, { padding: [35, 35], maxZoom: 14, animate: true });
+      } catch (err) {
+        console.warn('[LeafletMap] fitBounds error:', err);
+      }
+    }
+
+    return () => {
+      if (geoJsonLayerRef.current) {
+        geoJsonLayerRef.current.remove();
+        geoJsonLayerRef.current = null;
+      }
+    };
+  }, [geoJsonData, layerMode, activeMunicipality, choroplethCounts, onMunicipalityClick]);
+
   // Dashboard Mode: Severity colored dots & "how many" count clusters
   useEffect(() => {
     if (mode !== 'dashboard' || !mapInstanceRef.current) return;
@@ -243,8 +426,6 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       if (group.maxSeverity === 5) color = '#dc2626'; // 5: Critical Crimson
 
       // Size calculation
-      // Single report: 22px (28px if selected)
-      // Cluster: 28px for 2-9, 34px for 10+ (or +4px if selected)
       const baseSize = isCluster ? (count >= 10 ? 34 : 28) : 22;
       const dotSize = isSelected ? baseSize + 6 : baseSize;
       const pulseSize = dotSize + 14;

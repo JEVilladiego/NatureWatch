@@ -23,6 +23,9 @@ export default function App() {
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
   const [officialUser, setOfficialUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [dashboardViewMode, setDashboardViewMode] = useState<'workbench' | 'full_map'>('workbench');
+
+  const isFullMap = currentTab === 'dashboard' && dashboardViewMode === 'full_map';
 
   // Initialize and check connectivity
   useEffect(() => {
@@ -77,7 +80,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans text-stone-900">
+    <div className={`bg-white flex flex-col font-sans text-stone-900 ${isFullMap ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
       {/* Navigation */}
       <Navbar
         currentTab={currentTab}
@@ -92,7 +95,7 @@ export default function App() {
       />
 
       {/* Main Content View */}
-      <main className="flex-1 py-4 sm:py-8">
+      <main className={isFullMap ? 'flex-1 flex flex-col h-[calc(100dvh-57px)] w-full overflow-hidden p-0 m-0' : 'flex-1 py-4 sm:py-8'}>
         {currentTab === 'report' && (
           <ResidentReporter
             lang={lang}
@@ -115,24 +118,28 @@ export default function App() {
             lang={lang}
             officialUser={officialUser}
             onOpenLogin={() => setIsAuthModalOpen(true)}
+            viewMode={dashboardViewMode}
+            onViewModeChange={setDashboardViewMode}
           />
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-tagapo-950 text-tagapo-200 py-8 border-t border-tagapo-900 text-xs">
-        <div className="max-w-7xl mx-auto px-4 text-center space-y-2">
-          <p className="font-display font-bold tracking-wide uppercase text-white text-sm">
-            BantayKalikasan • Provincial Government of Rizal Environment and Natural Resources Office (PG-ENRO)
-          </p>
-          <p className="text-tagapo-300 text-[11px] tracking-wide">
-            Pamahalaang Lalawigan ng Rizal • Republic of the Philippines
-          </p>
-          <div className="pt-3 text-[11px] text-tagapo-400 border-t border-tagapo-900/70 max-w-xl mx-auto">
-            Protektado sa ilalim ng Republic Act No. 10173 (Data Privacy Act of 2012). Walang personal na datos ng mamamayan ang kinokolekta.
+      {/* Footer (hidden in Full Map mode to ensure edge-to-edge canvas) */}
+      {!isFullMap && (
+        <footer className="bg-tagapo-950 text-tagapo-200 py-8 border-t border-tagapo-900 text-xs">
+          <div className="max-w-7xl mx-auto px-4 text-center space-y-2">
+            <p className="font-display font-bold tracking-wide uppercase text-white text-sm">
+              BantayKalikasan • Provincial Government of Rizal Environment and Natural Resources Office (PG-ENRO)
+            </p>
+            <p className="text-tagapo-300 text-[11px] tracking-wide">
+              Pamahalaang Lalawigan ng Rizal • Republic of the Philippines
+            </p>
+            <div className="pt-3 text-[11px] text-tagapo-400 border-t border-tagapo-900/70 max-w-xl mx-auto">
+              Protektado sa ilalim ng Republic Act No. 10173 (Data Privacy Act of 2012). Walang personal na datos ng mamamayan ang kinokolekta.
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
 
       {/* Official Sign-In Modal */}
       <OfficialAuthModal

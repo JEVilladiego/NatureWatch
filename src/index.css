@@ -58,6 +58,11 @@
   z-index: 10 !important;
 }
 
+/* Tactical Cartography: Gentle calming of raw tile saturation */
+.leaflet-tile-pane {
+  filter: saturate(0.92) contrast(1.02);
+}
+
 .leaflet-top,
 .leaflet-bottom {
   z-index: 20 !important;
@@ -66,3 +71,89 @@
 .leaflet-control {
   z-index: 20 !important;
 }
+
+/* Tactical Map Tooltip HUD */
+.tactical-map-tooltip {
+  background: rgba(14, 32, 25, 0.92) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  padding: 6px 10px !important;
+}
+
+.tactical-map-tooltip.leaflet-tooltip-top::before {
+  border-top-color: rgba(14, 32, 25, 0.92) !important;
+}
+
+.tactical-map-tooltip.leaflet-tooltip-bottom::before {
+  border-bottom-color: rgba(14, 32, 25, 0.92) !important;
+}
+
+/* Elevated Light Leaflet Zoom & Bar Controls */
+.leaflet-bar {
+  border: 1px solid rgba(229, 231, 235, 0.9) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+}
+
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background-color: #ffffff !important;
+  color: #374151 !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  backdrop-filter: blur(8px) !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #f9fafb !important;
+  color: #1c382c !important;
+}
+
+.leaflet-bar a:last-child {
+  border-bottom: none !important;
+}
+
+.leaflet-top.leaflet-right {
+  margin-top: 52px;
+  margin-right: 12px;
+}
+
+/* Clean Refined Leaflet Attribution */
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(6px) !important;
+  color: #6b7280 !important;
+  font-size: 10px !important;
+  border-radius: 6px 0 0 0 !important;
+  border-top: 1px solid rgba(229, 231, 235, 0.8) !important;
+  border-left: 1px solid rgba(229, 231, 235, 0.8) !important;
+  padding: 2px 6px !important;
+}
+
+.leaflet-control-attribution a {
+  color: #2a5342 !important;
+  text-decoration: none !important;
+}
+
+.leaflet-control-attribution a:hover {
+  text-decoration: underline !important;
+}
+
+/* Tactical Leaflet Popups */
+.leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(14, 32, 25, 0.15) !important;
+  box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(14, 32, 25, 0.05) !important;
+  padding: 4px !important;
+}
+
+.leaflet-popup-tip {
+  background: #ffffff !important;
+}
+

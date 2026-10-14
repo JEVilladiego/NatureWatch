@@ -8,12 +8,10 @@ import {
   MapPin,
   Sparkles,
   Edit3,
-  Send,
   Database,
   Search,
   Eye,
   RefreshCw,
-  Bell,
   Layers,
   BarChart3,
   Check,
@@ -33,7 +31,7 @@ import {
   RIZAL_MUNICIPALITIES,
   MUNICIPALITY_COORDINATES,
 } from '../types/report';
-import { LeafletMap } from './LeafletMap';
+import { LeafletMap, MapLayerMode } from './LeafletMap';
 import { resolveReportCoordinates } from '../lib/barangayCoordinates';
 import { calculateDistanceMeters } from '../lib/geohash';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
@@ -55,17 +53,21 @@ interface DashboardProps {
   lang: Language;
   officialUser: any | null;
   onOpenLogin: () => void;
+  viewMode?: 'workbench' | 'full_map';
+  onViewModeChange?: (mode: 'workbench' | 'full_map') => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   lang,
   officialUser,
   onOpenLogin,
+  viewMode: controlledViewMode,
+  onViewModeChange,
 }) => {
   const t = translations[lang];
 
   // View Mode: 'workbench' (Option 1 default) vs 'full_map' (Option 2 GIS Canvas)
-  const [viewMode, setViewMode] = useState<'workbench' | 'full_map'>(() => {
+  const [internalViewMode, setInternalViewMode] = useState<'workbench' | 'full_map'>(() => {
     try {
       const saved = localStorage.getItem('naturewatch_dashboard_view_mode');
       return saved === 'full_map' ? 'full_map' : 'workbench';
@@ -74,8 +76,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   });
 
+  const viewMode = controlledViewMode !== undefined ? controlledViewMode : internalViewMode;
+
   const handleViewModeChange = (mode: 'workbench' | 'full_map') => {
-    setViewMode(mode);
+    if (onViewModeChange) {
+      onViewModeChange(mode);
+    } else {
+      setInternalViewMode(mode);
+    }
     try {
       localStorage.setItem('naturewatch_dashboard_view_mode', mode);
     } catch {}
@@ -108,29 +116,48 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [statusChangeNotes, setStatusChangeNotes] = useState<string>('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<boolean>(false);
 
-  // Alert state
-  const [isDispatchingAlert, setIsDispatchingAlert] = useState<boolean>(false);
-  const [alertSuccessMessage, setAlertSuccessMessage] = useState<string | null>(null);
-
   // Errors, photo and triage retry
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [isRetryingTriage, setIsRetryingTriage] = useState<boolean>(false);
 
-  // Map viewport state
+  // Map viewport & layer state
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 14.5800, lng: 121.2800 });
   const [mapZoom, setMapZoom] = useState<number>(11);
+  const [mapLayerMode, setMapLayerMode] = useState<MapLayerMode>('boundaries');
+
+  // Aggregated incident counts per municipality for real-time choropleth shading
+  const choroplethCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const report of reports) {
+      const status = report.status || 'pending';
+      if (status !== 'resolved' && report.location?.municipality) {
+        const mun = report.location.municipality;
+        counts[mun] = (counts[mun] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [reports]);
 
   const handleQuickJump = (munKey: string) => {
     if (munKey === 'all') {
       setMunicipalityFilter('all');
       setMapCenter({ lat: 14.5800, lng: 121.2800 });
       setMapZoom(11);
-    } else if (MUNICIPALITY_COORDINATES[munKey]) {
-      setMunicipalityFilter(munKey);
-      setMapCenter(MUNICIPALITY_COORDINATES[munKey]);
-      setMapZoom(13);
+    } else {
+      const matchedKey =
+        Object.keys(MUNICIPALITY_COORDINATES).find(
+          (k) =>
+            k === munKey ||
+            k.toLowerCase().includes(munKey.toLowerCase()) ||
+            munKey.toLowerCase().includes(k.toLowerCase())
+        ) || munKey;
+      setMunicipalityFilter(matchedKey);
+      if (MUNICIPALITY_COORDINATES[matchedKey]) {
+        setMapCenter(MUNICIPALITY_COORDINATES[matchedKey]);
+        setMapZoom(13);
+      }
     }
   };
 
@@ -412,31 +439,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  // Dispatch emergency alert (official-only API; report data is read server-side)
-  const handleDispatchAlert = async () => {
-    if (!selectedReport) return;
-    setIsDispatchingAlert(true);
-    setAlertSuccessMessage(null);
-    setActionError(null);
-
-    try {
-      const res = await fetch('/api/alert', {
-        method: 'POST',
-        headers: await authHeaders(),
-        body: JSON.stringify({ reportId: selectedReport.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      setAlertSuccessMessage(data.message);
-      setTimeout(() => setAlertSuccessMessage(null), 5000);
-    } catch (err) {
-      console.error('Alert dispatch failed:', err);
-      setActionError('Could not dispatch the alert.');
-    } finally {
-      setIsDispatchingAlert(false);
-    }
-  };
-
   const retryTriageButton = (
     <button
       type="button"
@@ -486,10 +488,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const activeMetadata = CATEGORIES[activeCategory as IncidentCategory] || CATEGORIES.other;
 
   return (
-    <div className={`mx-auto space-y-4 ${viewMode === 'full_map' ? 'w-full max-w-[1700px] px-2 sm:px-4' : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-2 sm:py-4'}`}>
+    <div className={viewMode === 'full_map' ? 'w-full h-full relative overflow-hidden flex-1' : 'mx-auto space-y-4 max-w-7xl px-4 sm:px-6 lg:px-8 py-2 sm:py-4'}>
       {/* Optional Alert Notification Toast */}
       {(loadError || actionError) && (
-        <div role="alert" className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center justify-between gap-2 shadow-xs">
+        <div role="alert" className={`p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center justify-between gap-2 shadow-xs ${viewMode === 'full_map' ? 'absolute top-16 left-1/2 -translate-x-1/2 z-40 max-w-md w-full' : ''}`}>
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{loadError || actionError}</span>
@@ -506,52 +508,46 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
-      {/* Top Command Banner & View Mode Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-stone-200">
-        <div>
-          <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-stone-950 tracking-tight uppercase leading-none">
-            PG-ENRO Rizal Command Dashboard
-          </h1>
-          <p className="text-xs text-stone-500 mt-1.5 font-medium">
-            Provincial Government of Rizal • Incident Triage & Human-in-the-Loop Operations
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Tactical View Switcher Segmented Control */}
-          <div className="bg-stone-100 p-1 rounded-xl border border-stone-200 flex items-center gap-1 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => handleViewModeChange('workbench')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
-                viewMode === 'workbench'
-                  ? 'bg-tagapo-900 text-white shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-              }`}
-            >
-              <Layout className="w-3.5 h-3.5" />
-              <span>Workbench</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleViewModeChange('full_map')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
-                viewMode === 'full_map'
-                  ? 'bg-tagapo-900 text-white shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-              }`}
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-              <span>Full Map</span>
-            </button>
+      {/* Top Command Banner & View Mode Switcher (rendered only in Workbench mode) */}
+      {viewMode === 'workbench' && (
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-stone-200">
+          <div>
+            <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-stone-950 tracking-tight uppercase leading-none">
+              PG-ENRO Rizal Command Dashboard
+            </h1>
+            <p className="text-xs text-stone-500 mt-1.5 font-medium">
+              Provincial Government of Rizal • Incident Triage & Human-in-the-Loop Operations
+            </p>
           </div>
 
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-tagapo-900 text-tagapo-50 font-display text-xs font-bold uppercase tracking-wider rounded-lg">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Live Telemetry
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Tactical View Switcher Segmented Control */}
+            <div className="bg-stone-100 p-1 rounded-xl border border-stone-200 flex items-center gap-1 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => handleViewModeChange('workbench')}
+                className="px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer bg-tagapo-900 text-white shadow-xs"
+              >
+                <Layout className="w-3.5 h-3.5" />
+                <span>Workbench</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleViewModeChange('full_map')}
+                className="px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>Full Map</span>
+              </button>
+            </div>
+
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-tagapo-900 text-tagapo-50 font-display text-xs font-bold uppercase tracking-wider rounded-lg">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              Live Telemetry
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ========================================================= */}
       {/* VIEW MODE 1: OPTION 1 (SPLIT-SCREEN TACTICAL WORKBENCH)   */}
@@ -722,14 +718,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {/* Map Canvas with Integrated HUD */}
               <div className="relative border border-stone-300 rounded-xl overflow-hidden shadow-xs bg-stone-100">
                 {/* Top In-Map HUD: Quick Jump LGU Chips */}
-                <div className="absolute top-2.5 left-2.5 z-20 flex flex-wrap items-center gap-1.5 max-w-[calc(100%-140px)]">
+                <div className="absolute top-2.5 left-2.5 z-20 flex flex-wrap items-center gap-0.5 max-w-[calc(100%-140px)] bg-white/95 backdrop-blur-md p-1 rounded-xl border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5">
                   <button
                     type="button"
                     onClick={() => handleQuickJump('all')}
-                    className={`px-2.5 py-1 rounded text-[11px] font-display font-bold uppercase tracking-wide backdrop-blur-md shadow-xs transition cursor-pointer border ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-display font-bold uppercase tracking-wide transition cursor-pointer whitespace-nowrap ${
                       municipalityFilter === 'all'
-                        ? 'bg-tagapo-900 text-white border-tagapo-950'
-                        : 'bg-white/90 text-stone-700 border-stone-300 hover:bg-white'
+                        ? 'bg-tagapo-800 text-white shadow-xs'
+                        : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                     }`}
                   >
                     All Rizal
@@ -739,10 +735,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       key={mun}
                       type="button"
                       onClick={() => handleQuickJump(mun)}
-                      className={`px-2.5 py-1 rounded text-[11px] font-display font-bold uppercase tracking-wide backdrop-blur-md shadow-xs transition cursor-pointer border ${
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-display font-bold uppercase tracking-wide transition cursor-pointer whitespace-nowrap ${
                         municipalityFilter === mun
-                          ? 'bg-tagapo-900 text-white border-tagapo-950'
-                          : 'bg-white/90 text-stone-700 border-stone-300 hover:bg-white'
+                          ? 'bg-tagapo-800 text-white shadow-xs'
+                          : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                       }`}
                     >
                       {mun.replace(' City', '').replace(' (Montalban)', '')}
@@ -755,16 +751,51 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   type="button"
                   onClick={() => handleViewModeChange('full_map')}
                   title="Expand to Full Map Canvas"
-                  className="absolute top-2.5 right-2.5 z-20 px-2.5 py-1 rounded text-[11px] font-display font-bold uppercase tracking-wider backdrop-blur-md bg-white/90 hover:bg-white text-stone-700 border border-stone-300 shadow-xs transition cursor-pointer flex items-center gap-1"
+                  className="absolute top-2.5 right-2.5 z-20 px-2.5 py-1.5 rounded-xl text-[11px] font-display font-bold uppercase tracking-wider backdrop-blur-md bg-white/95 hover:bg-stone-50 active:bg-stone-100 text-stone-800 border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 transition cursor-pointer flex items-center gap-1.5"
                 >
-                  <Maximize2 className="w-3.5 h-3.5" />
+                  <Maximize2 className="w-3.5 h-3.5 text-tagapo-800" />
                   <span className="hidden sm:inline">Full Map</span>
                 </button>
 
+                {/* Bottom-left In-Map HUD: Tactical Layer Controller */}
+                <div className="absolute bottom-6 left-2.5 z-20 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 flex items-center gap-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-stone-700">
+                  <button
+                    type="button"
+                    onClick={() => setMapLayerMode('standard')}
+                    className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
+                      mapLayerMode === 'standard' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                    }`}
+                    title="Standard point/cluster map"
+                  >
+                    <Layers className="w-3 h-3" />
+                    <span>Pins</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMapLayerMode('boundaries')}
+                    className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
+                      mapLayerMode === 'boundaries' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                    }`}
+                    title="Municipal vector boundaries & active focus"
+                  >
+                    <span>⛶ Boundaries</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMapLayerMode('choropleth')}
+                    className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
+                      mapLayerMode === 'choropleth' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                    }`}
+                    title="Thematic incident density volume"
+                  >
+                    <span>⬡ Density Choropleth</span>
+                  </button>
+                </div>
+
                 {/* Bottom-right In-Map HUD: Tactical Severity Legend */}
-                <div className="absolute bottom-6 right-2.5 z-20 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded text-[10px] font-display font-bold uppercase tracking-wide border border-stone-300 shadow-xs flex items-center gap-2">
-                  <span className="flex items-center gap-1 text-tagapo-900">
-                    <span className="w-2 h-2 rounded-full bg-tagapo-800" />
+                <div className="absolute bottom-6 right-2.5 z-20 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] font-display font-bold uppercase tracking-wide border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 flex items-center gap-2.5 text-stone-700">
+                  <span className="flex items-center gap-1 text-emerald-800">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     1-2 Minor
                   </span>
                   <span className="flex items-center gap-1 text-amber-800">
@@ -788,6 +819,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   zoom={mapZoom}
                   reports={filteredReports}
                   selectedReportId={selectedReport?.id}
+                  layerMode={mapLayerMode}
+                  activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
+                  onMunicipalityClick={(mun) => handleQuickJump(mun)}
+                  choroplethCounts={choroplethCounts}
                   onSelectReport={(r) => {
                     setSelectedReport(r);
                     const coords = resolveReportCoordinates(r);
@@ -1143,36 +1178,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       {isUpdatingStatus ? 'Updating...' : 'Log Status Transition'}
                     </button>
                   </div>
-
-                  {/* Emergency Alert Hook (Severity 4-5) */}
-                  {activeSeverity >= 4 && (
-                    <div className="p-3.5 bg-rose-50 rounded-xl border border-rose-300 space-y-2">
-                      <div className="flex items-center justify-between text-xs font-display font-bold uppercase tracking-wider text-rose-900">
-                        <span className="flex items-center gap-1.5">
-                          <Bell className="w-4 h-4 text-rose-600 animate-pulse" />
-                          <span>Urgent Severity Alert ({activeSeverity}/5)</span>
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-rose-800 leading-tight">
-                        Triggers high-priority notification to Rizal Environmental Quick Response Team.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleDispatchAlert}
-                        disabled={isDispatchingAlert}
-                        className="w-full py-2.5 bg-rose-700 hover:bg-rose-800 active:bg-rose-900 text-white font-display font-bold uppercase tracking-wider text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>{isDispatchingAlert ? 'Dispatching...' : t.dispatchAlertBtn}</span>
-                      </button>
-
-                      {alertSuccessMessage && (
-                        <div className="p-2 bg-white rounded border border-rose-200 text-[11px] text-rose-900 font-semibold">
-                          {alertSuccessMessage}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="bg-stone-50 rounded-xl border border-stone-200 p-12 text-center text-xs text-stone-500 space-y-2">
@@ -1193,8 +1198,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* ========================================================= */}
       {/* VIEW MODE 2: OPTION 2 (MAP-CENTRIC FULL CANVAS WITH HUDS) */}
       {/* ========================================================= */}
+      {/* ========================================================= */}
+      {/* VIEW MODE 2: OPTION 2 (MAP-CENTRIC FULL CANVAS WITH HUDS) */}
+      {/* ========================================================= */}
       {viewMode === 'full_map' && (
-        <div className="relative w-full h-[calc(100vh-140px)] min-h-[640px] max-h-[940px] rounded-2xl overflow-hidden border border-stone-300 shadow-sm bg-stone-100">
+        <div className="relative w-full h-full overflow-hidden bg-stone-100 rounded-none border-0">
           {/* Full-bleed Leaflet Map */}
           <LeafletMap
             mode="dashboard"
@@ -1202,6 +1210,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
             zoom={mapZoom}
             reports={filteredReports}
             selectedReportId={selectedReport?.id}
+            layerMode={mapLayerMode}
+            activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
+            onMunicipalityClick={(mun) => handleQuickJump(mun)}
+            choroplethCounts={choroplethCounts}
             onSelectReport={(r) => {
               setSelectedReport(r);
               if (typeof window !== 'undefined' && window.innerWidth < 640) {
@@ -1217,7 +1229,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* 1. Top Floating Telemetry & Command HUD */}
           <div className="absolute top-3 left-3 right-3 z-30 pointer-events-none flex flex-wrap items-center justify-between gap-2">
             {/* Brand & Telemetry Capsule */}
-            <div className="pointer-events-auto bg-white/95 backdrop-blur-md border border-stone-300 shadow-xs px-3.5 py-2 rounded-xl flex items-center gap-3">
+            <div className="pointer-events-auto bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.1),_0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-black/5 px-3.5 py-2 rounded-xl flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="font-display font-extrabold text-xs uppercase tracking-wider text-stone-900">
@@ -1233,38 +1245,52 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </span>
                 <span className="font-display font-semibold text-rose-700 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
-                  <span className="font-mono font-bold text-rose-700">{stats.urgentCount}</span> Urgent
+                  <span className="font-mono font-bold text-rose-800">{stats.urgentCount}</span> Urgent
                 </span>
-                <span className="font-display font-semibold text-tagapo-800">
-                  <span className="font-mono font-bold text-tagapo-800">{stats.resolvedCount}</span> Resolved
+                <span className="font-display font-semibold text-emerald-700">
+                  <span className="font-mono font-bold text-emerald-800">{stats.resolvedCount}</span> Resolved
                 </span>
-                <span className="font-display text-[11px] font-semibold text-stone-400 font-mono">
+                <span className="font-display text-[11px] font-semibold text-stone-500 font-mono">
                   18.4h SLA
                 </span>
               </div>
             </div>
 
             {/* Quick Command Actions */}
-            <div className="pointer-events-auto bg-white/95 backdrop-blur-md border border-stone-300 shadow-xs p-1 rounded-xl flex items-center gap-1.5">
+            <div className="pointer-events-auto bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.1),_0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-black/5 p-1 rounded-xl flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => handleViewModeChange('workbench')}
+                className="px-3 py-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100/80 active:bg-stone-200/60 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer"
+                title="Switch back to split-screen Workbench"
+              >
+                <Layout className="w-3.5 h-3.5 text-tagapo-800" />
+                <span className="hidden sm:inline">Workbench</span>
+              </button>
+
+              <div className="h-4 w-px bg-stone-200/80" />
+
               <button
                 type="button"
                 onClick={() => setIsQueueOpen(!isQueueOpen)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
                   isQueueOpen
-                    ? 'bg-tagapo-900 text-white shadow-xs'
-                    : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
+                    ? 'bg-tagapo-800 text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>Queue ({filteredReports.length})</span>
               </button>
 
+              <div className="h-4 w-px bg-stone-200/80" />
+
               <button
                 type="button"
                 onClick={handleRetryTriage}
                 disabled={isRetryingTriage || !selectedReport}
                 title={selectedReport ? "Re-run AI triage on selected incident" : "Select an incident to re-run triage"}
-                className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 disabled:opacity-40 disabled:hover:bg-stone-100 text-stone-700 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1 transition cursor-pointer"
+                className="px-3 py-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100/80 disabled:opacity-35 disabled:hover:bg-transparent rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1 transition cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
                 <span className="hidden md:inline">{isRetryingTriage ? 'Triaging...' : 'AI Triage'}</span>
@@ -1274,14 +1300,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* 2. Left Floating Collapsible Drawer (Incident Queue Stream) */}
           {isQueueOpen ? (
-            <div className="absolute top-16 left-2 right-2 sm:right-auto sm:left-3 bottom-auto max-h-[46vh] sm:max-h-none sm:bottom-14 z-20 sm:w-96 pointer-events-auto bg-white/95 backdrop-blur-md rounded-xl border border-stone-300 shadow-xl flex flex-col overflow-hidden transition-all duration-300 ease-out">
+            <div className="absolute top-16 left-2 right-2 sm:right-auto sm:left-3 bottom-auto max-h-[46vh] sm:max-h-none sm:bottom-14 z-20 sm:w-96 pointer-events-auto bg-white/98 backdrop-blur-xl rounded-2xl border border-stone-200/90 shadow-[0_12px_32px_-4px_rgba(15,23,42,0.12),_0_2px_6px_rgba(15,23,42,0.06)] ring-1 ring-black/5 flex flex-col overflow-hidden transition-all duration-300 ease-out">
               {/* Drawer Header */}
-              <div className="px-3.5 py-2.5 bg-stone-50/90 border-b border-stone-200 flex items-center justify-between">
+              <div className="px-3.5 py-2.5 bg-stone-50/95 border-b border-stone-200 flex items-center justify-between text-stone-900">
                 <div className="flex items-center gap-2">
                   <span className="font-display font-bold text-xs uppercase tracking-wider text-stone-900">
                     Incident Queue Stream
                   </span>
-                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-tagapo-100 text-tagapo-900 border border-tagapo-200">
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-tagapo-100 text-tagapo-800 border border-tagapo-200">
                     {filteredReports.length}
                   </span>
                 </div>
@@ -1455,18 +1481,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <button
               type="button"
               onClick={() => setIsQueueOpen(true)}
-              className="absolute top-16 left-3 z-20 pointer-events-auto px-3 py-2 bg-white/95 backdrop-blur-md border border-stone-300 shadow-md rounded-xl text-xs font-display font-bold uppercase tracking-wider text-stone-800 hover:bg-stone-50 flex items-center gap-2 cursor-pointer transition"
+              className="absolute top-16 left-3 z-20 pointer-events-auto px-3.5 py-2 bg-white/95 backdrop-blur-md border border-stone-200/90 text-stone-800 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 rounded-xl text-xs font-display font-bold uppercase tracking-wider hover:bg-stone-50 flex items-center gap-2 cursor-pointer transition"
             >
-              <Layers className="w-4 h-4 text-tagapo-900" />
+              <Layers className="w-4 h-4 text-tagapo-800" />
               <span>Incident Queue ({filteredReports.length})</span>
             </button>
           )}
 
           {/* 3. Right Floating Slide-In Drawer (Target Incident Dossier & Action Console) */}
           {selectedReport && (
-            <div className="absolute bottom-12 inset-x-2 sm:inset-x-auto sm:top-16 sm:right-3 sm:bottom-14 max-h-[58vh] sm:max-h-none z-20 sm:w-[420px] pointer-events-auto bg-white/95 backdrop-blur-md rounded-xl border border-stone-300 shadow-xl flex flex-col overflow-hidden transition-all duration-300 ease-out">
+            <div className="absolute bottom-12 inset-x-2 sm:inset-x-auto sm:top-16 sm:right-3 sm:bottom-14 max-h-[58vh] sm:max-h-none z-20 sm:w-[420px] pointer-events-auto bg-white/98 backdrop-blur-xl rounded-2xl border border-stone-200/90 shadow-[0_12px_32px_-4px_rgba(15,23,42,0.12),_0_2px_6px_rgba(15,23,42,0.06)] ring-1 ring-black/5 flex flex-col overflow-hidden transition-all duration-300 ease-out">
               {/* Dossier Header */}
-              <div className="px-4 py-3 bg-stone-50/90 border-b border-stone-200 flex items-start justify-between">
+              <div className="px-4 py-3 bg-stone-50/95 border-b border-stone-200 flex items-start justify-between text-stone-900">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-lg text-stone-950">
@@ -1475,10 +1501,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-display font-bold uppercase tracking-wider ${
                         selectedReport.status === 'resolved'
-                          ? 'bg-tagapo-50 text-tagapo-900 border border-tagapo-200'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                           : selectedReport.status === 'in_progress'
-                          ? 'bg-amber-50 text-amber-900 border border-amber-200'
-                          : 'bg-navy-50 text-navy-900 border border-navy-200'
+                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                          : 'bg-rose-50 text-rose-800 border border-rose-200'
                       }`}
                     >
                       {selectedReport.status.replace(/_/g, ' ')}
@@ -1727,51 +1753,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     {isUpdatingStatus ? 'Updating...' : 'Log Status Transition'}
                   </button>
                 </div>
-
-                {/* Emergency Alert Hook (Severity 4-5) */}
-                {activeSeverity >= 4 && (
-                  <div className="p-3.5 bg-rose-50 rounded-xl border border-rose-300 space-y-2">
-                    <div className="flex items-center justify-between text-xs font-display font-bold uppercase tracking-wider text-rose-900">
-                      <span className="flex items-center gap-1.5">
-                        <Bell className="w-4 h-4 text-rose-600 animate-pulse" />
-                        <span>Urgent Severity Alert ({activeSeverity}/5)</span>
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-rose-800 leading-tight">
-                      Triggers high-priority notification to Rizal Environmental Quick Response Team.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleDispatchAlert}
-                      disabled={isDispatchingAlert}
-                      className="w-full py-2.5 bg-rose-700 hover:bg-rose-800 active:bg-rose-900 text-white font-display font-bold uppercase tracking-wider text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>{isDispatchingAlert ? 'Dispatching...' : t.dispatchAlertBtn}</span>
-                    </button>
-
-                    {alertSuccessMessage && (
-                      <div className="p-2 bg-white rounded border border-rose-200 text-[11px] text-rose-900 font-semibold">
-                        {alertSuccessMessage}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           )}
 
-          {/* 4. Bottom Floating HUD: Quick LGU Chips & Severity Legend */}
+          {/* 4. Bottom Floating HUD: Quick LGU Chips, Layer Mode & Severity Legend */}
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex flex-wrap items-center justify-center gap-2 max-w-[95vw]">
             {/* LGU Quick Focus Chips */}
-            <div className="bg-white/95 backdrop-blur-md border border-stone-300 shadow-md rounded-full px-2 py-1 flex items-center gap-1 overflow-x-auto">
+            <div className="bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 rounded-xl p-1 flex items-center gap-0.5 overflow-x-auto">
               <button
                 type="button"
                 onClick={() => handleQuickJump('all')}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-display font-bold uppercase tracking-wider transition cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
                   municipalityFilter === 'all'
-                    ? 'bg-tagapo-900 text-white shadow-xs'
-                    : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
+                    ? 'bg-tagapo-800 text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                 }`}
               >
                 All Rizal
@@ -1781,10 +1777,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   key={mun}
                   type="button"
                   onClick={() => handleQuickJump(mun)}
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
                     municipalityFilter === mun
-                      ? 'bg-tagapo-900 text-white shadow-xs'
-                      : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
+                      ? 'bg-tagapo-800 text-white shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                   }`}
                 >
                   {mun.replace(' City', '').replace(' (Montalban)', '')}
@@ -1792,10 +1788,45 @@ export const Dashboard: React.FC<DashboardProps> = ({
               ))}
             </div>
 
+            {/* In-Map Tactical Layer Switcher HUD */}
+            <div className="bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 rounded-xl p-1 flex items-center gap-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-stone-700">
+              <button
+                type="button"
+                onClick={() => setMapLayerMode('standard')}
+                className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                  mapLayerMode === 'standard' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                }`}
+                title="Pins mode"
+              >
+                <Layers className="w-3 h-3" />
+                <span>Pins</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapLayerMode('boundaries')}
+                className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                  mapLayerMode === 'boundaries' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                }`}
+                title="Boundaries mode"
+              >
+                <span>⛶ Boundaries</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapLayerMode('choropleth')}
+                className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                  mapLayerMode === 'choropleth' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                }`}
+                title="Density Choropleth mode"
+              >
+                <span>⬡ Choropleth</span>
+              </button>
+            </div>
+
             {/* Severity Legend */}
-            <div className="bg-white/95 backdrop-blur-md border border-stone-300 shadow-md rounded-full px-3 py-1.5 flex items-center gap-2.5 text-[10px] font-display font-bold uppercase tracking-wider">
-              <span className="flex items-center gap-1 text-tagapo-900">
-                <span className="w-2 h-2 rounded-full bg-tagapo-800" />
+            <div className="bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 rounded-xl px-3 py-1.5 flex items-center gap-2.5 text-[10px] font-display font-bold uppercase tracking-wider text-stone-700">
+              <span className="flex items-center gap-1 text-emerald-800">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 1-2 Minor
               </span>
               <span className="flex items-center gap-1 text-amber-800">

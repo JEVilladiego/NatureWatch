@@ -29,6 +29,7 @@ import { db } from '../lib/firebase';
 import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { LeafletMap } from './LeafletMap';
 import { getBarangayCoordinates, findNearestBarangay } from '../lib/barangayCoordinates';
+import { isPointInRizal, findMunicipalityByPoint } from '../lib/geojsonService';
 import { Language, translations } from '../lib/i18n';
 
 // Default Rizal Province center
@@ -63,6 +64,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   const [selectedBarangay, setSelectedBarangay] = useState<string>('');
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [isOutOfJurisdiction, setIsOutOfJurisdiction] = useState<boolean>(false);
 
   // Input states
   const [description, setDescription] = useState<string>('');
@@ -86,6 +88,42 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
     acquireGpsLocation();
   }, []);
 
+  // Checks spatial jurisdiction against Rizal boundary and auto-detects municipality via Ray-Casting PIP
+  const checkJurisdictionAndMunicipality = async (lat: number, lng: number) => {
+    try {
+      const inRizal = await isPointInRizal(lat, lng);
+      setIsOutOfJurisdiction(!inRizal);
+
+      if (inRizal) {
+        const detectedMun = await findMunicipalityByPoint(lat, lng);
+        if (detectedMun) {
+          const matchedMun =
+            RIZAL_MUNICIPALITIES.find(
+              (m) =>
+                m === detectedMun ||
+                m.toLowerCase().includes(detectedMun.toLowerCase()) ||
+                detectedMun.toLowerCase().includes(m.toLowerCase())
+            ) || detectedMun;
+
+          setSelectedMunicipality(matchedMun);
+
+          const nearest = findNearestBarangay(lat, lng);
+          if (nearest && nearest.municipality === matchedMun) {
+            setSelectedBarangay(nearest.barangay);
+          }
+        } else {
+          const nearest = findNearestBarangay(lat, lng);
+          if (nearest) {
+            setSelectedMunicipality(nearest.municipality);
+            setSelectedBarangay(nearest.barangay);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[ResidentReporter] Jurisdiction check error:', err);
+    }
+  };
+
   const acquireGpsLocation = () => {
     if (!('geolocation' in navigator)) {
       setLocationError(t.gpsFallbackNotice);
@@ -104,12 +142,8 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         setLocationSource('gps');
         setIsLocating(false);
 
-        // Auto-detect nearest municipality & barangay in Rizal
-        const nearest = findNearestBarangay(latitude, longitude);
-        if (nearest) {
-          setSelectedMunicipality(nearest.municipality);
-          setSelectedBarangay(nearest.barangay);
-        }
+        // High-precision Point-in-Polygon & geofence verification
+        checkJurisdictionAndMunicipality(latitude, longitude);
       },
       (error) => {
         console.warn('Geolocation error:', error.message);
@@ -157,6 +191,15 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim() && !compressionInfo) return;
+
+    if (isOutOfJurisdiction) {
+      setSubmitError(
+        lang === 'fil'
+          ? 'Hindi maipapadala ang ulat. Ang lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal.'
+          : 'Cannot submit report. The selected location is outside the jurisdiction of Rizal Province.'
+      );
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -517,6 +560,23 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 </button>
               </div>
 
+              {/* Out of Jurisdiction Warning Banner */}
+              {isOutOfJurisdiction && (
+                <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 shadow-2xs">
+                  <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                  <div className="leading-snug">
+                    <span className="font-display font-bold uppercase tracking-wider block text-amber-950 mb-0.5">
+                      {lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}
+                    </span>
+                    <span>
+                      {lang === 'fil'
+                        ? 'Ang napiling lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal (PG-ENRO). Pakisuyong ilagay ang pin sa loob ng Rizal.'
+                        : 'The selected location is outside the jurisdiction of Rizal Province (PG-ENRO). Please place the pin inside Rizal.'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Map Preview with accuracy circle */}
               <div className="relative isolate z-0 rounded-xl overflow-hidden border border-stone-300 shadow-sm">
                 <LeafletMap
@@ -524,9 +584,12 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   center={coordinates}
                   zoom={15}
                   accuracyMeters={accuracyMeters}
+                  layerMode="boundaries"
+                  activeMunicipality={selectedMunicipality}
                   onLocationChange={(lat, lng) => {
                     setCoordinates({ lat, lng });
                     setLocationSource('manual_pin');
+                    checkJurisdictionAndMunicipality(lat, lng);
                   }}
                   className="h-56 sm:h-64 w-full"
                 />
@@ -617,6 +680,23 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 </div>
               </div>
 
+              {/* Out of Jurisdiction Warning Banner */}
+              {isOutOfJurisdiction && (
+                <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 shadow-2xs">
+                  <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                  <div className="leading-snug">
+                    <span className="font-display font-bold uppercase tracking-wider block text-amber-950 mb-0.5">
+                      {lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}
+                    </span>
+                    <span>
+                      {lang === 'fil'
+                        ? 'Ang napiling lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal (PG-ENRO). Pakisuyong ilagay ang pin sa loob ng Rizal.'
+                        : 'The selected location is outside the jurisdiction of Rizal Province (PG-ENRO). Please place the pin inside Rizal.'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Tap to Pin Instruction Bar */}
               <div className="flex items-center justify-between text-xs text-stone-500 pt-0.5">
                 <span className="flex items-center gap-1 text-[11px] text-stone-600 font-medium">
@@ -635,15 +715,12 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   center={coordinates}
                   zoom={14}
                   accuracyMeters={null}
+                  layerMode="boundaries"
+                  activeMunicipality={selectedMunicipality}
                   onLocationChange={(lat, lng) => {
                     setCoordinates({ lat, lng });
                     setLocationSource('manual_pin');
-                    // Check if dragged to a different barangay
-                    const nearest = findNearestBarangay(lat, lng);
-                    if (nearest && nearest.distanceMeters < 3000) {
-                      setSelectedMunicipality(nearest.municipality);
-                      setSelectedBarangay(nearest.barangay);
-                    }
+                    checkJurisdictionAndMunicipality(lat, lng);
                   }}
                   className="h-64 sm:h-72 w-full cursor-crosshair"
                 />
@@ -732,7 +809,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={isSubmitting || isCompressing || !description.trim()}
+          disabled={isSubmitting || isCompressing || !description.trim() || isOutOfJurisdiction}
           className="w-full py-4 px-6 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 disabled:bg-stone-200 disabled:text-stone-400 text-white font-display font-bold tracking-wider uppercase text-base rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           {isSubmitting ? (
