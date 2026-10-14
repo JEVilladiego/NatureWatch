@@ -19,6 +19,7 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
+  ArrowLeft,
   Layout,
   Maximize2,
 } from 'lucide-react';
@@ -89,8 +90,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     } catch {}
   };
 
-  // Option 2: Collapsible HUD Drawer state
-  const [isQueueOpen, setIsQueueOpen] = useState<boolean>(true);
+  // LikasMap-inspired Full Map layout states
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [isLegendExpanded, setIsLegendExpanded] = useState<boolean>(true);
 
   // Reports state
   const [reports, setReports] = useState<IncidentReport[]>([]);
@@ -1196,648 +1198,696 @@ export const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* ========================================================= */}
-      {/* VIEW MODE 2: OPTION 2 (MAP-CENTRIC FULL CANVAS WITH HUDS) */}
-      {/* ========================================================= */}
-      {/* ========================================================= */}
-      {/* VIEW MODE 2: OPTION 2 (MAP-CENTRIC FULL CANVAS WITH HUDS) */}
+      {/* VIEW MODE 2: LIKASMAP-INSPIRED INTEGRATED FULL MAP CANVAS */}
       {/* ========================================================= */}
       {viewMode === 'full_map' && (
-        <div className="relative w-full h-full overflow-hidden bg-stone-100 rounded-none border-0">
-          {/* Full-bleed Leaflet Map */}
-          <LeafletMap
-            mode="dashboard"
-            center={mapCenter}
-            zoom={mapZoom}
-            reports={filteredReports}
-            selectedReportId={selectedReport?.id}
-            layerMode={mapLayerMode}
-            activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
-            onMunicipalityClick={(mun) => handleQuickJump(mun)}
-            choroplethCounts={choroplethCounts}
-            onSelectReport={(r) => {
-              setSelectedReport(r);
-              if (typeof window !== 'undefined' && window.innerWidth < 640) {
-                setIsQueueOpen(false);
-              }
-              const coords = resolveReportCoordinates(r);
-              setMapCenter(coords);
-              setMapZoom(14);
-            }}
-            className="h-full w-full"
-          />
-
-          {/* 1. Top Floating Telemetry & Command HUD */}
-          <div className="absolute top-3 left-3 right-3 z-30 pointer-events-none flex flex-wrap items-center justify-between gap-2">
-            {/* Brand & Telemetry Capsule */}
-            <div className="pointer-events-auto bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.1),_0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-black/5 px-3.5 py-2 rounded-xl flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-display font-extrabold text-xs uppercase tracking-wider text-stone-900">
-                  PG-ENRO Rizal GIS Command
-                </span>
+        <div className="relative w-full h-full overflow-hidden bg-stone-100 flex flex-col">
+          {/* ========================================================= */}
+          {/* 1. ANCHORED TOP SUB-BAR (Flush below navbar)              */}
+          {/* ========================================================= */}
+          <div className="h-14 shrink-0 bg-white/95 backdrop-blur-md border-b border-stone-200/90 px-3 sm:px-4 flex items-center justify-between gap-2.5 z-30 shadow-xs">
+            {/* Left: Search input + LGU Horizontal Scrollable Tabs */}
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              {/* Search Input */}
+              <div className="relative w-40 sm:w-56 shrink-0">
+                <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search ref, barangay..."
+                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-stone-100/70 focus:bg-white border border-stone-200 focus:border-tagapo-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 font-sans transition placeholder:text-stone-400"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 cursor-pointer"
+                    title="Clear search"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
               </div>
 
-              <div className="h-4 w-px bg-stone-200 hidden sm:block" />
-
-              <div className="hidden sm:flex items-center gap-3 text-xs">
-                <span className="font-display font-semibold text-stone-600">
-                  <span className="font-mono font-bold text-stone-900">{stats.openCount}</span> Active
-                </span>
-                <span className="font-display font-semibold text-rose-700 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
-                  <span className="font-mono font-bold text-rose-800">{stats.urgentCount}</span> Urgent
-                </span>
-                <span className="font-display font-semibold text-emerald-700">
-                  <span className="font-mono font-bold text-emerald-800">{stats.resolvedCount}</span> Resolved
-                </span>
-                <span className="font-display text-[11px] font-semibold text-stone-500 font-mono">
-                  18.4h SLA
-                </span>
+              {/* LGU Filter Tabs (horizontal scrollable bar) */}
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+                <button
+                  type="button"
+                  onClick={() => handleQuickJump('all')}
+                  className={`px-2.5 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
+                    municipalityFilter === 'all'
+                      ? 'bg-tagapo-800 text-white shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                  }`}
+                >
+                  All Rizal
+                </button>
+                {RIZAL_MUNICIPALITIES.map((mun) => {
+                  const shortName = mun.replace(' City', '').replace(' (Montalban)', '');
+                  const isSelected = municipalityFilter === mun;
+                  return (
+                    <button
+                      key={mun}
+                      type="button"
+                      onClick={() => handleQuickJump(mun)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
+                        isSelected
+                          ? 'bg-tagapo-800 text-white shadow-xs'
+                          : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                      }`}
+                    >
+                      {shortName}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Quick Command Actions */}
-            <div className="pointer-events-auto bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.1),_0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-black/5 p-1 rounded-xl flex items-center gap-1">
+            {/* Right: Telemetry & Actions */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Telemetry Metrics */}
+              <div className="hidden xl:flex items-center gap-3 text-xs px-2 border-r border-stone-200">
+                <span className="flex items-center gap-1.5 font-semibold text-stone-700">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-mono font-bold text-stone-900">{stats.openCount}</span> Active
+                </span>
+                <span className="flex items-center gap-1.5 font-semibold text-rose-700">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
+                  <span className="font-mono font-bold text-rose-800">{stats.urgentCount}</span> Urgent
+                </span>
+                <span className="flex items-center gap-1.5 font-semibold text-emerald-700">
+                  <span className="font-mono font-bold text-emerald-800">{stats.resolvedCount}</span> Resolved
+                </span>
+              </div>
+
+              {/* Rerun AI Triage on selection (if selected report) */}
+              {selectedReport && (
+                <button
+                  type="button"
+                  onClick={handleRetryTriage}
+                  disabled={isRetryingTriage}
+                  title="Re-run AI triage on selected incident"
+                  className="px-2.5 py-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:bg-stone-200 disabled:opacity-40 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer border border-stone-200/80"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
+                  <span className="hidden lg:inline">{isRetryingTriage ? 'Triaging...' : 'AI Triage'}</span>
+                </button>
+              )}
+
+              {/* Switch to Workbench */}
               <button
                 type="button"
                 onClick={() => handleViewModeChange('workbench')}
-                className="px-3 py-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100/80 active:bg-stone-200/60 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer"
+                className="px-2.5 py-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:bg-stone-200 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer border border-stone-200/80"
                 title="Switch back to split-screen Workbench"
               >
                 <Layout className="w-3.5 h-3.5 text-tagapo-800" />
                 <span className="hidden sm:inline">Workbench</span>
               </button>
 
-              <div className="h-4 w-px bg-stone-200/80" />
-
+              {/* Sidebar Toggle Button */}
               <button
                 type="button"
-                onClick={() => setIsQueueOpen(!isQueueOpen)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
-                  isQueueOpen
-                    ? 'bg-tagapo-800 text-white shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer border ${
+                  isSidebarOpen
+                    ? 'bg-tagapo-800 text-white border-tagapo-900 shadow-xs'
+                    : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
                 }`}
+                title={isSidebarOpen ? 'Hide side panel' : 'Show side panel'}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>Queue ({filteredReports.length})</span>
-              </button>
-
-              <div className="h-4 w-px bg-stone-200/80" />
-
-              <button
-                type="button"
-                onClick={handleRetryTriage}
-                disabled={isRetryingTriage || !selectedReport}
-                title={selectedReport ? "Re-run AI triage on selected incident" : "Select an incident to re-run triage"}
-                className="px-3 py-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100/80 disabled:opacity-35 disabled:hover:bg-transparent rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1 transition cursor-pointer"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
-                <span className="hidden md:inline">{isRetryingTriage ? 'Triaging...' : 'AI Triage'}</span>
+                <span>
+                  {selectedReport ? 'Dossier' : `Queue (${filteredReports.length})`}
+                </span>
               </button>
             </div>
           </div>
 
-          {/* 2. Left Floating Collapsible Drawer (Incident Queue Stream) */}
-          {isQueueOpen ? (
-            <div className="absolute top-16 left-2 right-2 sm:right-auto sm:left-3 bottom-auto max-h-[46vh] sm:max-h-none sm:bottom-14 z-20 sm:w-96 pointer-events-auto bg-white/98 backdrop-blur-xl rounded-2xl border border-stone-200/90 shadow-[0_12px_32px_-4px_rgba(15,23,42,0.12),_0_2px_6px_rgba(15,23,42,0.06)] ring-1 ring-black/5 flex flex-col overflow-hidden transition-all duration-300 ease-out">
-              {/* Drawer Header */}
-              <div className="px-3.5 py-2.5 bg-stone-50/95 border-b border-stone-200 flex items-center justify-between text-stone-900">
-                <div className="flex items-center gap-2">
-                  <span className="font-display font-bold text-xs uppercase tracking-wider text-stone-900">
-                    Incident Queue Stream
+          {/* ========================================================= */}
+          {/* 2. SPLIT WORKSPACE: MAP CANVAS + DOCKED RIGHT SIDEBAR     */}
+          {/* ========================================================= */}
+          <div className="flex-1 flex overflow-hidden relative">
+            {/* Map Canvas (Expands to 100% when sidebar is collapsed) */}
+            <div className="flex-1 h-full relative min-w-0">
+              <LeafletMap
+                mode="dashboard"
+                center={mapCenter}
+                zoom={mapZoom}
+                reports={filteredReports}
+                selectedReportId={selectedReport?.id}
+                layerMode={mapLayerMode}
+                activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
+                onMunicipalityClick={(mun) => handleQuickJump(mun)}
+                choroplethCounts={choroplethCounts}
+                onSelectReport={(r) => {
+                  setSelectedReport(r);
+                  setIsSidebarOpen(true);
+                  const coords = resolveReportCoordinates(r);
+                  setMapCenter(coords);
+                  setMapZoom(14);
+                }}
+                className="h-full w-full"
+              />
+
+              {/* Bottom-Left Tucked Legend Card */}
+              <div className="absolute bottom-4 left-4 z-20 pointer-events-auto bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-md rounded-xl p-2.5 space-y-2 max-w-[270px]">
+                <div className="flex items-center justify-between gap-2 pb-1 border-b border-stone-100">
+                  <span className="font-display font-bold text-[10px] uppercase tracking-wider text-stone-500">
+                    Map Layers
                   </span>
-                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-tagapo-100 text-tagapo-800 border border-tagapo-200">
-                    {filteredReports.length}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsQueueOpen(false)}
-                  title="Collapse queue panel"
-                  className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded transition cursor-pointer"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Quick Search & Filters inside Drawer */}
-              <div className="p-2.5 border-b border-stone-200 bg-white/60 space-y-2">
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-2.5" />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search ref, barangay, description..."
-                    className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-1.5">
-                  <select
-                    value={municipalityFilter}
-                    onChange={(e) => {
-                      const mun = e.target.value;
-                      setMunicipalityFilter(mun);
-                      if (mun !== 'all' && MUNICIPALITY_COORDINATES[mun]) {
-                        setMapCenter(MUNICIPALITY_COORDINATES[mun]);
-                        setMapZoom(13);
-                      }
-                    }}
-                    className="text-[11px] font-semibold px-2 py-1.5 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none truncate"
+                  <button
+                    type="button"
+                    onClick={() => setIsLegendExpanded(!isLegendExpanded)}
+                    className="text-stone-400 hover:text-stone-700 p-0.5 rounded cursor-pointer"
+                    title={isLegendExpanded ? 'Collapse legend' : 'Expand legend'}
                   >
-                    <option value="all">All LGUs</option>
-                    {RIZAL_MUNICIPALITIES.map((mun) => (
-                      <option key={mun} value={mun}>
-                        {mun}
-                      </option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={severityFilter}
-                    onChange={(e) => setSeverityFilter(e.target.value)}
-                    className="text-[11px] font-semibold px-2 py-1.5 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none truncate"
-                  >
-                    <option value="all">All Severities</option>
-                    <option value="urgent">Urgent (4-5)</option>
-                    <option value="1">1 - Minor</option>
-                    <option value="2">2 - Low</option>
-                    <option value="3">3 - Moderate</option>
-                    <option value="4">4 - High</option>
-                    <option value="5">5 - Critical</option>
-                  </select>
+                    <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${isLegendExpanded ? '-rotate-90' : 'rotate-90'}`} />
+                  </button>
                 </div>
 
-                {(municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-[10px] text-stone-500 font-medium">Filters active</span>
-                    <button
-                      onClick={() => {
-                        setMunicipalityFilter('all');
-                        setStatusFilter('all');
-                        setCategoryFilter('all');
-                        setSeverityFilter('all');
-                        setSearchTerm('');
-                        setMapCenter({ lat: 14.5800, lng: 121.2800 });
-                        setMapZoom(11);
-                      }}
-                      className="font-display text-[10px] font-bold uppercase tracking-wider text-rose-700 hover:text-rose-900 cursor-pointer"
-                    >
-                      Reset Filters
-                    </button>
+                {/* Layer Mode Switcher Tabs */}
+                <div className="grid grid-cols-3 gap-1 bg-stone-100/90 p-0.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider">
+                  <button
+                    type="button"
+                    onClick={() => setMapLayerMode('standard')}
+                    className={`py-1 px-1.5 rounded-md text-center transition cursor-pointer ${
+                      mapLayerMode === 'standard' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                    title="Pins mode"
+                  >
+                    Pins
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMapLayerMode('boundaries')}
+                    className={`py-1 px-1.5 rounded-md text-center transition cursor-pointer ${
+                      mapLayerMode === 'boundaries' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                    title="Boundaries mode"
+                  >
+                    Boundaries
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMapLayerMode('choropleth')}
+                    className={`py-1 px-1.5 rounded-md text-center transition cursor-pointer ${
+                      mapLayerMode === 'choropleth' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                    title="Density Choropleth mode"
+                  >
+                    Choropleth
+                  </button>
+                </div>
+
+                {/* Legend Scale */}
+                {isLegendExpanded && (
+                  <div className="pt-1 space-y-1.5 text-[10px]">
+                    {mapLayerMode === 'choropleth' ? (
+                      <div>
+                        <div className="flex items-center justify-between text-stone-500 font-mono mb-1">
+                          <span>0 reports</span>
+                          <span>5+ reports</span>
+                        </div>
+                        <div className="h-2 rounded-full w-full bg-gradient-to-r from-emerald-100 via-emerald-400 to-emerald-800 border border-stone-200" />
+                        <div className="text-stone-400 text-[9px] mt-1 text-center font-display font-medium">
+                          Provincial Incident Density
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-1 text-stone-700 font-display font-bold uppercase tracking-wider">
+                        <span className="flex items-center gap-1 text-emerald-800">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          1-2 Minor
+                        </span>
+                        <span className="flex items-center gap-1 text-amber-800">
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />
+                          3 Mod
+                        </span>
+                        <span className="flex items-center gap-1 text-rose-800">
+                          <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
+                          4-5 Urgent
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Scrollable Incident Stream */}
-              <div className="flex-1 overflow-y-auto divide-y divide-stone-100">
-                {filteredReports.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-stone-500">
-                    No incident reports match your current filters.
-                  </div>
-                ) : (
-                  filteredReports.map((report) => {
-                    const isSelected = selectedReport?.id === report.id;
-                    const sev = report.final?.severity || report.aiTriage?.severity || 3;
-                    const cat = report.final?.category || report.aiTriage?.category || 'other';
-                    const catMeta = CATEGORIES[cat as IncidentCategory] || CATEGORIES.other;
+              {/* Edge tab to open sidebar when collapsed */}
+              {!isSidebarOpen && (
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="absolute top-4 right-0 z-20 pointer-events-auto px-3 py-2 bg-white/95 backdrop-blur-md border-y border-l border-stone-300 shadow-md rounded-l-xl text-xs font-display font-bold uppercase tracking-wider text-stone-800 hover:bg-stone-50 flex items-center gap-1.5 cursor-pointer transition hover:pr-4"
+                  title="Expand side panel"
+                >
+                  <ChevronLeft className="w-4 h-4 text-tagapo-800" />
+                  <span>{selectedReport ? 'View Dossier' : `Queue (${filteredReports.length})`}</span>
+                </button>
+              )}
+            </div>
 
-                    return (
-                      <div
-                        key={report.id}
-                        onClick={() => {
-                          setSelectedReport(report);
-                          if (typeof window !== 'undefined' && window.innerWidth < 640) {
-                            setIsQueueOpen(false);
-                          }
-                          const coords = resolveReportCoordinates(report);
-                          setMapCenter(coords);
-                          setMapZoom(14);
-                        }}
-                        className={`p-3 hover:bg-stone-50 cursor-pointer transition flex items-start justify-between gap-2.5 ${
-                          isSelected
-                            ? 'bg-tagapo-50/70 ring-1 ring-tagapo-800'
-                            : ''
-                        }`}
-                      >
-                        <div className="space-y-1 flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-mono font-bold text-xs text-stone-900">
-                              {report.referenceCode}
-                            </span>
-                            <span
-                              className={`text-[10px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${catMeta.badgeColor}`}
-                            >
-                              {lang === 'fil' ? catMeta.labelFil : catMeta.labelEn}
-                            </span>
-                            {report.duplicateClusterId && (
-                              <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-stone-200 text-stone-700 flex items-center gap-0.5">
-                                <Layers className="w-2.5 h-2.5" />
-                                Cluster
-                              </span>
-                            )}
+            {/* Docked Right Sidebar (Queue Stream or Selected Dossier) */}
+            {isSidebarOpen && (
+              <aside className="w-full sm:w-[380px] lg:w-[420px] h-full shrink-0 bg-white border-l border-stone-200 shadow-sm flex flex-col z-20 transition-all duration-300 absolute sm:relative inset-y-0 right-0">
+                {selectedReport ? (
+                  /* ===================================================== */
+                  /* A. TARGET INCIDENT DOSSIER & ACTION CONSOLE            */
+                  /* ===================================================== */
+                  <div className="h-full flex flex-col overflow-hidden">
+                    {/* Header with Back to Queue button */}
+                    <div className="px-3.5 py-2.5 bg-stone-50 border-b border-stone-200 flex items-center justify-between text-stone-900 shrink-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedReport(null)}
+                          className="flex items-center gap-1 text-xs font-display font-bold uppercase tracking-wider text-tagapo-800 hover:text-tagapo-950 hover:bg-stone-200/60 px-2 py-1 rounded-md transition cursor-pointer shrink-0"
+                          title="Return to incident queue"
+                        >
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                          <span>Queue</span>
+                        </button>
+                        <span className="text-stone-300">|</span>
+                        <span className="font-mono font-bold text-xs sm:text-sm text-stone-950 truncate">
+                          {selectedReport.referenceCode}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-display font-bold uppercase tracking-wider ${
+                            selectedReport.status === 'resolved'
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                              : selectedReport.status === 'in_progress'
+                              ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                              : 'bg-rose-50 text-rose-800 border border-rose-200'
+                          }`}
+                        >
+                          {selectedReport.status.replace(/_/g, ' ')}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsSidebarOpen(false)}
+                          title="Collapse side panel"
+                          className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded transition cursor-pointer"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Dossier Scrollable Body */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      {/* Duplicate Cluster Notice */}
+                      {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId && (
+                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 space-y-1">
+                          <div className="font-display font-bold uppercase tracking-wide flex items-center gap-1.5 text-amber-900">
+                            <Layers className="w-4 h-4 text-amber-700" />
+                            <span>{t.duplicateClusterDetected}</span>
                           </div>
-
-                          <p className="text-xs text-stone-600 line-clamp-1">
-                            {report.aiTriage?.summary || report.rawInput.description}
+                          <p className="text-[11px] leading-tight text-amber-800">
+                            {t.duplicateClusterDesc}
                           </p>
+                        </div>
+                      )}
 
-                          <div className="flex items-center gap-1.5 text-[11px] text-stone-400 font-mono">
-                            <span className="truncate">
-                              {[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
-                            </span>
-                            <span>•</span>
-                            <span className="shrink-0">{new Date(report.createdAt).toLocaleDateString()}</span>
+                      {/* Photo Display (Secured Image Preview) */}
+                      <div className="space-y-1">
+                        <label className="font-display text-xs font-bold uppercase tracking-wide text-stone-600 block">
+                          Incident Photo (Secured Access)
+                        </label>
+                        <div className="relative rounded-xl overflow-hidden bg-stone-950 aspect-video flex items-center justify-center border border-stone-300">
+                          {photoDataUrl ? (
+                            <img
+                              src={photoDataUrl}
+                              alt="Incident evidence"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="text-center p-4 text-stone-400 text-xs">
+                              <Eye className="w-6 h-6 mx-auto mb-1 text-stone-500" />
+                              <span>{selectedReport.rawInput.hasImage ? 'Loading photo...' : 'No photo was submitted'}</span>
+                            </div>
+                          )}
+                          <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/75 backdrop-blur-xs text-[10px] font-mono font-bold text-tagapo-300 rounded border border-white/10">
+                            RA 10173 SECURED TELEMETRY
                           </div>
                         </div>
+                      </div>
 
-                        <div className="flex flex-col items-end gap-1 shrink-0 pt-0.5">
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-display font-black uppercase tracking-wider ${
-                              sev >= 4
-                                ? 'bg-rose-700 text-white animate-pulse'
-                                : sev === 3
-                                ? 'bg-amber-600 text-white'
-                                : 'bg-tagapo-800 text-white'
-                            }`}
-                          >
-                            Sev {sev}
+                      {/* Resident Description */}
+                      <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 space-y-1.5">
+                        <div className="flex items-center justify-between text-[11px] font-display font-bold uppercase tracking-wide text-stone-600">
+                          <span>Resident Description</span>
+                          <span className="text-[10px] text-amber-800 bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-200">
+                            Untrusted Input
                           </span>
-                          {report.status === 'resolved' && (
-                            <span className="text-[9px] font-display font-bold uppercase text-tagapo-800">
-                              Closed
+                        </div>
+                        <p className="text-xs text-stone-900 italic leading-relaxed">
+                          "{selectedReport.rawInput.description}"
+                        </p>
+                        <div className="text-xs text-stone-500 font-mono pt-1">
+                          Loc: {selectedReport.location.lat.toFixed(4)}, {selectedReport.location.lng.toFixed(4)} • {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
+                        </div>
+                      </div>
+
+                      {/* AI Multimodal Triage Assessment */}
+                      <div className="p-4 bg-tagapo-50/60 rounded-xl border border-tagapo-200 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wide text-tagapo-950">
+                            <Sparkles className="w-4 h-4 text-tagapo-800" />
+                            <span>{t.aiTriageTitle}</span>
+                          </div>
+                          {selectedReport.aiTriage && (
+                            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-tagapo-200 text-tagapo-950 border border-tagapo-300">
+                              {t.aiConfidence}: {(selectedReport.aiTriage.confidence * 100).toFixed(0)}%
                             </span>
                           )}
                         </div>
+
+                        {selectedReport.triageStatus === 'failed' ? (
+                          <div className="space-y-2">
+                            <div className="p-2.5 bg-rose-100/80 rounded-lg text-rose-800 text-xs font-bold flex items-center gap-2">
+                              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                              <span>{t.needsReviewBadge}</span>
+                            </div>
+                            {retryTriageButton}
+                          </div>
+                        ) : selectedReport.aiTriage ? (
+                          <div className="space-y-2 text-xs">
+                            <div>
+                              <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
+                                {t.aiSummary}
+                              </span>
+                              <p className="text-stone-900 font-semibold mt-0.5">
+                                {selectedReport.aiTriage.summary}
+                              </p>
+                            </div>
+
+                            <div className="pt-2 border-t border-tagapo-100">
+                              <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
+                                {t.aiReasoning}
+                              </span>
+                              <p className="text-stone-700 text-xs mt-0.5 leading-relaxed">
+                                {selectedReport.aiTriage.reasoning}
+                              </p>
+                            </div>
+
+                            <div className="text-[11px] text-stone-400 font-mono">
+                              Engine: {selectedReport.aiTriage.model}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-stone-500 italic">Triage in progress...</p>
+                            {retryTriageButton}
+                          </div>
+                        )}
                       </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsQueueOpen(true)}
-              className="absolute top-16 left-3 z-20 pointer-events-auto px-3.5 py-2 bg-white/95 backdrop-blur-md border border-stone-200/90 text-stone-800 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 rounded-xl text-xs font-display font-bold uppercase tracking-wider hover:bg-stone-50 flex items-center gap-2 cursor-pointer transition"
-            >
-              <Layers className="w-4 h-4 text-tagapo-800" />
-              <span>Incident Queue ({filteredReports.length})</span>
-            </button>
-          )}
 
-          {/* 3. Right Floating Slide-In Drawer (Target Incident Dossier & Action Console) */}
-          {selectedReport && (
-            <div className="absolute bottom-12 inset-x-2 sm:inset-x-auto sm:top-16 sm:right-3 sm:bottom-14 max-h-[58vh] sm:max-h-none z-20 sm:w-[420px] pointer-events-auto bg-white/98 backdrop-blur-xl rounded-2xl border border-stone-200/90 shadow-[0_12px_32px_-4px_rgba(15,23,42,0.12),_0_2px_6px_rgba(15,23,42,0.06)] ring-1 ring-black/5 flex flex-col overflow-hidden transition-all duration-300 ease-out">
-              {/* Dossier Header */}
-              <div className="px-4 py-3 bg-stone-50/95 border-b border-stone-200 flex items-start justify-between text-stone-900">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-lg text-stone-950">
-                      {selectedReport.referenceCode}
-                    </span>
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-display font-bold uppercase tracking-wider ${
-                        selectedReport.status === 'resolved'
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                          : selectedReport.status === 'in_progress'
-                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                          : 'bg-rose-50 text-rose-800 border border-rose-200'
-                      }`}
-                    >
-                      {selectedReport.status.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-stone-500 font-mono mt-0.5">
-                    Logged {new Date(selectedReport.createdAt).toLocaleString()}
-                  </div>
-                </div>
+                      {/* Human-in-the-Loop Override Form */}
+                      <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-display text-xs font-bold uppercase tracking-wide text-stone-900 flex items-center gap-1.5">
+                            <Edit3 className="w-3.5 h-3.5 text-tagapo-800" />
+                            <span>{t.humanOverrideTitle}</span>
+                          </h3>
+                          {selectedReport.final && (
+                            <span className="font-display text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-navy-100 text-navy-900 border border-navy-200">
+                              Human Verified
+                            </span>
+                          )}
+                        </div>
 
-                <button
-                  type="button"
-                  onClick={() => setSelectedReport(null)}
-                  title="Close dossier"
-                  className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded transition cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <label className="block font-display text-[11px] font-bold uppercase tracking-wide text-stone-600 mb-1">
+                              {t.overrideCategory}
+                            </label>
+                            <select
+                              value={overrideCategory}
+                              onChange={(e) => setOverrideCategory(e.target.value as any)}
+                              className="w-full text-xs px-2.5 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
+                            >
+                              {Object.entries(CATEGORIES).map(([key, cat]) => (
+                                <option key={key} value={key}>
+                                  {lang === 'fil' ? cat.labelFil : cat.labelEn}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
 
-              {/* Dossier Scrollable Body */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {/* Duplicate Cluster Notice */}
-                {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId && (
-                  <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 space-y-1">
-                    <div className="font-display font-bold uppercase tracking-wide flex items-center gap-1.5 text-amber-900">
-                      <Layers className="w-4 h-4 text-amber-700" />
-                      <span>{t.duplicateClusterDetected}</span>
-                    </div>
-                    <p className="text-[11px] leading-tight text-amber-800">
-                      {t.duplicateClusterDesc}
-                    </p>
-                  </div>
-                )}
+                          <div>
+                            <label className="block font-display text-[11px] font-bold uppercase tracking-wide text-stone-600 mb-1">
+                              {t.overrideSeverity}
+                            </label>
+                            <select
+                              value={overrideSeverity}
+                              onChange={(e) => setOverrideSeverity(Number(e.target.value) as any)}
+                              className="w-full text-xs px-2.5 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 font-bold"
+                            >
+                              <option value="1">1 - Minor / Cosmetic</option>
+                              <option value="2">2 - Low Concern</option>
+                              <option value="3">3 - Moderate</option>
+                              <option value="4">4 - High Hazard</option>
+                              <option value="5">5 - Critical Emergency</option>
+                            </select>
+                          </div>
+                        </div>
 
-                {/* Photo Display (Secured Image Preview) */}
-                <div className="space-y-1">
-                  <label className="font-display text-xs font-bold uppercase tracking-wide text-stone-600 block">
-                    Incident Photo (Secured Access)
-                  </label>
-                  <div className="relative rounded-xl overflow-hidden bg-stone-950 aspect-video flex items-center justify-center border border-stone-300">
-                    {photoDataUrl ? (
-                      <img
-                        src={photoDataUrl}
-                        alt="Incident evidence"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-center p-4 text-stone-400 text-xs">
-                        <Eye className="w-6 h-6 mx-auto mb-1 text-stone-500" />
-                        <span>{selectedReport.rawInput.hasImage ? 'Loading photo...' : 'No photo was submitted'}</span>
+                        <div>
+                          <label className="block font-display text-[11px] font-bold uppercase tracking-wide text-stone-600 mb-1">
+                            {t.officerNotes}
+                          </label>
+                          <textarea
+                            value={officerNotes}
+                            onChange={(e) => setOfficerNotes(e.target.value)}
+                            rows={2}
+                            placeholder="Enter assessment findings or regulatory directives..."
+                            className="w-full text-xs px-3 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleSaveOverride}
+                          disabled={isSavingOverride}
+                          className="w-full py-2.5 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 text-white font-display font-bold uppercase tracking-wider text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>{isSavingOverride ? 'Saving...' : t.saveOverrideBtn}</span>
+                        </button>
+
+                        {overrideSuccess && (
+                          <p className="text-xs text-tagapo-800 font-bold text-center">
+                            Final assessment saved and applied to live dashboard!
+                          </p>
+                        )}
                       </div>
-                    )}
-                    <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/75 backdrop-blur-xs text-[10px] font-mono font-bold text-tagapo-300 rounded border border-white/10">
-                      RA 10173 SECURED TELEMETRY
-                    </div>
-                  </div>
-                </div>
 
-                {/* Resident Description */}
-                <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px] font-display font-bold uppercase tracking-wide text-stone-600">
-                    <span>Resident Description</span>
-                    <span className="text-[10px] text-amber-800 bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-200">
-                      Untrusted Input
-                    </span>
-                  </div>
-                  <p className="text-xs text-stone-900 italic leading-relaxed">
-                    "{selectedReport.rawInput.description}"
-                  </p>
-                  <div className="text-xs text-stone-500 font-mono pt-1">
-                    Loc: {selectedReport.location.lat.toFixed(4)}, {selectedReport.location.lng.toFixed(4)} • {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
-                  </div>
-                </div>
+                      {/* Status Transition Workflow */}
+                      <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
+                        <label className="font-display text-xs font-bold uppercase tracking-wide text-stone-800 block">
+                          Update Incident Status
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(['pending', 'in_progress', 'resolved'] as ReportStatus[]).map((st) => (
+                            <button
+                              key={st}
+                              type="button"
+                              onClick={() => setNewStatus(st)}
+                              className={`py-2 text-xs font-display font-bold uppercase tracking-wider rounded-lg border transition cursor-pointer ${
+                                newStatus === st
+                                  ? 'bg-tagapo-900 text-white border-tagapo-950 shadow-xs'
+                                  : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-100'
+                              }`}
+                            >
+                              {st.replace(/_/g, ' ')}
+                            </button>
+                          ))}
+                        </div>
 
-                {/* AI Multimodal Triage Assessment */}
-                <div className="p-4 bg-tagapo-50/60 rounded-xl border border-tagapo-200 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wide text-tagapo-950">
-                      <Sparkles className="w-4 h-4 text-tagapo-800" />
-                      <span>{t.aiTriageTitle}</span>
-                    </div>
-                    {selectedReport.aiTriage && (
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-tagapo-200 text-tagapo-950 border border-tagapo-300">
-                        {t.aiConfidence}: {(selectedReport.aiTriage.confidence * 100).toFixed(0)}%
-                      </span>
-                    )}
-                  </div>
+                        <input
+                          type="text"
+                          value={statusChangeNotes}
+                          onChange={(e) => setStatusChangeNotes(e.target.value)}
+                          placeholder="Notes (e.g. 'Field team dispatched', 'Cleanup finished')..."
+                          className="w-full text-xs px-3 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
+                        />
 
-                  {selectedReport.triageStatus === 'failed' ? (
-                    <div className="space-y-2">
-                      <div className="p-2.5 bg-rose-100/80 rounded-lg text-rose-800 text-xs font-bold flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                        <span>{t.needsReviewBadge}</span>
+                        <button
+                          type="button"
+                          onClick={handleUpdateStatus}
+                          disabled={isUpdatingStatus || newStatus === selectedReport.status}
+                          className="w-full py-2.5 bg-tagapo-900 hover:bg-tagapo-800 disabled:bg-stone-200 text-white font-display font-bold uppercase tracking-wider text-xs rounded-lg transition shadow-xs cursor-pointer"
+                        >
+                          {isUpdatingStatus ? 'Updating...' : 'Log Status Transition'}
+                        </button>
                       </div>
-                      {retryTriageButton}
                     </div>
-                  ) : selectedReport.aiTriage ? (
-                    <div className="space-y-2 text-xs">
-                      <div>
-                        <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
-                          {t.aiSummary}
+                  </div>
+                ) : (
+                  /* ===================================================== */
+                  /* B. INCIDENT QUEUE STREAM (Browse & Filter List)       */
+                  /* ===================================================== */
+                  <div className="h-full flex flex-col overflow-hidden">
+                    {/* Header */}
+                    <div className="px-4 py-3 bg-stone-50 border-b border-stone-200 flex items-center justify-between text-stone-900 shrink-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-display font-bold text-xs uppercase tracking-wider text-stone-900">
+                          Incident Queue
                         </span>
-                        <p className="text-stone-900 font-semibold mt-0.5">
-                          {selectedReport.aiTriage.summary}
-                        </p>
-                      </div>
-
-                      <div className="pt-2 border-t border-tagapo-100">
-                        <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
-                          {t.aiReasoning}
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-tagapo-100 text-tagapo-800 border border-tagapo-200">
+                          {filteredReports.length}
                         </span>
-                        <p className="text-stone-700 text-xs mt-0.5 leading-relaxed">
-                          {selectedReport.aiTriage.reasoning}
-                        </p>
                       </div>
-
-                      <div className="text-[11px] text-stone-400 font-mono">
-                        Engine: {selectedReport.aiTriage.model}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <p className="text-xs text-stone-500 italic">Triage in progress...</p>
-                      {retryTriageButton}
-                    </div>
-                  )}
-                </div>
-
-                {/* Human-in-the-Loop Override Form */}
-                <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-display text-xs font-bold uppercase tracking-wide text-stone-900 flex items-center gap-1.5">
-                      <Edit3 className="w-3.5 h-3.5 text-tagapo-800" />
-                      <span>{t.humanOverrideTitle}</span>
-                    </h3>
-                    {selectedReport.final && (
-                      <span className="font-display text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-navy-100 text-navy-900 border border-navy-200">
-                        Human Verified
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <label className="block font-display text-[11px] font-bold uppercase tracking-wide text-stone-600 mb-1">
-                        {t.overrideCategory}
-                      </label>
-                      <select
-                        value={overrideCategory}
-                        onChange={(e) => setOverrideCategory(e.target.value as any)}
-                        className="w-full text-xs px-2.5 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
-                      >
-                        {Object.entries(CATEGORIES).map(([key, cat]) => (
-                          <option key={key} value={key}>
-                            {lang === 'fil' ? cat.labelFil : cat.labelEn}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-display text-[11px] font-bold uppercase tracking-wide text-stone-600 mb-1">
-                        {t.overrideSeverity}
-                      </label>
-                      <select
-                        value={overrideSeverity}
-                        onChange={(e) => setOverrideSeverity(Number(e.target.value) as any)}
-                        className="w-full text-xs px-2.5 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 font-bold"
-                      >
-                        <option value="1">1 - Minor / Cosmetic</option>
-                        <option value="2">2 - Low Concern</option>
-                        <option value="3">3 - Moderate</option>
-                        <option value="4">4 - High Hazard</option>
-                        <option value="5">5 - Critical Emergency</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block font-display text-[11px] font-bold uppercase tracking-wide text-stone-600 mb-1">
-                      {t.officerNotes}
-                    </label>
-                    <textarea
-                      value={officerNotes}
-                      onChange={(e) => setOfficerNotes(e.target.value)}
-                      rows={2}
-                      placeholder="Enter assessment findings or regulatory directives..."
-                      className="w-full text-xs px-3 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleSaveOverride}
-                    disabled={isSavingOverride}
-                    className="w-full py-2.5 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 text-white font-display font-bold uppercase tracking-wider text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>{isSavingOverride ? 'Saving...' : t.saveOverrideBtn}</span>
-                  </button>
-
-                  {overrideSuccess && (
-                    <p className="text-xs text-tagapo-800 font-bold text-center">
-                      Final assessment saved and applied to live dashboard!
-                    </p>
-                  )}
-                </div>
-
-                {/* Status Transition Workflow */}
-                <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
-                  <label className="font-display text-xs font-bold uppercase tracking-wide text-stone-800 block">
-                    Update Incident Status
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(['pending', 'in_progress', 'resolved'] as ReportStatus[]).map((st) => (
                       <button
-                        key={st}
                         type="button"
-                        onClick={() => setNewStatus(st)}
-                        className={`py-2 text-xs font-display font-bold uppercase tracking-wider rounded-lg border transition cursor-pointer ${
-                          newStatus === st
-                            ? 'bg-tagapo-900 text-white border-tagapo-950 shadow-xs'
-                            : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-100'
-                        }`}
+                        onClick={() => setIsSidebarOpen(false)}
+                        title="Collapse side panel"
+                        className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded transition cursor-pointer"
                       >
-                        {st.replace(/_/g, ' ')}
+                        <ChevronRight className="w-4 h-4" />
                       </button>
-                    ))}
+                    </div>
+
+                    {/* Secondary Quick Filter bar inside Sidebar */}
+                    <div className="p-3 border-b border-stone-200 bg-white/70 space-y-2 shrink-0">
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={categoryFilter}
+                          onChange={(e) => setCategoryFilter(e.target.value)}
+                          className="text-[11px] font-semibold px-2 py-1.5 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none truncate"
+                        >
+                          <option value="all">All Categories</option>
+                          {Object.entries(CATEGORIES).map(([key, cat]) => (
+                            <option key={key} value={key}>
+                              {lang === 'fil' ? cat.labelFil : cat.labelEn}
+                            </option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={severityFilter}
+                          onChange={(e) => setSeverityFilter(e.target.value)}
+                          className="text-[11px] font-semibold px-2 py-1.5 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none truncate"
+                        >
+                          <option value="all">All Severities</option>
+                          <option value="urgent">Urgent (4-5)</option>
+                          <option value="1">1 - Minor</option>
+                          <option value="2">2 - Low</option>
+                          <option value="3">3 - Moderate</option>
+                          <option value="4">4 - High</option>
+                          <option value="5">5 - Critical</option>
+                        </select>
+                      </div>
+
+                      {(municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
+                        <div className="flex items-center justify-between pt-0.5">
+                          <span className="text-[10px] text-stone-500 font-medium">Filters active</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMunicipalityFilter('all');
+                              setStatusFilter('all');
+                              setCategoryFilter('all');
+                              setSeverityFilter('all');
+                              setSearchTerm('');
+                              setMapCenter({ lat: 14.5800, lng: 121.2800 });
+                              setMapZoom(11);
+                            }}
+                            className="font-display text-[10px] font-bold uppercase tracking-wider text-rose-700 hover:text-rose-900 cursor-pointer"
+                          >
+                            Reset Filters
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Scrollable Incident Stream */}
+                    <div className="flex-1 overflow-y-auto divide-y divide-stone-100">
+                      {filteredReports.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-stone-500 space-y-1">
+                          <p className="font-semibold text-stone-700">No incident reports found</p>
+                          <p className="text-stone-400">Try adjusting your municipality or severity filters.</p>
+                        </div>
+                      ) : (
+                        filteredReports.map((report) => {
+                          const sev = report.final?.severity || report.aiTriage?.severity || 3;
+                          const cat = report.final?.category || report.aiTriage?.category || 'other';
+                          const catMeta = CATEGORIES[cat as IncidentCategory] || CATEGORIES.other;
+
+                          return (
+                            <div
+                              key={report.id}
+                              onClick={() => {
+                                setSelectedReport(report);
+                                const coords = resolveReportCoordinates(report);
+                                setMapCenter(coords);
+                                setMapZoom(14);
+                              }}
+                              className="p-3.5 hover:bg-stone-50/90 cursor-pointer transition flex items-start justify-between gap-2.5"
+                            >
+                              <div className="space-y-1 flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-mono font-bold text-xs text-stone-900">
+                                    {report.referenceCode}
+                                  </span>
+                                  <span
+                                    className={`text-[10px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${catMeta.badgeColor}`}
+                                  >
+                                    {lang === 'fil' ? catMeta.labelFil : catMeta.labelEn}
+                                  </span>
+                                  {report.duplicateClusterId && (
+                                    <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-stone-200 text-stone-700 flex items-center gap-0.5">
+                                      <Layers className="w-2.5 h-2.5" />
+                                      Cluster
+                                    </span>
+                                  )}
+                                </div>
+
+                                <p className="text-xs text-stone-600 line-clamp-2">
+                                  {report.aiTriage?.summary || report.rawInput.description}
+                                </p>
+
+                                <div className="flex items-center gap-1.5 text-[11px] text-stone-400 font-mono">
+                                  <span className="truncate">
+                                    {[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
+                                  </span>
+                                  <span>•</span>
+                                  <span className="shrink-0">{new Date(report.createdAt).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col items-end gap-1 shrink-0 pt-0.5">
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-display font-black uppercase tracking-wider ${
+                                    sev >= 4
+                                      ? 'bg-rose-700 text-white animate-pulse'
+                                      : sev === 3
+                                      ? 'bg-amber-600 text-white'
+                                      : 'bg-tagapo-800 text-white'
+                                  }`}
+                                >
+                                  Sev {sev}
+                                </span>
+                                {report.status === 'resolved' && (
+                                  <span className="text-[9px] font-display font-bold uppercase text-tagapo-800">
+                                    Closed
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
-
-                  <input
-                    type="text"
-                    value={statusChangeNotes}
-                    onChange={(e) => setStatusChangeNotes(e.target.value)}
-                    placeholder="Notes (e.g. 'Field team dispatched', 'Cleanup finished')..."
-                    className="w-full text-xs px-3 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={handleUpdateStatus}
-                    disabled={isUpdatingStatus || newStatus === selectedReport.status}
-                    className="w-full py-2.5 bg-tagapo-900 hover:bg-tagapo-800 disabled:bg-stone-200 text-white font-display font-bold uppercase tracking-wider text-xs rounded-lg transition shadow-xs cursor-pointer"
-                  >
-                    {isUpdatingStatus ? 'Updating...' : 'Log Status Transition'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 4. Bottom Floating HUD: Quick LGU Chips, Layer Mode & Severity Legend */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex flex-wrap items-center justify-center gap-2 max-w-[95vw]">
-            {/* LGU Quick Focus Chips */}
-            <div className="bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 rounded-xl p-1 flex items-center gap-0.5 overflow-x-auto">
-              <button
-                type="button"
-                onClick={() => handleQuickJump('all')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
-                  municipalityFilter === 'all'
-                    ? 'bg-tagapo-800 text-white shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
-                }`}
-              >
-                All Rizal
-              </button>
-              {['Antipolo City', 'Tanay', 'Rodriguez (Montalban)', 'Binangonan', 'Angono', 'Taytay'].map((mun) => (
-                <button
-                  key={mun}
-                  type="button"
-                  onClick={() => handleQuickJump(mun)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
-                    municipalityFilter === mun
-                      ? 'bg-tagapo-800 text-white shadow-xs'
-                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
-                  }`}
-                >
-                  {mun.replace(' City', '').replace(' (Montalban)', '')}
-                </button>
-              ))}
-            </div>
-
-            {/* In-Map Tactical Layer Switcher HUD */}
-            <div className="bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 rounded-xl p-1 flex items-center gap-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-stone-700">
-              <button
-                type="button"
-                onClick={() => setMapLayerMode('standard')}
-                className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  mapLayerMode === 'standard' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
-                }`}
-                title="Pins mode"
-              >
-                <Layers className="w-3 h-3" />
-                <span>Pins</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMapLayerMode('boundaries')}
-                className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  mapLayerMode === 'boundaries' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
-                }`}
-                title="Boundaries mode"
-              >
-                <span>⛶ Boundaries</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMapLayerMode('choropleth')}
-                className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  mapLayerMode === 'choropleth' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
-                }`}
-                title="Density Choropleth mode"
-              >
-                <span>⬡ Choropleth</span>
-              </button>
-            </div>
-
-            {/* Severity Legend */}
-            <div className="bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 rounded-xl px-3 py-1.5 flex items-center gap-2.5 text-[10px] font-display font-bold uppercase tracking-wider text-stone-700">
-              <span className="flex items-center gap-1 text-emerald-800">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                1-2 Minor
-              </span>
-              <span className="flex items-center gap-1 text-amber-800">
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                3 Mod
-              </span>
-              <span className="flex items-center gap-1 text-rose-800">
-                <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
-                4-5 Urgent
-              </span>
-            </div>
+                )}
+              </aside>
+            )}
           </div>
         </div>
       )}
