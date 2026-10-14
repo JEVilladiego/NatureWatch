@@ -17,6 +17,7 @@ import {
   IncidentCategory,
   CATEGORIES,
   RIZAL_LGUS,
+  RIZAL_BARANGAY_AREAS,
   RIZAL_MUNICIPALITIES,
   MUNICIPALITY_COORDINATES,
   IncidentReport,
@@ -404,7 +405,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             <label className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
               <span>2. {t.locationTitle}</span>
               {accuracyMeters !== null && (
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full border border-emerald-300">
+                <span className="text-xs font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full border border-emerald-300">
                   {t.gpsAccuracy}: ±{accuracyMeters}m
                 </span>
               )}
@@ -461,12 +462,22 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 <option value="">
                   {selectedMunicipality ? t.selectBarangayActive : t.selectBarangay}
                 </option>
-                {selectedMunicipality &&
-                  RIZAL_LGUS[selectedMunicipality]?.map((brgy) => (
-                    <option key={brgy} value={brgy}>
-                      Brgy. {brgy}
-                    </option>
-                  ))}
+                {selectedMunicipality && RIZAL_BARANGAY_AREAS[selectedMunicipality]
+                  ? RIZAL_BARANGAY_AREAS[selectedMunicipality].map((area) => (
+                      <optgroup key={area.label} label={area.label}>
+                        {area.barangays.map((brgy) => (
+                          <option key={brgy} value={brgy}>
+                            Brgy. {brgy}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))
+                  : selectedMunicipality &&
+                    RIZAL_LGUS[selectedMunicipality]?.map((brgy) => (
+                      <option key={brgy} value={brgy}>
+                        Brgy. {brgy}
+                      </option>
+                    ))}
               </select>
             </div>
           </div>
@@ -474,7 +485,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           {/* Map guidance and coordinates display */}
           <div className="flex items-center justify-between text-xs text-gray-500 pt-0.5">
             <span>{t.dragPinHint}</span>
-            <span className="text-[10px] text-stone-400 font-mono">
+            <span className="text-xs text-stone-400 font-mono">
               {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
             </span>
           </div>

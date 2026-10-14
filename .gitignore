@@ -33,3 +33,5 @@ serviceAccount*.json
 # Deployment tool metadata
 .vercel/
 .firebase/
+.vercel
+.env*

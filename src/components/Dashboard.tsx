@@ -585,7 +585,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <MapPin className="w-4 h-4 text-emerald-600" />
                 <span>Geospatial Incidents ({filteredReports.length})</span>
               </span>
-              <div className="flex items-center gap-2 text-[10px]">
+              <div className="flex items-center gap-2 text-xs">
                 <span className="flex items-center gap-1">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                   1-2 Minor
@@ -651,12 +651,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             {report.referenceCode}
                           </span>
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${catMeta.badgeColor}`}
+                            className={`text-xs font-bold px-2 py-0.5 rounded-full border ${catMeta.badgeColor}`}
                           >
                             {lang === 'fil' ? catMeta.labelFil : catMeta.labelEn}
                           </span>
                           {report.duplicateClusterId && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-stone-200 text-stone-700 flex items-center gap-0.5">
+                            <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-stone-200 text-stone-700 flex items-center gap-0.5">
                               <Layers className="w-2.5 h-2.5" />
                               Cluster
                             </span>
@@ -667,7 +667,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           {report.aiTriage?.summary || report.rawInput.description}
                         </p>
 
-                        <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                        <div className="flex items-center gap-3 text-xs text-gray-400">
                           <span>{[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}</span>
                           <span>•</span>
                           <span>{new Date(report.createdAt).toLocaleDateString()}</span>
@@ -765,7 +765,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <span>{selectedReport.rawInput.hasImage ? 'Loading photo...' : 'No photo was submitted'}</span>
                     </div>
                   )}
-                  <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-xs text-[10px] font-mono text-emerald-300 rounded">
+                  <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-xs text-xs font-mono text-emerald-300 rounded">
                     RA 10173 Protected Image
                   </div>
                 </div>
@@ -775,14 +775,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
                 <div className="flex items-center justify-between text-[11px] font-bold text-stone-600">
                   <span>Resident Description</span>
-                  <span className="text-[10px] font-normal text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded border border-amber-200">
+                  <span className="text-xs font-normal text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded border border-amber-200">
                     Untrusted Input
                   </span>
                 </div>
                 <p className="text-xs text-gray-800 italic">
                   "{selectedReport.rawInput.description}"
                 </p>
-                <div className="text-[10px] text-gray-400 pt-0.5">
+                <div className="text-xs text-gray-400 pt-0.5">
                   Location: {selectedReport.location.lat.toFixed(4)}, {selectedReport.location.lng.toFixed(4)} • {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
                 </div>
               </div>
@@ -795,7 +795,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <span>{t.aiTriageTitle}</span>
                   </div>
                   {selectedReport.aiTriage && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">
                       {t.aiConfidence}: {(selectedReport.aiTriage.confidence * 100).toFixed(0)}%
                     </span>
                   )}
@@ -812,7 +812,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 ) : selectedReport.aiTriage ? (
                   <div className="space-y-2 text-xs">
                     <div>
-                      <span className="text-gray-500 font-semibold block text-[10px]">
+                      <span className="text-gray-500 font-semibold block text-xs">
                         {t.aiSummary}
                       </span>
                       <p className="text-gray-800 font-medium">
@@ -821,7 +821,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
 
                     <div className="pt-1 border-t border-emerald-100">
-                      <span className="text-gray-500 font-semibold block text-[10px]">
+                      <span className="text-gray-500 font-semibold block text-xs">
                         {t.aiReasoning}
                       </span>
                       <p className="text-gray-600 text-[11px]">
@@ -829,7 +829,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </p>
                     </div>
 
-                    <div className="text-[10px] text-gray-400">
+                    <div className="text-xs text-gray-400">
                       Model: {selectedReport.aiTriage.model}
                     </div>
                   </div>
@@ -849,7 +849,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <span>{t.humanOverrideTitle}</span>
                   </h3>
                   {selectedReport.final && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
                       Human Verified
                     </span>
                   )}
@@ -857,7 +857,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-600 mb-1">
+                    <label className="block text-xs font-bold text-gray-600 mb-1">
                       {t.overrideCategory}
                     </label>
                     <select
@@ -874,7 +874,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-600 mb-1">
+                    <label className="block text-xs font-bold text-gray-600 mb-1">
                       {t.overrideSeverity}
                     </label>
                     <select
@@ -892,7 +892,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-600 mb-1">
+                  <label className="block text-xs font-bold text-gray-600 mb-1">
                     {t.officerNotes}
                   </label>
                   <textarea

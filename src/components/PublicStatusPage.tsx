@@ -170,7 +170,7 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
         <div className="mt-6 space-y-5 animate-in fade-in duration-300">
           <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
                 Reference Code
               </span>
               <div className="text-xl font-mono font-black text-emerald-950">
@@ -185,7 +185,7 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
             <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-2">
               <Building className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
-                <span className="text-gray-400 font-semibold block text-[10px]">Municipality / Area</span>
+                <span className="text-gray-400 font-semibold block text-xs">Municipality / Area</span>
                 <span className="font-bold text-gray-800">
                   {[result.barangay, result.municipality || 'Rizal Province'].filter(Boolean).join(', ')}
                 </span>
@@ -195,7 +195,7 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
             <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-2">
               <Calendar className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
-                <span className="text-gray-400 font-semibold block text-[10px]">Date Reported</span>
+                <span className="text-gray-400 font-semibold block text-xs">Date Reported</span>
                 <span className="font-bold text-gray-800">
                   {new Date(result.createdAt).toLocaleDateString()}
                 </span>
@@ -208,7 +208,7 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
             <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center gap-2 text-xs">
               <Tag className="w-4 h-4 text-emerald-600" />
               <div>
-                <span className="text-gray-400 font-semibold block text-[10px]">Category Classification</span>
+                <span className="text-gray-400 font-semibold block text-xs">Category Classification</span>
                 <span className="font-bold text-gray-800 uppercase">
                   {result.finalCategory.replace(/_/g, ' ')}
                 </span>
@@ -229,7 +229,7 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
                     <div className="font-bold text-gray-900 capitalize">
                       {item.status.replace(/_/g, ' ')}
                     </div>
-                    <div className="text-[10px] text-gray-400">
+                    <div className="text-xs text-gray-400">
                       {new Date(item.changedAt).toLocaleString()} • {item.changedBy}
                     </div>
                     {item.notes && (

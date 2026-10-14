@@ -120,7 +120,7 @@ export default function App() {
           <p className="text-emerald-400 text-[11px]">
             Pamahalaang Lalawigan ng Rizal • Republic of the Philippines
           </p>
-          <div className="pt-2 text-[10px] text-emerald-500 border-t border-emerald-900/60 max-w-xl mx-auto">
+          <div className="pt-2 text-xs text-emerald-500 border-t border-emerald-900/60 max-w-xl mx-auto">
             Protektado sa ilalim ng Republic Act No. 10173 (Data Privacy Act of 2012). Walang personal na datos ng mamamayan ang kinokolekta.
           </div>
         </div>
