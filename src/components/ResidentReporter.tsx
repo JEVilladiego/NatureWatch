@@ -28,6 +28,7 @@ import { encodeGeohash, generateReferenceCode } from '../lib/geohash';
 import { db } from '../lib/firebase';
 import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { LeafletMap } from './LeafletMap';
+import { getBarangayCoordinates, findNearestBarangay } from '../lib/barangayCoordinates';
 import { Language, translations } from '../lib/i18n';
 
 // Default Rizal Province center
@@ -54,9 +55,10 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
 
   // Location states
+  const [locationTab, setLocationTab] = useState<'gps' | 'manual'>('gps');
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number }>(RIZAL_COORDS);
   const [accuracyMeters, setAccuracyMeters] = useState<number | null>(null);
-  const [locationSource, setLocationSource] = useState<'gps' | 'manual_pin'>('manual_pin');
+  const [locationSource, setLocationSource] = useState<'gps' | 'manual_pin'>('gps');
   const [selectedMunicipality, setSelectedMunicipality] = useState<string>('');
   const [selectedBarangay, setSelectedBarangay] = useState<string>('');
   const [isLocating, setIsLocating] = useState<boolean>(false);
@@ -86,7 +88,8 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
 
   const acquireGpsLocation = () => {
     if (!('geolocation' in navigator)) {
-      setLocationError('Geolocation not supported on this device. Please drag the map pin.');
+      setLocationError(t.gpsFallbackNotice);
+      setLocationTab('manual');
       return;
     }
 
@@ -100,14 +103,30 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         setAccuracyMeters(Math.round(accuracy));
         setLocationSource('gps');
         setIsLocating(false);
+
+        // Auto-detect nearest municipality & barangay in Rizal
+        const nearest = findNearestBarangay(latitude, longitude);
+        if (nearest) {
+          setSelectedMunicipality(nearest.municipality);
+          setSelectedBarangay(nearest.barangay);
+        }
       },
       (error) => {
         console.warn('Geolocation error:', error.message);
         setIsLocating(false);
-        setLocationError('GPS permission not granted. You can select a barangay and drag the pin.');
+        setLocationError(t.gpsFallbackNotice);
+        // Automatic gentle fallback to manual picking
+        setLocationTab('manual');
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
     );
+  };
+
+  const handleTabSwitch = (tab: 'gps' | 'manual') => {
+    setLocationTab(tab);
+    if (tab === 'gps') {
+      acquireGpsLocation();
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -426,121 +445,211 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           )}
         </div>
 
-        {/* Step 2: Location & Draggable Map */}
+        {/* Step 2: Location (Dual-Mode: GPS On-Site vs Pick on Map) */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 pb-2">
             <h2 className="font-display font-bold text-base sm:text-lg text-stone-900 tracking-wide uppercase flex items-center gap-2">
               <span className="w-5 h-5 rounded bg-tagapo-900 text-white text-xs font-bold flex items-center justify-center font-mono">2</span>
               <span>{t.locationTitle}</span>
-              {accuracyMeters !== null && (
-                <span className="ml-1 text-[11px] font-mono font-semibold px-2 py-0.5 bg-tagapo-50 text-tagapo-900 rounded border border-tagapo-200">
-                  {t.gpsAccuracy}: ±{accuracyMeters}m
-                </span>
-              )}
             </h2>
-            <button
-              type="button"
-              onClick={acquireGpsLocation}
-              disabled={isLocating}
-              className="font-display text-xs font-bold uppercase tracking-wider text-tagapo-900 hover:text-tagapo-700 flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded bg-stone-100 hover:bg-stone-200 transition"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
-              <span>GPS Sync</span>
-            </button>
+
+            {/* Tactical Location Mode Segmented Tabs */}
+            <div className="bg-stone-100 p-0.5 rounded-lg border border-stone-200 flex items-center gap-1 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => handleTabSwitch('gps')}
+                className={`px-3 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
+                  locationTab === 'gps'
+                    ? 'bg-tagapo-900 text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/50'
+                }`}
+              >
+                <span>{t.locationTabGps}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabSwitch('manual')}
+                className={`px-3 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
+                  locationTab === 'manual'
+                    ? 'bg-tagapo-900 text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/50'
+                }`}
+              >
+                <span>{t.locationTabManual}</span>
+              </button>
+            </div>
           </div>
 
-          {/* Municipality & Barangay manual selector */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            <div>
-              <label className="block font-display text-xs font-bold uppercase tracking-wide text-stone-600 mb-1">
-                {t.manualMunicipalityLabel}
-              </label>
-              <select
-                value={selectedMunicipality}
-                onChange={(e) => {
-                  const mun = e.target.value;
-                  setSelectedMunicipality(mun);
-                  setSelectedBarangay('');
-                  if (mun && MUNICIPALITY_COORDINATES[mun]) {
-                    setCoordinates(MUNICIPALITY_COORDINATES[mun]);
-                    setLocationSource('manual_pin');
-                  }
-                }}
-                className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl focus:ring-2 focus:ring-tagapo-800 focus:border-tagapo-800 focus:outline-none transition shadow-2xs"
-              >
-                <option value="">{t.selectMunicipality}</option>
-                {RIZAL_MUNICIPALITIES.map((mun) => (
-                  <option key={mun} value={mun}>
-                    {mun}
-                  </option>
-                ))}
-              </select>
+          {/* Fallback Notice if GPS failed */}
+          {locationError && (
+            <div role="alert" className="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl flex items-center gap-2.5 shadow-2xs">
+              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+              <span>{locationError}</span>
             </div>
+          )}
 
-            <div>
-              <label className="block font-display text-xs font-bold uppercase tracking-wide text-stone-600 mb-1">
-                {t.manualBarangayLabel}
-              </label>
-              <select
-                value={selectedBarangay}
-                onChange={(e) => setSelectedBarangay(e.target.value)}
-                disabled={!selectedMunicipality}
-                className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl focus:ring-2 focus:ring-tagapo-800 focus:border-tagapo-800 focus:outline-none disabled:bg-stone-100 disabled:text-stone-400 transition shadow-2xs"
-              >
-                <option value="">
-                  {selectedMunicipality ? t.selectBarangayActive : t.selectBarangay}
-                </option>
-                {selectedMunicipality && RIZAL_BARANGAY_AREAS[selectedMunicipality]
-                  ? RIZAL_BARANGAY_AREAS[selectedMunicipality].map((area) => (
-                      <optgroup key={area.label} label={area.label}>
-                        {area.barangays.map((brgy) => (
+          {/* TAB 1: GPS (On-site reporting) */}
+          {locationTab === 'gps' && (
+            <div className="space-y-2.5">
+              {/* GPS Verified Status Banner */}
+              <div className="p-3 bg-tagapo-50/70 border border-tagapo-200 rounded-xl flex items-center justify-between gap-2 shadow-2xs">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-tagapo-900">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>{locationSource === 'gps' ? t.gpsAcquiredBadge : t.locating}</span>
+                  </div>
+                  <div className="text-xs text-stone-600 font-medium">
+                    {selectedBarangay && selectedMunicipality
+                      ? `Brgy. ${selectedBarangay}, ${selectedMunicipality}`
+                      : 'Rizal Province'}
+                    {accuracyMeters !== null && ` • ±${accuracyMeters}m radius`}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={acquireGpsLocation}
+                  disabled={isLocating}
+                  className="px-2.5 py-1 bg-white hover:bg-stone-50 border border-stone-200 text-stone-700 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1 transition cursor-pointer shrink-0 shadow-2xs"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
+                  <span>GPS Sync</span>
+                </button>
+              </div>
+
+              {/* Map Preview with accuracy circle */}
+              <div className="relative isolate z-0 rounded-xl overflow-hidden border border-stone-300 shadow-sm">
+                <LeafletMap
+                  mode="picker"
+                  center={coordinates}
+                  zoom={15}
+                  accuracyMeters={accuracyMeters}
+                  onLocationChange={(lat, lng) => {
+                    setCoordinates({ lat, lng });
+                    setLocationSource('manual_pin');
+                  }}
+                  className="h-56 sm:h-64 w-full"
+                />
+                {isLocating && (
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center text-xs font-display font-bold uppercase tracking-wider text-tagapo-950 gap-2 z-10">
+                    <RefreshCw className="w-4 h-4 animate-spin text-tagapo-800" />
+                    <span>{t.locating}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: Pick on Map / Choose Barangay (for reporting seen elsewhere) */}
+          {locationTab === 'manual' && (
+            <div className="space-y-2.5">
+              {/* Municipality & Barangay selector */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block font-display text-xs font-bold uppercase tracking-wide text-stone-600 mb-1">
+                    {t.manualMunicipalityLabel}
+                  </label>
+                  <select
+                    value={selectedMunicipality}
+                    onChange={(e) => {
+                      const mun = e.target.value;
+                      setSelectedMunicipality(mun);
+                      setSelectedBarangay('');
+                      if (mun && MUNICIPALITY_COORDINATES[mun]) {
+                        setCoordinates(MUNICIPALITY_COORDINATES[mun]);
+                        setLocationSource('manual_pin');
+                      }
+                    }}
+                    className="w-full text-xs font-medium px-3 py-2 bg-white border border-stone-300 rounded-xl focus:ring-1 focus:ring-tagapo-800 focus:outline-none shadow-2xs"
+                  >
+                    <option value="">{t.selectMunicipality}</option>
+                    {RIZAL_MUNICIPALITIES.map((mun) => (
+                      <option key={mun} value={mun}>
+                        {mun}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-display text-xs font-bold uppercase tracking-wide text-stone-600 mb-1">
+                    {t.manualBarangayLabel}
+                  </label>
+                  <select
+                    value={selectedBarangay}
+                    onChange={(e) => {
+                      const brgy = e.target.value;
+                      setSelectedBarangay(brgy);
+                      if (selectedMunicipality && brgy) {
+                        const brgyCoords = getBarangayCoordinates(selectedMunicipality, brgy);
+                        if (brgyCoords) {
+                          setCoordinates(brgyCoords);
+                          setLocationSource('manual_pin');
+                        }
+                      } else if (selectedMunicipality && MUNICIPALITY_COORDINATES[selectedMunicipality]) {
+                        setCoordinates(MUNICIPALITY_COORDINATES[selectedMunicipality]);
+                        setLocationSource('manual_pin');
+                      }
+                    }}
+                    disabled={!selectedMunicipality}
+                    className="w-full text-xs font-medium px-3 py-2 bg-white border border-stone-300 rounded-xl focus:ring-1 focus:ring-tagapo-800 focus:outline-none disabled:bg-stone-100 disabled:text-stone-400 shadow-2xs"
+                  >
+                    <option value="">
+                      {selectedMunicipality ? t.selectBarangayActive : t.selectBarangay}
+                    </option>
+                    {selectedMunicipality && RIZAL_BARANGAY_AREAS[selectedMunicipality]
+                      ? RIZAL_BARANGAY_AREAS[selectedMunicipality].map((area) => (
+                          <optgroup key={area.label} label={area.label}>
+                            {area.barangays.map((brgy) => (
+                              <option key={brgy} value={brgy}>
+                                Brgy. {brgy}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))
+                      : selectedMunicipality &&
+                        RIZAL_LGUS[selectedMunicipality]?.map((brgy) => (
                           <option key={brgy} value={brgy}>
                             Brgy. {brgy}
                           </option>
                         ))}
-                      </optgroup>
-                    ))
-                  : selectedMunicipality &&
-                    RIZAL_LGUS[selectedMunicipality]?.map((brgy) => (
-                      <option key={brgy} value={brgy}>
-                        Brgy. {brgy}
-                      </option>
-                    ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Map guidance and coordinates display */}
-          <div className="flex items-center justify-between text-xs text-stone-500 pt-1">
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-tagapo-800" />
-              {t.dragPinHint}
-            </span>
-            <span className="text-xs text-stone-600 font-mono bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
-              {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
-            </span>
-          </div>
-
-          {/* Leaflet Picker Map */}
-          <div className="relative isolate z-0 rounded-xl overflow-hidden border border-stone-300 shadow-sm">
-            <LeafletMap
-              mode="picker"
-              center={coordinates}
-              zoom={14}
-              accuracyMeters={accuracyMeters}
-              onLocationChange={(lat, lng) => {
-                setCoordinates({ lat, lng });
-                setLocationSource('manual_pin');
-              }}
-              className="h-64 sm:h-72 w-full"
-            />
-            {isLocating && (
-              <div className="absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center text-xs font-display font-bold uppercase tracking-wider text-tagapo-950 gap-2 z-10">
-                <RefreshCw className="w-4 h-4 animate-spin text-tagapo-800" />
-                <span>{t.locating}</span>
+                  </select>
+                </div>
               </div>
-            )}
-          </div>
+
+              {/* Tap to Pin Instruction Bar */}
+              <div className="flex items-center justify-between text-xs text-stone-500 pt-0.5">
+                <span className="flex items-center gap-1 text-[11px] text-stone-600 font-medium">
+                  <MapPin className="w-3.5 h-3.5 text-tagapo-800 shrink-0" />
+                  {t.tapToPinHint}
+                </span>
+                <span className="text-[11px] text-stone-500 font-mono bg-stone-100 px-2 py-0.5 rounded border border-stone-200 shrink-0">
+                  {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
+                </span>
+              </div>
+
+              {/* Interactive Click-to-Pin Map */}
+              <div className="relative isolate z-0 rounded-xl overflow-hidden border border-stone-300 shadow-sm">
+                <LeafletMap
+                  mode="picker"
+                  center={coordinates}
+                  zoom={14}
+                  accuracyMeters={null}
+                  onLocationChange={(lat, lng) => {
+                    setCoordinates({ lat, lng });
+                    setLocationSource('manual_pin');
+                    // Check if dragged to a different barangay
+                    const nearest = findNearestBarangay(lat, lng);
+                    if (nearest && nearest.distanceMeters < 3000) {
+                      setSelectedMunicipality(nearest.municipality);
+                      setSelectedBarangay(nearest.barangay);
+                    }
+                  }}
+                  className="h-64 sm:h-72 w-full cursor-crosshair"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Step 3: Description */}

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { IncidentReport } from '../types/report';
+import { resolveReportCoordinates } from '../lib/barangayCoordinates';
 
 // Rizal Province default center (encompassing Sierra Madre, central corridor & Laguna de Bay shore)
 const RIZAL_DEFAULT = { lat: 14.5800, lng: 121.2800 };
@@ -52,7 +53,16 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     mapInstanceRef.current = map;
 
+    // Automatically recalculate Leaflet tiles on container size changes
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    if (mapContainerRef.current) {
+      resizeObserver.observe(mapContainerRef.current);
+    }
+
     return () => {
+      resizeObserver.disconnect();
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -126,6 +136,18 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       pickerMarkerRef.current.setLatLng([center.lat, center.lng]);
     }
 
+    // Map click-to-pin listener
+    const handleMapClick = (e: L.LeafletMouseEvent) => {
+      const { lat, lng } = e.latlng;
+      if (pickerMarkerRef.current) {
+        pickerMarkerRef.current.setLatLng([lat, lng]);
+      }
+      if (onLocationChange) {
+        onLocationChange(lat, lng);
+      }
+    };
+    map.on('click', handleMapClick);
+
     // Accuracy Circle with subtle tactical dashed boundary
     if (accuracyMeters && accuracyMeters > 0) {
       if (!accuracyCircleRef.current) {
@@ -145,9 +167,13 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       accuracyCircleRef.current.remove();
       accuracyCircleRef.current = null;
     }
+
+    return () => {
+      map.off('click', handleMapClick);
+    };
   }, [mode, center.lat, center.lng, accuracyMeters, onLocationChange]);
 
-  // Dashboard Mode: Severity colored pins & duplicate cluster counts
+  // Dashboard Mode: Severity colored dots & "how many" count clusters
   useEffect(() => {
     if (mode !== 'dashboard' || !mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
@@ -156,129 +182,218 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     dashboardMarkersRef.current.forEach((m) => m.remove());
     dashboardMarkersRef.current.clear();
 
-    // Group duplicate clusters
-    const clusterCounts = new Map<string, number>();
-    reports.forEach((r) => {
-      if (r.duplicateClusterId) {
-        clusterCounts.set(r.duplicateClusterId, (clusterCounts.get(r.duplicateClusterId) || 0) + 1);
+    // Group reports by resolved coordinates / barangay
+    interface MarkerGroup {
+      key: string;
+      lat: number;
+      lng: number;
+      reports: IncidentReport[];
+      maxSeverity: number;
+      hasSelected: boolean;
+      municipality?: string;
+      barangay?: string;
+    }
+
+    const groups = new Map<string, MarkerGroup>();
+
+    reports.forEach((report) => {
+      const coords = resolveReportCoordinates(report);
+      // Group by coordinate proximity (~11m precision)
+      const key = `${coords.lat.toFixed(4)},${coords.lng.toFixed(4)}`;
+      const activeSeverity = report.final?.severity || report.aiTriage?.severity || 3;
+      const isSelected = report.id === selectedReportId;
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          lat: coords.lat,
+          lng: coords.lng,
+          reports: [report],
+          maxSeverity: activeSeverity,
+          hasSelected: isSelected,
+          municipality: report.location.municipality,
+          barangay: report.location.barangay,
+        });
+      } else {
+        const group = groups.get(key)!;
+        group.reports.push(report);
+        if (activeSeverity > group.maxSeverity) {
+          group.maxSeverity = activeSeverity;
+        }
+        if (isSelected) {
+          group.hasSelected = true;
+        }
+        if (!group.barangay && report.location.barangay) {
+          group.barangay = report.location.barangay;
+        }
       }
     });
 
-    reports.forEach((report) => {
-      const activeSeverity = report.final?.severity || report.aiTriage?.severity || 3;
-      const isSelected = report.id === selectedReportId;
-      const clusterCount = report.duplicateClusterId ? clusterCounts.get(report.duplicateClusterId) || 1 : 1;
+    // Render markers for each group
+    groups.forEach((group) => {
+      const isSelected = group.hasSelected;
+      const count = group.reports.length;
+      const isCluster = count > 1;
 
-      // Color mapping
+      // Color based on maximum severity
       let color = '#244460'; // 2: Laguna Lake Navy
-      if (activeSeverity === 1) color = '#2a5342'; // 1: Tagapo Forest Green
-      if (activeSeverity === 3) color = '#d97706'; // 3: Amber
-      if (activeSeverity === 4) color = '#ea580c'; // 4: Tactical Orange
-      if (activeSeverity === 5) color = '#dc2626'; // 5: Critical Crimson
+      if (group.maxSeverity === 1) color = '#2a5342'; // 1: Tagapo Forest Green
+      if (group.maxSeverity === 3) color = '#d97706'; // 3: Amber
+      if (group.maxSeverity === 4) color = '#ea580c'; // 4: Tactical Orange
+      if (group.maxSeverity === 5) color = '#dc2626'; // 5: Critical Crimson
+
+      // Size calculation
+      // Single report: 22px (28px if selected)
+      // Cluster: 28px for 2-9, 34px for 10+ (or +4px if selected)
+      const baseSize = isCluster ? (count >= 10 ? 34 : 28) : 22;
+      const dotSize = isSelected ? baseSize + 6 : baseSize;
+      const pulseSize = dotSize + 14;
 
       const iconHtml = `
         <div style="
           position: relative;
           cursor: pointer;
-          transform: ${isSelected ? 'scale(1.25)' : 'scale(1)'};
-          transition: transform 0.2s ease;
+          transform: ${isSelected ? 'scale(1.15)' : 'scale(1)'};
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           display: flex;
           align-items: center;
           justify-content: center;
         ">
           ${
-            activeSeverity >= 4
+            group.maxSeverity >= 4
               ? `<div style="
                   position: absolute;
-                  width: 36px;
-                  height: 36px;
+                  width: ${pulseSize}px;
+                  height: ${pulseSize}px;
                   border-radius: 50%;
                   background: ${color};
-                  opacity: 0.35;
-                  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+                  opacity: 0.38;
+                  animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
                 "></div>`
               : ''
           }
           <div style="
-            width: ${isSelected ? '32px' : '26px'};
-            height: ${isSelected ? '32px' : '26px'};
+            width: ${dotSize}px;
+            height: ${dotSize}px;
             background: ${color};
-            border: 2.5px solid white;
+            border: ${isSelected ? '3px solid #ffffff' : '2px solid #ffffff'};
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: ${isSelected ? '13px' : '11px'};
+            color: #ffffff;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: ${isSelected ? '12px' : '11px'};
             font-weight: 800;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+            box-shadow: ${isSelected ? '0 0 0 2px #0e2019, 0 6px 14px rgba(0,0,0,0.45)' : '0 3px 8px rgba(0,0,0,0.35)'};
           ">
-            ${activeSeverity}
+            ${isCluster ? count : ''}
           </div>
-          ${
-            clusterCount > 1
-              ? `<span style="
-                  position: absolute;
-                  top: -6px;
-                  right: -6px;
-                  background: #1e293b;
-                  color: #38bdf8;
-                  font-size: 10px;
-                  font-weight: bold;
-                  padding: 1px 4px;
-                  border-radius: 8px;
-                  border: 1px solid #64748b;
-                ">+${clusterCount}</span>`
-              : ''
-          }
         </div>
       `;
 
       const markerIcon = L.divIcon({
         className: 'custom-severity-marker',
         html: iconHtml,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
+        iconSize: [dotSize, dotSize],
+        iconAnchor: [dotSize / 2, dotSize / 2],
       });
 
-      const marker = L.marker([report.location.lat, report.location.lng], {
+      const marker = L.marker([group.lat, group.lng], {
         icon: markerIcon,
       }).addTo(map);
 
-      // Popup
-      const statusBadge =
-        report.status === 'resolved'
-          ? '<span style="color:#059669; font-weight:bold;">RESOLVED</span>'
-          : report.status === 'in_progress'
-          ? '<span style="color:#d97706; font-weight:bold;">IN PROGRESS</span>'
-          : '<span style="color:#dc2626; font-weight:bold;">PENDING</span>';
+      // Popup Content
+      const locationLabel = [group.barangay, group.municipality || 'Rizal'].filter(Boolean).join(', ');
 
-      marker.bindPopup(`
-        <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4; max-width: 200px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <strong>${report.referenceCode}</strong>
-            ${statusBadge}
+      if (!isCluster) {
+        const report = group.reports[0];
+        const statusBadge =
+          report.status === 'resolved'
+            ? '<span style="color:#059669; font-weight:bold; font-size:10px;">RESOLVED</span>'
+            : report.status === 'in_progress'
+            ? '<span style="color:#d97706; font-weight:bold; font-size:10px;">IN PROGRESS</span>'
+            : '<span style="color:#dc2626; font-weight:bold; font-size:10px;">PENDING</span>';
+
+        marker.bindPopup(`
+          <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; max-width: 220px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px;">
+              <strong style="font-family: monospace; font-size: 13px;">${report.referenceCode}</strong>
+              ${statusBadge}
+            </div>
+            <div style="margin-bottom: 5px; color: #64748b; font-size: 11px;">
+              📍 ${locationLabel}
+            </div>
+            <div style="font-size: 11px; color: #1e293b; margin-bottom: 6px;">
+              ${report.aiTriage?.summary || report.rawInput.description.slice(0, 80)}...
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 4px;">
+              <span style="font-weight:bold; color:${color}; font-size:11px;">Severity ${group.maxSeverity}/5</span>
+              <span style="font-size: 10px; color: #64748b;">Click to inspect</span>
+            </div>
           </div>
-          <div style="margin-bottom: 4px; color: #475569;">
-            ${[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
+        `);
+      } else {
+        // Multi-incident cluster popup
+        const reportItems = group.reports
+          .slice(0, 5)
+          .map((r) => {
+            const rSev = r.final?.severity || r.aiTriage?.severity || 3;
+            let rColor = '#244460';
+            if (rSev === 1) rColor = '#2a5342';
+            if (rSev === 3) rColor = '#d97706';
+            if (rSev === 4) rColor = '#ea580c';
+            if (rSev === 5) rColor = '#dc2626';
+
+            return `
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f5f9; font-size: 11px;">
+                <span style="font-family: monospace; font-weight: 700;">${r.referenceCode}</span>
+                <span style="color: ${rColor}; font-weight: 800; font-size: 10px;">Sev ${rSev}</span>
+              </div>
+            `;
+          })
+          .join('');
+
+        const extraCount = group.reports.length > 5 ? `<div style="font-size: 10px; color: #64748b; text-align: center; margin-top: 2px;">+${group.reports.length - 5} more incidents</div>` : '';
+
+        marker.bindPopup(`
+          <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; max-width: 220px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+              <strong style="color: #0f172a; font-size: 13px;">${count} Incidents</strong>
+              <span style="font-weight: 800; color: ${color}; font-size: 11px;">Max Sev ${group.maxSeverity}</span>
+            </div>
+            <div style="color: #64748b; font-size: 11px; margin-bottom: 6px;">
+              📍 ${locationLabel}
+            </div>
+            <div style="margin-bottom: 4px;">
+              ${reportItems}
+              ${extraCount}
+            </div>
+            <div style="font-size: 10px; color: #64748b; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 3px;">
+              Click dot to open dossier
+            </div>
           </div>
-          <div style="font-size: 11px; color: #1e293b; margin-bottom: 6px;">
-            ${report.aiTriage?.summary || report.rawInput.description.slice(0, 70)}...
-          </div>
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <span style="font-weight:bold; color:${color}">Severity ${activeSeverity}/5</span>
-            <span style="font-size: 10px; color: #64748b;">Click to inspect</span>
-          </div>
-        </div>
-      `);
+        `);
+      }
 
       marker.on('click', () => {
         if (onSelectReport) {
-          onSelectReport(report);
+          const targetReport =
+            group.reports.find((r) => r.id === selectedReportId) ||
+            group.reports.reduce((prev, curr) => {
+              const prevSev = prev.final?.severity || prev.aiTriage?.severity || 3;
+              const currSev = curr.final?.severity || curr.aiTriage?.severity || 3;
+              return currSev > prevSev ? curr : prev;
+            }, group.reports[0]);
+
+          onSelectReport(targetReport);
         }
       });
 
-      dashboardMarkersRef.current.set(report.id, marker);
+      // Map references for tracking
+      group.reports.forEach((r) => {
+        dashboardMarkersRef.current.set(r.id, marker);
+      });
     });
   }, [mode, reports, selectedReportId, onSelectReport]);
 
