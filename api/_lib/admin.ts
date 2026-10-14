@@ -1,7 +1,5 @@
 import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
-import { getMessaging } from 'firebase-admin/messaging';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Automatically load local .env in Node 20+ when running locally
@@ -54,6 +52,7 @@ export async function verifyOfficial(req: VercelRequest): Promise<{ uid: string;
 
   let decoded;
   try {
+    const { getAuth } = await import('firebase-admin/auth');
     decoded = await getAuth(getAdminApp()).verifyIdToken(token);
   } catch {
     throw new HttpError(401, 'Invalid or expired authentication token.');
@@ -79,6 +78,7 @@ export async function sendUrgentAlert(params: {
   barangay?: string;
 }): Promise<boolean> {
   try {
+    const { getMessaging } = await import('firebase-admin/messaging');
     await getMessaging(getAdminApp()).send({
       topic: 'officials_urgent_alerts',
       notification: {
