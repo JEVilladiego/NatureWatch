@@ -29,7 +29,7 @@ interface NavbarProps {
 }
 
 const FOCUS_RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tagapo-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
 
 /** Desktop underline text tab. */
 const NavTab: React.FC<{ active: boolean; onClick: () => void; label: string }> = ({
@@ -41,14 +41,14 @@ const NavTab: React.FC<{ active: boolean; onClick: () => void; label: string }> 
     type="button"
     onClick={onClick}
     aria-current={active ? 'page' : undefined}
-    className={`relative h-full px-3 flex items-center text-sm font-medium transition-colors cursor-pointer rounded-md ${FOCUS_RING} ${
-      active ? 'text-stone-900' : 'text-stone-500 hover:text-stone-900'
+    className={`relative h-full px-3 flex items-center font-display text-sm font-bold tracking-wide uppercase transition-colors cursor-pointer rounded-md ${FOCUS_RING} ${
+      active ? 'text-stone-950' : 'text-stone-500 hover:text-stone-900'
     }`}
   >
     <span>{label}</span>
     <span
       aria-hidden="true"
-      className={`absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-emerald-700 origin-center transition-transform duration-200 ease-out ${
+      className={`absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-tagapo-900 origin-center transition-transform duration-200 ease-out ${
         active ? 'scale-x-100' : 'scale-x-0'
       }`}
     />
@@ -67,15 +67,15 @@ const MobileRow: React.FC<{
     type="button"
     onClick={onClick}
     aria-current={active ? 'page' : undefined}
-    className={`w-full min-h-12 flex items-center gap-3 px-4 text-[15px] rounded-lg transition-colors cursor-pointer ${FOCUS_RING} ${
+    className={`w-full min-h-12 flex items-center gap-3 px-4 font-display text-sm font-bold tracking-wide uppercase rounded-lg transition-colors cursor-pointer ${FOCUS_RING} ${
       active
-        ? 'bg-emerald-50 text-emerald-900 font-semibold'
+        ? 'bg-tagapo-50 text-tagapo-950 font-bold'
         : tone === 'danger'
           ? 'text-stone-700 font-medium hover:bg-rose-50 hover:text-rose-700'
           : 'text-stone-700 font-medium hover:bg-stone-100'
     }`}
   >
-    <span className={active ? 'text-emerald-700' : 'text-stone-400'}>{icon}</span>
+    <span className={active ? 'text-tagapo-800' : 'text-stone-400'}>{icon}</span>
     <span>{label}</span>
   </button>
 );
@@ -196,16 +196,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             className={`flex items-center gap-2.5 select-none cursor-pointer rounded-md ${FOCUS_RING}`}
             title="BantayKalikasan"
           >
-            <span className="w-7 h-7 rounded-lg bg-emerald-800 text-emerald-50 flex items-center justify-center">
+            <span className="w-7 h-7 rounded-lg bg-tagapo-900 text-tagapo-50 flex items-center justify-center">
               <ShieldCheck className="w-4 h-4" strokeWidth={2.2} />
             </span>
-            <span className="font-semibold text-[15px] tracking-tight text-stone-900">
+            <span className="font-display font-extrabold text-[16px] tracking-wide text-stone-950 uppercase">
               BantayKalikasan
             </span>
             {officialUser && (
-              <span className="hidden md:flex items-center gap-2.5 text-sm text-stone-500">
+              <span className="hidden md:flex items-center gap-2.5 text-xs text-stone-500">
                 <span className="h-4 w-px bg-stone-300" aria-hidden="true" />
-                <span className="font-medium">{t.operationsLabel}</span>
+                <span className="font-display font-bold uppercase tracking-wider text-tagapo-900">{t.operationsLabel}</span>
               </span>
             )}
           </button>
@@ -252,7 +252,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     aria-haspopup="menu"
                     className={`flex items-center gap-2 pl-1 pr-1.5 py-1 rounded-full hover:bg-stone-100 transition-colors cursor-pointer select-none ${FOCUS_RING}`}
                   >
-                    <span className="w-7 h-7 rounded-full bg-emerald-800 text-white flex items-center justify-center text-xs font-semibold">
+                    <span className="w-7 h-7 rounded-full bg-tagapo-900 text-white flex items-center justify-center text-xs font-semibold">
                       {username[0].toUpperCase()}
                     </span>
                     <span className="text-sm font-medium max-w-[140px] truncate text-stone-800">

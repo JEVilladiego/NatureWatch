@@ -2,7 +2,34 @@
 
 @theme {
   --font-sans: 'Public Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Barlow Semi Condensed', 'Barlow', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Tagapo Forest Green Palette (Sierra Madre montane evergreen) */
+  --color-tagapo-50: #f2f7f4;
+  --color-tagapo-100: #e1ede6;
+  --color-tagapo-200: #c2dbcd;
+  --color-tagapo-300: #96c2ac;
+  --color-tagapo-400: #68a287;
+  --color-tagapo-500: #468469;
+  --color-tagapo-600: #346852;
+  --color-tagapo-700: #2a5342;
+  --color-tagapo-800: #224336;
+  --color-tagapo-900: #1c382c;
+  --color-tagapo-950: #0e2019;
+
+  /* Laguna Lake Navy Palette (Deep water & official jurisdiction) */
+  --color-navy-50: #f0f5fa;
+  --color-navy-100: #dfeaf4;
+  --color-navy-200: #c4d7e8;
+  --color-navy-300: #9abbd7;
+  --color-navy-400: #689bc2;
+  --color-navy-500: #467fac;
+  --color-navy-600: #33658f;
+  --color-navy-700: #295174;
+  --color-navy-800: #244460;
+  --color-navy-900: #1b3348;
+  --color-navy-950: #0f1e2e;
 }
 
 @layer base {
@@ -11,11 +38,13 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    background-color: #ffffff;
+    color: #1c1917;
   }
 
   ::selection {
-    background-color: #a7f3d0;
-    color: #064e3b;
+    background-color: #c2dbcd;
+    color: #0e2019;
   }
 }
 

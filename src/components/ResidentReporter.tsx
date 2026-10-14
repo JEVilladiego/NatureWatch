@@ -234,17 +234,17 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   // SUCCESS VIEW
   if (submittedReport) {
     return (
-      <div className="max-w-xl mx-auto p-4 sm:p-6 my-4 bg-white rounded-2xl shadow-xl border border-emerald-100">
+      <div className="max-w-2xl mx-auto p-6 sm:p-8 my-6 bg-white rounded-2xl border border-stone-200 shadow-sm">
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto shadow-inner">
+          <div className="w-16 h-16 bg-tagapo-100 text-tagapo-900 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle className="w-10 h-10" />
           </div>
 
-          <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+          <h2 className="font-display font-extrabold text-2xl sm:text-3xl text-stone-900 tracking-tight uppercase">
             {t.successTitle}
           </h2>
 
-          <p className="text-sm text-gray-600 max-w-md mx-auto">
+          <p className="text-sm text-stone-600 max-w-md mx-auto leading-relaxed">
             {t.successSubtitle}
           </p>
 
@@ -256,17 +256,17 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           )}
 
           {/* Reference Code Card */}
-          <div className="bg-emerald-50/80 border-2 border-dashed border-emerald-300 rounded-2xl p-5 my-6">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+          <div className="bg-stone-50 border border-stone-200 rounded-xl p-6 my-6 text-center">
+            <span className="font-display text-xs font-bold uppercase tracking-wider text-tagapo-900">
               {t.referenceCodeLabel}
             </span>
-            <div className="text-3xl font-mono font-black text-emerald-950 mt-1 tracking-wider">
+            <div className="text-3xl sm:text-4xl font-mono font-bold text-stone-950 mt-1.5 tracking-widest">
               {submittedReport.referenceCode}
             </div>
 
             <button
               onClick={handleCopyCode}
-              className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs rounded-xl shadow transition"
+              className="mt-3.5 inline-flex items-center gap-1.5 px-4 py-2 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 text-white font-display font-bold text-xs uppercase tracking-wide rounded-lg shadow-xs hover:shadow transition cursor-pointer"
             >
               <Copy className="w-3.5 h-3.5" />
               <span>{copied ? t.copied : t.copyCode}</span>
@@ -277,7 +277,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button
               onClick={() => onViewStatus(submittedReport.referenceCode)}
-              className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm transition"
+              className="flex-1 py-3 px-4 bg-tagapo-900 hover:bg-tagapo-800 text-white font-display font-bold uppercase tracking-wider rounded-xl text-sm flex items-center justify-center gap-2 shadow-xs transition cursor-pointer"
             >
               <FileText className="w-4 h-4" />
               <span>{t.trackStatusBtn}</span>
@@ -285,15 +285,15 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
 
             <button
               onClick={resetForm}
-              className="py-3 px-4 border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-xl text-sm transition"
+              className="py-3 px-4 border border-stone-300 hover:bg-stone-50 text-stone-700 font-display font-bold uppercase tracking-wider rounded-xl text-sm transition cursor-pointer"
             >
               {t.reportAnotherBtn}
             </button>
           </div>
 
           {/* Privacy footer */}
-          <div className="pt-4 border-t border-gray-100 text-[11px] text-gray-400 flex items-center justify-center gap-1">
-            <Shield className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="pt-4 border-t border-stone-100 text-[11px] text-stone-400 flex items-center justify-center gap-1">
+            <Shield className="w-3.5 h-3.5 text-tagapo-800" />
             <span>{t.retentionNote}</span>
           </div>
         </div>
@@ -302,26 +302,35 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   }
 
   return (
-    <div className="max-w-xl mx-auto p-4 sm:p-6 bg-white rounded-2xl shadow-xl border border-emerald-50">
-      {/* Title & Anonymity Banner */}
-      <div className="mb-6">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full mb-2">
-          <Shield className="w-3.5 h-3.5" />
-          <span>{t.anonymousNotice}</span>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6">
+      {/* Title & Tactical Status Header */}
+      <div className="pb-6 border-b border-stone-200">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div>
+            <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-stone-950 tracking-tight uppercase leading-none">
+              {t.appTitle}
+            </h1>
+            <p className="text-sm text-stone-600 mt-2 max-w-xl leading-relaxed">
+              {t.tagline}
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 border border-stone-200 text-stone-700 text-xs font-semibold rounded-md shrink-0">
+            <Shield className="w-3.5 h-3.5 text-tagapo-800 shrink-0" />
+            <span>{t.anonymousNotice}</span>
+          </div>
         </div>
-        <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-          {t.appTitle}
-        </h1>
-        <p className="text-xs text-gray-600 mt-0.5">{t.tagline}</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="py-6 space-y-8">
         {/* Step 1: Photo Capture */}
-        <div className="space-y-2">
-          <label className="block text-sm font-bold text-gray-800">
-            1. {t.photoCaptureTitle}
-          </label>
-          <p className="text-xs text-gray-500">{t.photoCaptureHint}</p>
+        <div className="space-y-3">
+          <div className="flex items-baseline justify-between border-b border-stone-100 pb-2">
+            <h2 className="font-display font-bold text-base sm:text-lg text-stone-900 tracking-wide uppercase flex items-center gap-2">
+              <span className="w-5 h-5 rounded bg-tagapo-900 text-white text-xs font-bold flex items-center justify-center font-mono">1</span>
+              <span>{t.photoCaptureTitle}</span>
+            </h2>
+            <span className="text-xs text-stone-400 font-medium">{t.photoCaptureHint}</span>
+          </div>
 
           {/* Hidden inputs */}
           <input
@@ -341,34 +350,52 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           />
 
           {!compressionInfo ? (
-            <div className="grid grid-cols-2 gap-3 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
               <button
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
-                className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-emerald-400 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-800 rounded-xl transition cursor-pointer"
+                className="group flex items-center gap-4 p-4 sm:p-5 bg-white border border-stone-200 hover:border-tagapo-800/50 rounded-xl shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-xs transition-all duration-150 cursor-pointer text-left"
               >
-                <Camera className="w-7 h-7 text-emerald-600 mb-1" />
-                <span className="text-xs font-bold">{t.cameraBtn}</span>
+                <div className="w-12 h-12 rounded-xl bg-tagapo-50 group-hover:bg-tagapo-100 text-tagapo-900 flex items-center justify-center shrink-0 transition-colors">
+                  <Camera className="w-6 h-6 text-tagapo-800" strokeWidth={2.2} />
+                </div>
+                <div>
+                  <div className="font-display font-bold text-sm sm:text-base text-stone-900 tracking-wide uppercase">
+                    {t.cameraBtn}
+                  </div>
+                  <div className="text-xs text-stone-500 mt-0.5">
+                    {lang === 'fil' ? 'Kumuha ng litrato gamit ang kamera' : 'Capture photo directly from camera'}
+                  </div>
+                </div>
               </button>
 
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 bg-gray-50/50 hover:bg-gray-50 text-gray-700 rounded-xl transition cursor-pointer"
+                className="group flex items-center gap-4 p-4 sm:p-5 bg-white border border-stone-200 hover:border-navy-800/50 rounded-xl shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-xs transition-all duration-150 cursor-pointer text-left"
               >
-                <Upload className="w-7 h-7 text-gray-500 mb-1" />
-                <span className="text-xs font-bold">{t.galleryBtn}</span>
+                <div className="w-12 h-12 rounded-xl bg-navy-50 group-hover:bg-navy-100 text-navy-900 flex items-center justify-center shrink-0 transition-colors">
+                  <Upload className="w-6 h-6 text-navy-800" strokeWidth={2.2} />
+                </div>
+                <div>
+                  <div className="font-display font-bold text-sm sm:text-base text-stone-900 tracking-wide uppercase">
+                    {t.galleryBtn}
+                  </div>
+                  <div className="text-xs text-stone-500 mt-0.5">
+                    {lang === 'fil' ? 'Mag-upload mula sa album / storage' : 'Upload photo from file gallery'}
+                  </div>
+                </div>
               </button>
             </div>
           ) : (
-            <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-black/5">
+            <div className="relative rounded-xl overflow-hidden border border-stone-200 bg-stone-900 shadow-sm">
               <img
                 src={compressionInfo.previewUrl}
                 alt="Incident capture"
-                className="w-full h-52 object-cover"
+                className="w-full h-64 sm:h-72 object-cover"
               />
-              <div className="absolute bottom-2 left-2 right-2 bg-black/75 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg flex items-center justify-between text-xs">
-                <span>
+              <div className="absolute bottom-3 left-3 right-3 bg-stone-950/85 backdrop-blur-md text-white px-4 py-2.5 rounded-lg flex items-center justify-between text-xs border border-white/10">
+                <span className="font-mono text-stone-300">
                   {t.compressedTo}: {(compressionInfo.compressedSize / 1024).toFixed(0)} KB
                 </span>
                 <button
@@ -377,7 +404,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                     setSelectedFile(null);
                     setCompressionInfo(null);
                   }}
-                  className="text-rose-300 hover:text-rose-100 font-bold underline"
+                  className="text-stone-300 hover:text-white font-display font-bold uppercase tracking-wider text-xs underline cursor-pointer"
                 >
                   Change
                 </button>
@@ -386,14 +413,14 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           )}
 
           {isCompressing && (
-            <p className="text-xs text-emerald-600 flex items-center gap-1.5 animate-pulse">
+            <p className="text-xs text-tagapo-800 flex items-center gap-1.5 animate-pulse font-medium">
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
               <span>{t.compressing}</span>
             </p>
           )}
 
           {imageError && (
-            <p role="alert" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2">
+            <p role="alert" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2.5">
               {imageError}
             </p>
           )}
@@ -401,30 +428,31 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
 
         {/* Step 2: Location & Draggable Map */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
-              <span>2. {t.locationTitle}</span>
+          <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+            <h2 className="font-display font-bold text-base sm:text-lg text-stone-900 tracking-wide uppercase flex items-center gap-2">
+              <span className="w-5 h-5 rounded bg-tagapo-900 text-white text-xs font-bold flex items-center justify-center font-mono">2</span>
+              <span>{t.locationTitle}</span>
               {accuracyMeters !== null && (
-                <span className="text-xs font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full border border-emerald-300">
+                <span className="ml-1 text-[11px] font-mono font-semibold px-2 py-0.5 bg-tagapo-50 text-tagapo-900 rounded border border-tagapo-200">
                   {t.gpsAccuracy}: ±{accuracyMeters}m
                 </span>
               )}
-            </label>
+            </h2>
             <button
               type="button"
               onClick={acquireGpsLocation}
               disabled={isLocating}
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer"
+              className="font-display text-xs font-bold uppercase tracking-wider text-tagapo-900 hover:text-tagapo-700 flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded bg-stone-100 hover:bg-stone-200 transition"
             >
-              <RefreshCw className={`w-3 h-3 ${isLocating ? 'animate-spin' : ''}`} />
-              <span>GPS</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
+              <span>GPS Sync</span>
             </button>
           </div>
 
           {/* Municipality & Barangay manual selector */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">
+              <label className="block font-display text-xs font-bold uppercase tracking-wide text-stone-600 mb-1">
                 {t.manualMunicipalityLabel}
               </label>
               <select
@@ -438,7 +466,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                     setLocationSource('manual_pin');
                   }
                 }}
-                className="w-full text-xs font-medium px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl focus:ring-2 focus:ring-tagapo-800 focus:border-tagapo-800 focus:outline-none transition shadow-2xs"
               >
                 <option value="">{t.selectMunicipality}</option>
                 {RIZAL_MUNICIPALITIES.map((mun) => (
@@ -450,14 +478,14 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">
+              <label className="block font-display text-xs font-bold uppercase tracking-wide text-stone-600 mb-1">
                 {t.manualBarangayLabel}
               </label>
               <select
                 value={selectedBarangay}
                 onChange={(e) => setSelectedBarangay(e.target.value)}
                 disabled={!selectedMunicipality}
-                className="w-full text-xs font-medium px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-100 disabled:text-gray-400"
+                className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl focus:ring-2 focus:ring-tagapo-800 focus:border-tagapo-800 focus:outline-none disabled:bg-stone-100 disabled:text-stone-400 transition shadow-2xs"
               >
                 <option value="">
                   {selectedMunicipality ? t.selectBarangayActive : t.selectBarangay}
@@ -483,15 +511,18 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           </div>
 
           {/* Map guidance and coordinates display */}
-          <div className="flex items-center justify-between text-xs text-gray-500 pt-0.5">
-            <span>{t.dragPinHint}</span>
-            <span className="text-xs text-stone-400 font-mono">
+          <div className="flex items-center justify-between text-xs text-stone-500 pt-1">
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 text-tagapo-800" />
+              {t.dragPinHint}
+            </span>
+            <span className="text-xs text-stone-600 font-mono bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
               {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
             </span>
           </div>
 
-          {/* Leaflet Picker Map with isolated stacking context */}
-          <div className="relative isolate z-0 rounded-xl overflow-hidden border border-gray-300 shadow-xs">
+          {/* Leaflet Picker Map */}
+          <div className="relative isolate z-0 rounded-xl overflow-hidden border border-stone-300 shadow-sm">
             <LeafletMap
               mode="picker"
               center={coordinates}
@@ -501,11 +532,11 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 setCoordinates({ lat, lng });
                 setLocationSource('manual_pin');
               }}
-              className="h-56 w-full"
+              className="h-64 sm:h-72 w-full"
             />
             {isLocating && (
-              <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center text-xs font-bold text-emerald-800 gap-2 z-10">
-                <RefreshCw className="w-4 h-4 animate-spin" />
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center text-xs font-display font-bold uppercase tracking-wider text-tagapo-950 gap-2 z-10">
+                <RefreshCw className="w-4 h-4 animate-spin text-tagapo-800" />
                 <span>{t.locating}</span>
               </div>
             )}
@@ -513,14 +544,15 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         </div>
 
         {/* Step 3: Description */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-bold text-gray-800">
-              3. {t.descriptionTitle}
-            </label>
+        <div className="space-y-3">
+          <div className="flex items-baseline justify-between border-b border-stone-100 pb-2">
+            <h2 className="font-display font-bold text-base sm:text-lg text-stone-900 tracking-wide uppercase flex items-center gap-2">
+              <span className="w-5 h-5 rounded bg-tagapo-900 text-white text-xs font-bold flex items-center justify-center font-mono">3</span>
+              <span>{t.descriptionTitle}</span>
+            </h2>
             <span
-              className={`text-xs ${
-                description.length > 450 ? 'text-amber-600 font-bold' : 'text-gray-400'
+              className={`text-xs font-mono ${
+                description.length > 450 ? 'text-amber-700 font-bold' : 'text-stone-400'
               }`}
             >
               {500 - description.length} {t.charsRemaining}
@@ -533,21 +565,21 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             rows={3}
             required
             placeholder={t.descriptionPlaceholder}
-            className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
+            className="w-full px-4 py-3 text-sm bg-white border border-stone-300 rounded-xl focus:ring-2 focus:ring-tagapo-800 focus:border-tagapo-800 focus:outline-none transition shadow-2xs placeholder:text-stone-400"
           />
 
-          <p className="text-[11px] text-gray-500 italic flex items-center gap-1">
-            <Info className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <p className="text-[11px] text-stone-500 italic flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-tagapo-800 shrink-0" />
             <span>{t.untrustedInputNotice}</span>
           </p>
         </div>
 
         {/* Step 4: Optional Category Hint */}
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-gray-700">
+        <div className="space-y-2">
+          <label className="block font-display text-xs font-bold uppercase tracking-wide text-stone-600">
             {t.categoryHintLabel}
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
             {(Object.keys(CATEGORIES) as IncidentCategory[])
               .filter((cat) => cat !== 'not_environmental')
               .map((catKey) => {
@@ -558,10 +590,10 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                     key={catKey}
                     type="button"
                     onClick={() => setCategoryHint(isSelected ? '' : catKey)}
-                    className={`p-2 text-left rounded-lg text-xs font-semibold transition border ${
+                    className={`p-2.5 text-left rounded-lg text-xs font-semibold transition border cursor-pointer ${
                       isSelected
-                        ? 'bg-emerald-800 text-white border-emerald-900 shadow-xs'
-                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                        ? 'bg-tagapo-900 text-white border-tagapo-950 shadow-xs'
+                        : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50 hover:border-stone-300'
                     }`}
                   >
                     <div className="truncate">
@@ -574,13 +606,16 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         </div>
 
         {/* Privacy Act Compliance Notice */}
-        <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/80 text-[11px] text-emerald-900 leading-relaxed">
-          <span className="font-bold">RA 10173 Compliance: </span>
-          {t.privacyNotice}
+        <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 text-xs text-stone-700 leading-relaxed flex items-start gap-3">
+          <Shield className="w-4 h-4 text-tagapo-800 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-display font-bold uppercase tracking-wider text-stone-900">RA 10173 Compliance: </span>
+            {t.privacyNotice}
+          </div>
         </div>
 
         {submitError && (
-          <p role="alert" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2.5">
+          <p role="alert" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-3">
             {submitError}
           </p>
         )}
@@ -589,7 +624,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         <button
           type="submit"
           disabled={isSubmitting || isCompressing || !description.trim()}
-          className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white font-extrabold text-sm sm:text-base rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full py-4 px-6 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 disabled:bg-stone-200 disabled:text-stone-400 text-white font-display font-bold tracking-wider uppercase text-base rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           {isSubmitting ? (
             <>

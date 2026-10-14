@@ -44,9 +44,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       zoomControl: true,
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Rizal PG-ENRO',
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank" rel="noopener noreferrer">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank" rel="noopener noreferrer">OpenStreetMap France</a> | PG-ENRO Rizal',
       maxZoom: 19,
     }).addTo(map);
 
@@ -72,39 +72,40 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     const map = mapInstanceRef.current;
 
-    // Draggable Pin Icon
+    // Tactical Field Pin Icon
     const pinIcon = L.divIcon({
       className: 'custom-picker-pin',
       html: `
         <div style="
           position: relative;
-          width: 36px;
-          height: 36px;
+          width: 38px;
+          height: 38px;
           display: flex;
           align-items: center;
           justify-content: center;
         ">
           <div style="
-            width: 24px;
-            height: 24px;
-            background: #047857;
-            border: 3px solid white;
+            width: 26px;
+            height: 26px;
+            background: #1c382c;
+            border: 2.5px solid #ffffff;
             border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+            box-shadow: 0 4px 12px rgba(14, 32, 25, 0.45);
           "></div>
           <div style="
             position: absolute;
             width: 8px;
             height: 8px;
             background: #facc15;
+            border: 1.5px solid #0e2019;
             border-radius: 50%;
             top: 10px;
           "></div>
         </div>
       `,
-      iconSize: [36, 36],
-      iconAnchor: [18, 36],
+      iconSize: [38, 38],
+      iconAnchor: [19, 38],
     });
 
     if (!pickerMarkerRef.current) {
@@ -125,15 +126,16 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       pickerMarkerRef.current.setLatLng([center.lat, center.lng]);
     }
 
-    // Accuracy Circle
+    // Accuracy Circle with subtle tactical dashed boundary
     if (accuracyMeters && accuracyMeters > 0) {
       if (!accuracyCircleRef.current) {
         accuracyCircleRef.current = L.circle([center.lat, center.lng], {
           radius: Math.min(accuracyMeters, 500),
-          color: '#10b981',
-          fillColor: '#34d399',
-          fillOpacity: 0.15,
+          color: '#1c382c',
+          fillColor: '#2a5342',
+          fillOpacity: 0.12,
           weight: 1.5,
+          dashArray: '3, 4',
         }).addTo(map);
       } else {
         accuracyCircleRef.current.setLatLng([center.lat, center.lng]);
@@ -168,11 +170,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       const clusterCount = report.duplicateClusterId ? clusterCounts.get(report.duplicateClusterId) || 1 : 1;
 
       // Color mapping
-      let color = '#3b82f6'; // 2: Blue
-      if (activeSeverity === 1) color = '#10b981'; // 1: Green
-      if (activeSeverity === 3) color = '#eab308'; // 3: Yellow
-      if (activeSeverity === 4) color = '#f97316'; // 4: Orange
-      if (activeSeverity === 5) color = '#ef4444'; // 5: Red
+      let color = '#244460'; // 2: Laguna Lake Navy
+      if (activeSeverity === 1) color = '#2a5342'; // 1: Tagapo Forest Green
+      if (activeSeverity === 3) color = '#d97706'; // 3: Amber
+      if (activeSeverity === 4) color = '#ea580c'; // 4: Tactical Orange
+      if (activeSeverity === 5) color = '#dc2626'; // 5: Critical Crimson
 
       const iconHtml = `
         <div style="

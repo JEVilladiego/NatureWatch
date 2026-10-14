@@ -61,8 +61,8 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-gray-900">PG-ENRO / MENRO Login</h2>
-            <p className="text-xs text-gray-500">Provincial Government of Rizal</p>
+            <h2 className="font-display font-extrabold text-xl text-stone-900 tracking-tight uppercase">PG-ENRO / MENRO Login</h2>
+            <p className="text-xs text-stone-500">Provincial Government of Rizal</p>
           </div>
         </div>
 
@@ -75,7 +75,7 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
 
         <form onSubmit={handleSignIn} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">
+            <label className="block font-display text-xs font-bold uppercase tracking-wide text-stone-700 mb-1">
               Official Email
             </label>
             <div className="relative">
@@ -85,14 +85,14 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="officer@rizal.gov.ph"
                 required
-                className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full pl-9 pr-3 py-2.5 text-sm bg-white border border-stone-300 rounded-xl focus:ring-2 focus:ring-tagapo-800 focus:border-tagapo-800 focus:outline-none"
               />
-              <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+              <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">
+            <label className="block font-display text-xs font-bold uppercase tracking-wide text-stone-700 mb-1">
               Password
             </label>
             <div className="relative">
@@ -102,16 +102,16 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full pl-9 pr-3 py-2.5 text-sm bg-white border border-stone-300 rounded-xl focus:ring-2 focus:ring-tagapo-800 focus:border-tagapo-800 focus:outline-none"
               />
-              <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+              <Lock className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
             </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition shadow"
+            className="w-full py-3 bg-tagapo-900 hover:bg-tagapo-800 text-white font-display font-bold uppercase tracking-wider text-xs rounded-xl transition shadow-xs cursor-pointer"
           >
             {loading ? 'Authenticating...' : 'Sign In with Firebase Auth'}
           </button>

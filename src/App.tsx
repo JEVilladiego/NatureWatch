@@ -56,6 +56,13 @@ export default function App() {
     };
   }, []);
 
+  // Prevent authenticated officers from accessing citizen reporting form
+  useEffect(() => {
+    if (officialUser && currentTab === 'report') {
+      setCurrentTab('dashboard');
+    }
+  }, [officialUser, currentTab]);
+
   const handleViewStatus = (referenceCode: string) => {
     setStatusLookupCode(referenceCode);
     setCurrentTab('status');
@@ -70,7 +77,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-100 flex flex-col font-sans text-gray-900 selection:bg-emerald-200">
+    <div className="min-h-screen bg-white flex flex-col font-sans text-stone-900">
       {/* Navigation */}
       <Navbar
         currentTab={currentTab}
@@ -85,7 +92,7 @@ export default function App() {
       />
 
       {/* Main Content View */}
-      <main className="flex-1 py-4 sm:py-6">
+      <main className="flex-1 py-4 sm:py-8">
         {currentTab === 'report' && (
           <ResidentReporter
             lang={lang}
@@ -98,6 +105,7 @@ export default function App() {
           <PublicStatusPage
             initialCode={statusLookupCode}
             lang={lang}
+            isOfficial={!!officialUser}
             onBackToReport={() => setCurrentTab('report')}
           />
         )}
@@ -112,15 +120,15 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-emerald-950 text-emerald-200 py-6 border-t border-emerald-900 text-xs">
+      <footer className="bg-tagapo-950 text-tagapo-200 py-8 border-t border-tagapo-900 text-xs">
         <div className="max-w-7xl mx-auto px-4 text-center space-y-2">
-          <p className="font-semibold text-white">
+          <p className="font-display font-bold tracking-wide uppercase text-white text-sm">
             BantayKalikasan • Provincial Government of Rizal Environment and Natural Resources Office (PG-ENRO)
           </p>
-          <p className="text-emerald-400 text-[11px]">
+          <p className="text-tagapo-300 text-[11px] tracking-wide">
             Pamahalaang Lalawigan ng Rizal • Republic of the Philippines
           </p>
-          <div className="pt-2 text-xs text-emerald-500 border-t border-emerald-900/60 max-w-xl mx-auto">
+          <div className="pt-3 text-[11px] text-tagapo-400 border-t border-tagapo-900/70 max-w-xl mx-auto">
             Protektado sa ilalim ng Republic Act No. 10173 (Data Privacy Act of 2012). Walang personal na datos ng mamamayan ang kinokolekta.
           </div>
         </div>
