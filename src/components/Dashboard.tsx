@@ -23,6 +23,10 @@ import {
   Layout,
   Maximize2,
   Crosshair,
+  CloudRain,
+  Thermometer,
+  Wind,
+  Droplets,
 } from 'lucide-react';
 import {
   IncidentReport,
@@ -32,6 +36,8 @@ import {
   ReportStatus,
   RIZAL_MUNICIPALITIES,
   MUNICIPALITY_COORDINATES,
+  WeatherContext,
+  ProtectedZoneHit,
 } from '../types/report';
 import { LeafletMap, MapLayerMode } from './LeafletMap';
 import { resolveReportCoordinates } from '../lib/barangayCoordinates';
@@ -149,6 +155,84 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
     return counts;
   }, [reports]);
+
+  // Open-Meteo telemetry widget for active report
+  const renderWeatherWidget = (weather?: WeatherContext | null) => {
+    if (!weather) return null;
+    return (
+      <div className="pt-2.5 mt-2 border-t border-tagapo-100">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="font-display text-[10px] font-bold uppercase tracking-wider text-tagapo-900 flex items-center gap-1">
+            <Wind className="w-3 h-3 text-tagapo-700" />
+            {t.weatherTelemetryTitle}
+          </span>
+          <span className="text-[10px] text-stone-400 font-mono">
+            {new Date(weather.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+          <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-tagapo-50/70 border border-tagapo-200/50">
+            <Thermometer className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[10px] text-stone-500 block leading-none">{t.weatherTemp}</span>
+              <span className="font-mono font-bold text-stone-900">{weather.temperature}°C</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-tagapo-50/70 border border-tagapo-200/50">
+            <Wind className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[10px] text-stone-500 block leading-none">{t.weatherWind}</span>
+              <span className="font-mono font-bold text-stone-900 truncate">
+                {weather.windSpeed} km/h
+                {weather.windGusts ? <span className="text-[9px] text-stone-500 font-normal"> ({weather.windGusts} {t.weatherGusts})</span> : null}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-tagapo-50/70 border border-tagapo-200/50">
+            <Droplets className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[10px] text-stone-500 block leading-none">{t.weatherHumidity}</span>
+              <span className="font-mono font-bold text-stone-900">{weather.humidity}%</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-tagapo-50/70 border border-tagapo-200/50">
+            <CloudRain className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[10px] text-stone-500 block leading-none">{t.weatherPrecipitation}</span>
+              <span className="font-mono font-bold text-stone-900">{weather.precipitation} mm</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Protected Ecological Zone alert banner
+  const renderProtectedZoneBadge = (zone?: ProtectedZoneHit | null) => {
+    if (!zone) return null;
+    return (
+      <div className="p-3 bg-emerald-950 text-emerald-100 rounded-xl border border-emerald-500/40 shadow-xs space-y-1 my-2">
+        <div className="flex items-center gap-1.5">
+          <ShieldAlert className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="font-display text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+            {t.protectedZoneAlertTitle}
+          </span>
+          <span className="ml-auto text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-900 text-emerald-200 border border-emerald-700/60 uppercase">
+            {zone.type.replace(/_/g, ' ')}
+          </span>
+        </div>
+        <div className="text-xs font-bold text-white leading-tight">
+          {zone.name}
+        </div>
+        <div className="text-[11px] text-emerald-200/90 leading-relaxed font-sans">
+          {zone.legalNote}
+        </div>
+      </div>
+    );
+  };
 
   const handleQuickJump = (munKey: string) => {
     if (munKey === 'all') {
@@ -769,40 +853,44 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span className="hidden sm:inline">Full Map</span>
                 </button>
 
-                {/* Bottom-left In-Map HUD: Tactical Layer Controller */}
+                {/* Bottom-left In-Map HUD: Tactical Mutually Exclusive Layer Controller */}
                 <div className="absolute bottom-6 left-2.5 z-20 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 flex items-center gap-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-stone-700">
                   <button
                     type="button"
-                    onClick={() => setMapLayerMode('standard')}
-                    className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
-                      mapLayerMode === 'standard' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
-                    }`}
-                    title="Standard point/cluster map"
-                  >
-                    <Layers className="w-3 h-3" />
-                    <span>Pins</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMapLayerMode('boundaries')}
+                    onClick={() => setMapLayerMode(mapLayerMode === 'boundaries' ? 'standard' : 'boundaries')}
                     className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
                       mapLayerMode === 'boundaries' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                     }`}
-                    title="Municipal vector boundaries & active focus"
+                    title="Municipal vector boundaries across all 14 LGUs"
                   >
                     <Layers className="w-3.5 h-3.5" />
                     <span>Boundaries</span>
                   </button>
+
                   <button
                     type="button"
-                    onClick={() => setMapLayerMode('choropleth')}
+                    onClick={() => setMapLayerMode(mapLayerMode === 'choropleth' ? 'standard' : 'choropleth')}
                     className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
                       mapLayerMode === 'choropleth' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                     }`}
                     title="Thematic incident density volume"
                   >
                     <BarChart3 className="w-3.5 h-3.5" />
-                    <span>Density Choropleth</span>
+                    <span>Choropleth</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMapLayerMode(mapLayerMode === 'protected_zones' ? 'standard' : 'protected_zones')}
+                    className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
+                      mapLayerMode === 'protected_zones'
+                        ? 'bg-emerald-800 text-white shadow-xs'
+                        : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                    }`}
+                    title="Curated ecological reserves, lake easement, & watersheds"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>{t.protectedZonesToggle}</span>
                   </button>
 
                   <div className="h-4 w-px bg-stone-200/80 mx-0.5" />
@@ -812,35 +900,60 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     onClick={() => setIsMaskActive(!isMaskActive)}
                     className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
                       isMaskActive
-                        ? 'bg-tagapo-800 text-white shadow-xs'
+                        ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-800 text-white shadow-xs' : 'bg-tagapo-800 text-white shadow-xs')
                         : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                     }`}
-                    title={isMaskActive ? "Click to disable non-Rizal dimming mask" : "Click to gray out non-Rizal regions"}
+                    title={
+                      mapLayerMode === 'protected_zones'
+                        ? (isMaskActive ? "Click to disable dimming of surrounding terrain" : "Click to dim surroundings and spotlight protected reserves")
+                        : (isMaskActive ? "Click to disable non-Rizal dimming mask" : "Click to gray out non-Rizal regions")
+                    }
                   >
                     <Crosshair className="w-3.5 h-3.5" />
-                    <span>Focus: Rizal</span>
+                    <span>{mapLayerMode === 'protected_zones' ? 'Dim Outside' : 'Focus: Rizal'}</span>
                   </button>
                 </div>
 
-                {/* Bottom-right In-Map HUD: Tactical Severity Legend */}
-                <div className="absolute bottom-6 right-2.5 z-20 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] font-display font-bold uppercase tracking-wide border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 flex items-center gap-2.5 text-stone-700">
-                  <span className="flex items-center gap-1 text-emerald-800">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    1-2 Minor
-                  </span>
-                  <span className="flex items-center gap-1 text-amber-800">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    3 Mod
-                  </span>
-                  <span className="flex items-center gap-1 text-rose-800">
-                    <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
-                    4-5 Urgent
-                  </span>
-                  <span className="hidden sm:inline-block text-stone-300">|</span>
-                  <span className="hidden sm:inline-block text-stone-500 font-medium normal-case">
-                    num = count
-                  </span>
-                </div>
+                {/* Bottom-right In-Map HUD: Contextual Legend */}
+                {mapLayerMode === 'protected_zones' ? (
+                  <div className="absolute bottom-6 right-2.5 z-20 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-display font-bold uppercase tracking-wide border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 flex items-center gap-2.5 text-stone-700">
+                    <span className="flex items-center gap-1 text-emerald-800">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      Sanctuary
+                    </span>
+                    <span className="flex items-center gap-1 text-sky-800">
+                      <span className="w-2 h-2 rounded-full bg-sky-500" />
+                      Shore Buffer
+                    </span>
+                    <span className="flex items-center gap-1 text-green-900">
+                      <span className="w-2 h-2 rounded-full bg-green-700" />
+                      Watershed
+                    </span>
+                    <span className="flex items-center gap-1 text-amber-800">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      Nat'l Park
+                    </span>
+                  </div>
+                ) : (
+                  <div className="absolute bottom-6 right-2.5 z-20 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] font-display font-bold uppercase tracking-wide border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 flex items-center gap-2.5 text-stone-700">
+                    <span className="flex items-center gap-1 text-emerald-800">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      1-2 Minor
+                    </span>
+                    <span className="flex items-center gap-1 text-amber-800">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      3 Mod
+                    </span>
+                    <span className="flex items-center gap-1 text-rose-800">
+                      <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
+                      4-5 Urgent
+                    </span>
+                    <span className="hidden sm:inline-block text-stone-300">|</span>
+                    <span className="hidden sm:inline-block text-stone-500 font-medium normal-case">
+                      num = count
+                    </span>
+                  </div>
+                )}
 
                 {/* Map Component */}
                 <LeafletMap
@@ -1070,6 +1183,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           </p>
                         </div>
 
+                        {renderProtectedZoneBadge(selectedReport.aiTriage.protectedZone)}
+
                         <div className="pt-2 border-t border-tagapo-100">
                           <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
                             {t.aiReasoning}
@@ -1078,6 +1193,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             {selectedReport.aiTriage.reasoning}
                           </p>
                         </div>
+
+                        {renderWeatherWidget(selectedReport.aiTriage.weather)}
 
                         <div className="text-[11px] text-stone-400 font-mono">
                           Engine: {selectedReport.aiTriage.model}
@@ -1384,7 +1501,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               />
 
               {/* Bottom-Left Tucked Legend Card */}
-              <div className="absolute bottom-4 left-4 z-20 pointer-events-auto bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-md rounded-xl p-2.5 space-y-2 max-w-[270px]">
+              <div className="absolute bottom-4 left-4 z-20 pointer-events-auto bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-md rounded-xl p-2.5 space-y-2 max-w-[280px]">
                 <div className="flex items-center justify-between gap-2 pb-1 border-b border-stone-100">
                   <span className="font-display font-bold text-[10px] uppercase tracking-wider text-stone-500">
                     Map Layers
@@ -1399,65 +1516,73 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </button>
                 </div>
 
-                {/* Layer Mode Switcher Tabs */}
+                {/* Layer Mode Switcher Tabs (Mutually Exclusive) */}
                 <div className="grid grid-cols-3 gap-1 bg-stone-100/90 p-0.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider">
                   <button
                     type="button"
-                    onClick={() => setMapLayerMode('standard')}
-                    className={`py-1 px-1.5 rounded-md text-center transition cursor-pointer ${
-                      mapLayerMode === 'standard' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                    }`}
-                    title="Pins mode"
-                  >
-                    Pins
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => setMapLayerMode('boundaries')}
-                    className={`py-1 px-1.5 rounded-md text-center transition cursor-pointer ${
-                      mapLayerMode === 'boundaries' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                    className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
+                      mapLayerMode === 'boundaries' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
                     }`}
-                    title="Boundaries mode"
+                    title="Municipal vector boundaries across all 14 LGUs"
                   >
                     Boundaries
                   </button>
                   <button
                     type="button"
                     onClick={() => setMapLayerMode('choropleth')}
-                    className={`py-1 px-1.5 rounded-md text-center transition cursor-pointer ${
-                      mapLayerMode === 'choropleth' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                    className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
+                      mapLayerMode === 'choropleth' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
                     }`}
-                    title="Density Choropleth mode"
+                    title="Incident density volume"
                   >
                     Choropleth
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setMapLayerMode('protected_zones')}
+                    className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
+                      mapLayerMode === 'protected_zones' ? 'bg-emerald-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                    title="Curated protected ecological reserves & buffers"
+                  >
+                    Protected
+                  </button>
                 </div>
 
-                {/* Jurisdiction Focus (Mask Non-Rizal) Toggle */}
+                {/* Jurisdiction Focus (Mask Non-Rizal) / Dimming Toggle */}
                 <button
                   type="button"
                   onClick={() => setIsMaskActive(!isMaskActive)}
                   className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider flex items-center justify-between transition cursor-pointer border ${
                     isMaskActive
-                      ? 'bg-tagapo-50 text-tagapo-950 border-tagapo-300'
+                      ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-950/20 text-emerald-950 border-emerald-300' : 'bg-tagapo-50 text-tagapo-950 border-tagapo-300')
                       : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
                   }`}
-                  title={isMaskActive ? "Click to disable non-Rizal dimming mask" : "Click to gray out non-Rizal regions"}
+                  title={
+                    mapLayerMode === 'protected_zones'
+                      ? (isMaskActive ? "Click to disable dimming of surrounding terrain" : "Click to dim surroundings and spotlight protected reserves")
+                      : (isMaskActive ? "Click to disable non-Rizal dimming mask" : "Click to gray out non-Rizal regions")
+                  }
                 >
                   <span className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${isMaskActive ? 'bg-tagapo-700 animate-pulse' : 'bg-stone-400'}`} />
-                    <span>Focus: Rizal Only</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isMaskActive ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-600 animate-pulse' : 'bg-tagapo-700 animate-pulse') : 'bg-stone-400'}`} />
+                    <span>{mapLayerMode === 'protected_zones' ? 'Dim Outside Reserves' : 'Focus: Rizal Only'}</span>
                   </span>
-                  <span className={`text-[9px] font-mono px-1 py-0.2 rounded font-bold ${isMaskActive ? 'bg-tagapo-200/80 text-tagapo-900' : 'bg-stone-100 text-stone-500'}`}>
+                  <span className={`text-[9px] font-mono px-1 py-0.2 rounded font-bold ${
+                    isMaskActive
+                      ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-200/90 text-emerald-950' : 'bg-tagapo-200/80 text-tagapo-900')
+                      : 'bg-stone-100 text-stone-500'
+                  }`}>
                     {isMaskActive ? 'ON' : 'OFF'}
                   </span>
                 </button>
 
-                {/* Legend Scale */}
+                {/* Contextual Sub-Legend depending on active layer */}
                 {isLegendExpanded && (
-                  <div className="pt-1 space-y-1.5 text-[10px]">
-                    {mapLayerMode === 'choropleth' ? (
-                      <div>
+                  <div className="pt-1 text-[10px]">
+                    {mapLayerMode === 'choropleth' && (
+                      <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-stone-500 font-mono mb-1 text-[9px]">
                           <span>0</span>
                           <span>1 (20%)</span>
@@ -1477,20 +1602,63 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           Incident Density Scale (20% – 100% Opacity)
                         </div>
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-between gap-1 text-stone-700 font-display font-bold uppercase tracking-wider">
-                        <span className="flex items-center gap-1 text-emerald-800">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                          1-2 Minor
-                        </span>
-                        <span className="flex items-center gap-1 text-amber-800">
-                          <span className="w-2 h-2 rounded-full bg-amber-500" />
-                          3 Mod
-                        </span>
-                        <span className="flex items-center gap-1 text-rose-800">
-                          <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
-                          4-5 Urgent
-                        </span>
+                    )}
+
+                    {mapLayerMode === 'protected_zones' && (
+                      <div className="p-2 rounded-lg bg-emerald-50/70 border border-emerald-200/60 space-y-1.5">
+                        <div className="font-display text-[9px] font-bold uppercase tracking-wider text-emerald-950 flex items-center gap-1">
+                          <ShieldAlert className="w-3 h-3 text-emerald-700" />
+                          <span>Protected Reserves</span>
+                        </div>
+                        <div className="space-y-1 text-[10px]">
+                          <div className="flex items-center gap-1.5 text-stone-700">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                            <span className="font-semibold text-emerald-950">Mt. Tagapo Sanctuary</span>
+                            <span className="text-[9px] text-stone-400 ml-auto">Talim Is.</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-stone-700">
+                            <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
+                            <span className="font-semibold text-sky-950">Laguna Lake 50m Buffer</span>
+                            <span className="text-[9px] text-stone-400 ml-auto">Coast</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-stone-700">
+                            <span className="w-2 h-2 rounded-full bg-green-700 shrink-0" />
+                            <span className="font-semibold text-green-950">Upper Marikina Watershed</span>
+                            <span className="text-[9px] text-stone-400 ml-auto">Sierra Madre</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-stone-700">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                            <span className="font-semibold text-amber-950">Hinulugang Taktak</span>
+                            <span className="text-[9px] text-stone-400 ml-auto">Antipolo</span>
+                          </div>
+                        </div>
+                        <div className="text-[9px] text-emerald-800/80 font-medium pt-1 border-t border-emerald-200/60 flex items-center gap-1">
+                          <span>✨ Surroundings dimmed to highlight ecological zones</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {(mapLayerMode === 'boundaries' || mapLayerMode === 'standard') && (
+                      <div className="pt-0.5 space-y-1">
+                        <div className="flex items-center justify-between gap-1 text-stone-700 font-display font-bold uppercase tracking-wider">
+                          <span className="flex items-center gap-1 text-emerald-800">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            1-2 Minor
+                          </span>
+                          <span className="flex items-center gap-1 text-amber-800">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            3 Mod
+                          </span>
+                          <span className="flex items-center gap-1 text-rose-800">
+                            <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
+                            4-5 Urgent
+                          </span>
+                        </div>
+                        {mapLayerMode === 'boundaries' && (
+                          <div className="text-[9px] text-stone-400 font-display text-center pt-0.5">
+                            14 LGUs of Rizal • Click to filter
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1648,6 +1816,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               </p>
                             </div>
 
+                            {renderProtectedZoneBadge(selectedReport.aiTriage.protectedZone)}
+
                             <div className="pt-2 border-t border-tagapo-100">
                               <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
                                 {t.aiReasoning}
@@ -1656,6 +1826,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 {selectedReport.aiTriage.reasoning}
                               </p>
                             </div>
+
+                            {renderWeatherWidget(selectedReport.aiTriage.weather)}
 
                             <div className="text-[11px] text-stone-400 font-mono">
                               Engine: {selectedReport.aiTriage.model}

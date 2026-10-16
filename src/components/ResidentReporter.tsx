@@ -32,7 +32,7 @@ import { db } from '../lib/firebase';
 import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { LeafletMap } from './LeafletMap';
 import { getBarangayCoordinates, findNearestBarangay } from '../lib/barangayCoordinates';
-import { isPointInRizal, findMunicipalityByPoint } from '../lib/geojsonService';
+import { isPointInRizal, findMunicipalityByPoint, findProtectedZoneByCoordinates, type ProtectedZoneFeatureProperties } from '../lib/geojsonService';
 import { Language, translations } from '../lib/i18n';
 
 // Default Rizal Province center
@@ -68,6 +68,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isOutOfJurisdiction, setIsOutOfJurisdiction] = useState<boolean>(false);
+  const [detectedProtectedZone, setDetectedProtectedZone] = useState<ProtectedZoneFeatureProperties | null>(null);
 
   // Input states
   const [description, setDescription] = useState<string>('');
@@ -98,6 +99,10 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
       setIsOutOfJurisdiction(!inRizal);
 
       if (inRizal) {
+        findProtectedZoneByCoordinates(lat, lng)
+          .then((zone) => setDetectedProtectedZone(zone))
+          .catch(() => setDetectedProtectedZone(null));
+
         const detectedMun = await findMunicipalityByPoint(lat, lng);
         if (detectedMun) {
           const matchedMun =
@@ -566,6 +571,20 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                       ? 'Ang napiling lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal (PG-ENRO). Pakisuyong ilagay ang pin sa loob ng Rizal.'
                       : 'The selected location is outside the jurisdiction of Rizal Province (PG-ENRO). Please place the pin inside Rizal.'}
                   </p>
+                </div>
+              )}
+
+              {detectedProtectedZone && !isOutOfJurisdiction && (
+                <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200/80 text-emerald-950 text-xs flex items-start gap-2 shadow-xs">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5 min-w-0">
+                    <span className="font-bold text-emerald-900 block leading-tight">
+                      {t.protectedZoneNoticeResident}: {detectedProtectedZone.shortName}
+                    </span>
+                    <p className="text-[11px] text-emerald-800 leading-snug">
+                      {detectedProtectedZone.legalNote}
+                    </p>
+                  </div>
                 </div>
               )}
 

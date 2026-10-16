@@ -1,0 +1,131 @@
+{
+  "type": "FeatureCollection",
+  "name": "Rizal Province Protected Ecological Zones & Conservation Buffers",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "mt-tagapo-sanctuary",
+      "properties": {
+        "id": "mt-tagapo-sanctuary",
+        "name": "Mount Tagapo Ecological Park & Wildlife Sanctuary",
+        "shortName": "Mt. Tagapo Sanctuary",
+        "type": "sanctuary",
+        "severityBonus": 2,
+        "municipality": "Binangonan / Cardona (Talim Island)",
+        "legalNote": "Declared Municipal Ecological Reserve & Wildlife Sanctuary. Tree cutting, open burning (siga), and quarrying carry mandatory statutory penalties.",
+        "strokeColor": "#059669",
+        "fillColor": "#10b981"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [121.2160, 14.3680],
+            [121.2260, 14.3690],
+            [121.2350, 14.3630],
+            [121.2410, 14.3510],
+            [121.2430, 14.3380],
+            [121.2380, 14.3230],
+            [121.2280, 14.3180],
+            [121.2180, 14.3240],
+            [121.2130, 14.3390],
+            [121.2140, 14.3560],
+            [121.2160, 14.3680]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "laguna-lake-easement",
+      "properties": {
+        "id": "laguna-lake-easement",
+        "name": "Laguna de Bay Shoreline Conservation Easement (Binangonan-Cardona Corridor)",
+        "shortName": "Laguna Lake 50m Shore Buffer",
+        "type": "shoreline_easement",
+        "severityBonus": 1,
+        "municipality": "Binangonan, Cardona, Angono",
+        "legalNote": "Statutory 50-meter shoreline protection easement under PD 1067 (Water Code) & LLDA regulations. Solid waste dumping, toxic effluent runoff, and illegal lakeshore reclamation strictly prohibited.",
+        "strokeColor": "#0284c7",
+        "fillColor": "#38bdf8"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [121.1520, 14.5050],
+            [121.1750, 14.5120],
+            [121.1960, 14.4780],
+            [121.2150, 14.4560],
+            [121.2380, 14.4820],
+            [121.2580, 14.4750],
+            [121.2450, 14.4320],
+            [121.2180, 14.4080],
+            [121.1890, 14.4250],
+            [121.1680, 14.4520],
+            [121.1520, 14.5050]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "upper-marikina-watershed",
+      "properties": {
+        "id": "upper-marikina-watershed",
+        "name": "Upper Marikina River Basin Protected Landscape (UMRBPL)",
+        "shortName": "Upper Marikina Protected Watershed",
+        "type": "watershed",
+        "severityBonus": 2,
+        "municipality": "Antipolo, Rodriguez, San Mateo, Tanay, Baras",
+        "legalNote": "Protected Landscape under Presidential Proclamation No. 296 & ENIPAS Act (RA 11038). Upland watershed vital for flood mitigation. Unlawful timber cutting, charcoal making (ulingan), and quarrying strictly prohibited.",
+        "strokeColor": "#15803d",
+        "fillColor": "#22c55e"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [121.1750, 14.6550],
+            [121.2350, 14.7750],
+            [121.3250, 14.8150],
+            [121.3850, 14.7700],
+            [121.4150, 14.6850],
+            [121.3750, 14.5950],
+            [121.3150, 14.5650],
+            [121.2450, 14.5900],
+            [121.1950, 14.6250],
+            [121.1750, 14.6550]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "hinulugang-taktak-park",
+      "properties": {
+        "id": "hinulugang-taktak-park",
+        "name": "Hinulugang Taktak Protected Landscape",
+        "shortName": "Hinulugang Taktak National Park",
+        "type": "national_park",
+        "severityBonus": 1,
+        "municipality": "Antipolo City",
+        "legalNote": "Protected Landscape under Republic Act No. 6964. Historical waterfall riparian basin. Discharge of untreated wastewater and unauthorized structures strictly prohibited.",
+        "strokeColor": "#b45309",
+        "fillColor": "#f59e0b"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [121.1610, 14.5980],
+            [121.1710, 14.5990],
+            [121.1730, 14.5900],
+            [121.1620, 14.5890],
+            [121.1610, 14.5980]
+          ]
+        ]
+      }
+    }
+  ]
+}

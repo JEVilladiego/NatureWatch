@@ -2,6 +2,8 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { z } from 'zod';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getDb, HttpError, sendUrgentAlert } from './admin.js';
+import { fetchWeatherContext, type WeatherSnapshot } from './weather.js';
+import { findProtectedAreaByPoint, type ProtectedAreaHit } from './protectedAreas.js';
 
 const CATEGORIES = [
   'solid_waste',
@@ -33,6 +35,13 @@ RIZAL PROVINCE GEOGRAPHIC CONTEXT:
 - Coastal and island communities along Laguna de Bay (Angono, Binangonan, Cardona, Morong, Baras, Tanay, Pililla, Jalajala, and Talim Island): Heavy plastic waste clogging shores, fish kill risks, toxic chemical runoff into the lake.
 - Densely populated urban centers (Antipolo, Cainta, Taytay, San Mateo): Open burning (siga) of plastics/leaves, commercial solid waste accumulation, and industrial noise pollution.
 
+METEOROLOGICAL CONTEXT EVALUATION:
+When real-time meteorological telemetry is provided:
+- High wind speeds (>20 km/h) or strong gusts exponentially escalate open burning (siga) and brushfire spread risks to adjacent residential structures or forest cover; elevate severity accordingly.
+- Heavy precipitation or rain escalates clogged drainage, flood threats, and chemical/sewage runoff into rivers and Laguna de Bay.
+- Dry, hot, windy conditions exacerbate quarry dust emissions and hillside erosion hazards.
+- Note any critical meteorological factors in your reasoning.
+
 CATEGORIES (Single Source of Truth):
 - solid_waste: Illegal dumping, uncollected trash, trash clogging canals/esteros/rivers or floating on lakeshore.
 - water_pollution: Chemical waste, murky or foul discharge into canals, rivers, or Laguna de Bay, oily runoff.
@@ -62,7 +71,13 @@ const STALE_PROCESSING_MS = 2 * 60 * 1000;
 
 export type TriageOutcome = 'done' | 'failed' | 'processing' | 'skipped';
 
-async function callGemini(description: string, imageDataUrl: string | null, model: string) {
+async function callGemini(
+  description: string,
+  imageDataUrl: string | null,
+  model: string,
+  weather: WeatherSnapshot | null = null,
+  protectedZone: ProtectedAreaHit | null = null,
+) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new HttpError(500, 'GEMINI_API_KEY is not configured.');
   const ai = new GoogleGenAI({ apiKey });
@@ -72,14 +87,41 @@ async function callGemini(description: string, imageDataUrl: string | null, mode
     const match = imageDataUrl.match(/^data:(image\/[\w.+-]+);base64,(.*)$/);
     if (match) contents.push({ inlineData: { mimeType: match[1], data: match[2] } });
   }
-  contents.push({
-    text: `Analyze this environmental incident report for Rizal PG-ENRO / PENRO.
+
+  let promptText = `Analyze this environmental incident report for Rizal PG-ENRO / PENRO.
 <untrusted_resident_description>
 ${description.slice(0, 500) || 'No description provided'}
-</untrusted_resident_description>
+</untrusted_resident_description>`;
 
-Respond ONLY with valid JSON conforming to the requested schema.`,
-  });
+  if (weather) {
+    promptText += `\n
+<realtime_meteorological_context>
+Location Weather Conditions (via Open-Meteo):
+- Temperature: ${weather.temperature}°C
+- Relative Humidity: ${weather.humidity}%
+- Wind Speed: ${weather.windSpeed} km/h${weather.windGusts ? ` (Gusts up to ${weather.windGusts} km/h)` : ''}
+- Precipitation: ${weather.precipitation} mm
+Consider whether these current conditions amplify or mitigate the reported environmental hazard.
+</realtime_meteorological_context>`;
+  }
+
+  if (protectedZone) {
+    promptText += `\n
+<protected_ecological_zone_alert>
+CRITICAL JURISDICTION CONTEXT:
+The reported incident location falls within a declared protected ecological sanctuary or conservation watershed:
+- Area: "${protectedZone.name}" (${protectedZone.municipality})
+- Classification: ${protectedZone.type.toUpperCase()}
+- Legal / Regulatory Framework: ${protectedZone.legalNote}
+SPECIAL MANDATE:
+Environmental violations occurring within this protected zone (illegal tree cutting, slash-and-burn/kaingin, solid waste dumping, quarrying, chemical runoff) carry elevated statutory penalties.
+Elevate severity by +${protectedZone.severityBonus} level(s) (capped at 5). Explicitly mention the protected zone violation in your objective summary and internal reasoning.
+</protected_ecological_zone_alert>`;
+  }
+
+  promptText += `\n\nRespond ONLY with valid JSON conforming to the requested schema.`;
+
+  contents.push({ text: promptText });
 
   let lastError: unknown;
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -158,7 +200,25 @@ export async function triageReport(reportId: string, opts: { retryFailed?: boole
       if (imgSnap.exists) imageDataUrl = imgSnap.data()?.data ?? null;
     }
 
-    const result = await callGemini(String(data.rawInput?.description || ''), imageDataUrl, model);
+    let weather: WeatherSnapshot | null = null;
+    let protectedZone: ProtectedAreaHit | null = null;
+    const lat = data.location?.lat;
+    const lng = data.location?.lng;
+    if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+      try {
+        weather = await fetchWeatherContext(lat, lng);
+      } catch (wErr) {
+        console.warn(`[Triage] Weather lookup skipped for ${reportId}:`, (wErr as Error)?.message || wErr);
+      }
+
+      try {
+        protectedZone = findProtectedAreaByPoint(lat, lng);
+      } catch (pErr) {
+        console.warn(`[Triage] Protected area lookup skipped for ${reportId}:`, (pErr as Error)?.message || pErr);
+      }
+    }
+
+    const result = await callGemini(String(data.rawInput?.description || ''), imageDataUrl, model, weather, protectedZone);
 
     await ref.update({
       triageStatus: 'done',
@@ -171,6 +231,8 @@ export async function triageReport(reportId: string, opts: { retryFailed?: boole
         reasoning: result.reasoning,
         model,
         triagedAt: new Date().toISOString(),
+        weather: weather || null,
+        protectedZone: protectedZone || null,
       },
     });
 

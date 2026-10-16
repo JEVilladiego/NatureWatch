@@ -5,9 +5,12 @@ import { resolveReportCoordinates } from '../lib/barangayCoordinates';
 import {
   fetchRizalMunicipalitiesGeoJSON,
   fetchRizalInvertedMaskGeoJSON,
+  fetchProtectedZonesInvertedMaskGeoJSON,
+  fetchRizalProtectedZonesGeoJSON,
   GeoJSONFeature,
   GeoJSONFeatureCollection,
   MunicipalityFeatureProperties,
+  ProtectedZoneFeatureProperties,
   getChoroplethStyle,
 } from '../lib/geojsonService';
 
@@ -26,7 +29,7 @@ export const PHILIPPINES_BOUNDS: [[number, number], [number, number]] = [
   [21.5, 127.0], // North-East (Batanes / Babuyan / Philippine Sea)
 ];
 
-export type MapLayerMode = 'standard' | 'boundaries' | 'choropleth';
+export type MapLayerMode = 'standard' | 'boundaries' | 'choropleth' | 'protected_zones';
 
 interface LeafletMapProps {
   mode: 'picker' | 'dashboard';
@@ -45,6 +48,7 @@ interface LeafletMapProps {
   choroplethCounts?: Record<string, number>;
   maskNonRizal?: boolean;
   fitProvinceKey?: number | string;
+  showProtectedZones?: boolean;
 }
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
@@ -63,6 +67,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   choroplethCounts = {},
   maskNonRizal,
   fitProvinceKey,
+  showProtectedZones = true,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -71,8 +76,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const dashboardMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
   const maskLayerRef = useRef<L.GeoJSON | null>(null);
+  const protectedZonesLayerRef = useRef<L.GeoJSON | null>(null);
   const [geoJsonData, setGeoJsonData] = useState<GeoJSONFeatureCollection<MunicipalityFeatureProperties> | null>(null);
   const [maskData, setMaskData] = useState<GeoJSONFeature | null>(null);
+  const [protectedMaskData, setProtectedMaskData] = useState<GeoJSONFeature | null>(null);
+  const [protectedZonesData, setProtectedZonesData] = useState<GeoJSONFeatureCollection<ProtectedZoneFeatureProperties> | null>(null);
 
   const shouldMask = maskNonRizal !== undefined ? maskNonRizal : mode === 'dashboard';
 
@@ -97,6 +105,32 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         if (isMounted) setMaskData(data);
       })
       .catch((err) => console.warn('[LeafletMap] Inverted mask load error:', err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Load Curated Protected Ecological Zones GeoJSON once
+  useEffect(() => {
+    let isMounted = true;
+    fetchRizalProtectedZonesGeoJSON()
+      .then((data) => {
+        if (isMounted) setProtectedZonesData(data);
+      })
+      .catch((err) => console.warn('[LeafletMap] Protected zones GeoJSON load error:', err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Load Inverted Protected Zones Mask GeoJSON once
+  useEffect(() => {
+    let isMounted = true;
+    fetchProtectedZonesInvertedMaskGeoJSON()
+      .then((data) => {
+        if (isMounted) setProtectedMaskData(data);
+      })
+      .catch((err) => console.warn('[LeafletMap] Protected zones mask load error:', err));
     return () => {
       isMounted = false;
     };
@@ -183,7 +217,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     return () => clearTimeout(timer);
   }, [fitProvinceKey, mode, selectedReportId, activeMunicipality]);
 
-  // Non-Rizal Inverted Mask Rendering & Toggling
+  // Inverted Mask Rendering & Toggling (Supports both Provincial Mask and Protected Zones Dimming Mask)
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
@@ -194,6 +228,32 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       maskLayerRef.current = null;
     }
 
+    // In 'protected_zones' mode: dim all surrounding terrain except the protected zones
+    if (layerMode === 'protected_zones') {
+      if (!shouldMask || !protectedMaskData) return;
+
+      const layer = L.geoJSON(protectedMaskData as any, {
+        pane: 'maskPane',
+        interactive: false,
+        style: {
+          className: 'protected-zones-dim-mask',
+          fillColor: '#0b1613', // Deep moody forest night tint to spotlight sanctuaries
+          fillOpacity: 0.65,    // Distinct spotlight effect that keeps base geography legible
+          stroke: false,        // Let protectedZonesLayer draw the distinct boundary borders
+        },
+      }).addTo(map);
+
+      maskLayerRef.current = layer;
+
+      return () => {
+        if (maskLayerRef.current) {
+          maskLayerRef.current.remove();
+          maskLayerRef.current = null;
+        }
+      };
+    }
+
+    // Standard / Boundaries / Choropleth modes: apply non-Rizal provincial mask when enabled
     if (!shouldMask || !maskData) return;
 
     const layer = L.geoJSON(maskData as any, {
@@ -217,7 +277,84 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         maskLayerRef.current = null;
       }
     };
-  }, [shouldMask, maskData]);
+  }, [layerMode, shouldMask, maskData, protectedMaskData]);
+
+  // Protected Ecological Zones Vector Layer Rendering
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    if (protectedZonesLayerRef.current) {
+      protectedZonesLayerRef.current.remove();
+      protectedZonesLayerRef.current = null;
+    }
+
+    // Strictly mutually exclusive: only render when layerMode is 'protected_zones'
+    if (layerMode !== 'protected_zones' || !protectedZonesData) return;
+
+    const layer = L.geoJSON(protectedZonesData as any, {
+      style: (feature: any) => {
+        const props = feature?.properties;
+        return {
+          color: props?.strokeColor || '#059669',
+          weight: 2,
+          fillColor: props?.fillColor || '#10b981',
+          fillOpacity: 0.14,
+          dashArray: '5, 5',
+        };
+      },
+      onEachFeature: (feature: any, featureLayer: L.Layer) => {
+        const props = feature?.properties || {};
+        const title = props.shortName || props.name || 'Protected Zone';
+        const type = String(props.type || 'Sanctuary').toUpperCase().replace(/_/g, ' ');
+        const mun = props.municipality || 'Rizal';
+
+        const tooltipHtml = `
+          <div style="font-family: system-ui, sans-serif; min-width: 170px;">
+            <div style="font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: ${props.strokeColor || '#059669'};">
+              🛡️ ${type}
+            </div>
+            <div style="font-weight: 700; font-size: 11px; color: #f8fafc; margin-top: 1px;">
+              ${title}
+            </div>
+            <div style="font-size: 10px; color: #94a3b8; font-family: system-ui;">
+              ${mun}
+            </div>
+          </div>
+        `;
+
+        featureLayer.bindTooltip(tooltipHtml, {
+          sticky: true,
+          direction: 'auto',
+          className: 'tactical-map-tooltip',
+        });
+
+        const pathLayer = featureLayer as L.Path;
+        pathLayer.on('mouseover', () => {
+          pathLayer.setStyle({
+            weight: 3,
+            fillOpacity: 0.28,
+          });
+        });
+
+        pathLayer.on('mouseout', () => {
+          pathLayer.setStyle({
+            weight: 2,
+            fillOpacity: 0.14,
+          });
+        });
+      },
+    }).addTo(map);
+
+    protectedZonesLayerRef.current = layer;
+
+    return () => {
+      if (protectedZonesLayerRef.current) {
+        protectedZonesLayerRef.current.remove();
+        protectedZonesLayerRef.current = null;
+      }
+    };
+  }, [layerMode, protectedZonesData]);
 
   // Update Center & Zoom
   useEffect(() => {
@@ -337,8 +474,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       geoJsonLayerRef.current = null;
     }
 
-    // If layerMode is 'standard' and no activeMunicipality in picker, do not render full polygons
-    if (layerMode === 'standard' && (!activeMunicipality || activeMunicipality === 'all')) {
+    // If layerMode is not 'boundaries' or 'choropleth' and no activeMunicipality in picker, do not render full polygons
+    if (layerMode !== 'boundaries' && layerMode !== 'choropleth' && (!activeMunicipality || activeMunicipality === 'all')) {
       return;
     }
 

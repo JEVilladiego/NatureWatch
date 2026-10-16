@@ -29,10 +29,23 @@ export interface GeoJSONFeatureCollection<P = any> {
   features: GeoJSONFeature<P>[];
 }
 
+export interface ProtectedZoneFeatureProperties {
+  id: string;
+  name: string;
+  shortName: string;
+  type: 'sanctuary' | 'shoreline_easement' | 'watershed' | 'national_park';
+  severityBonus: number;
+  municipality: string;
+  legalNote: string;
+  strokeColor: string;
+  fillColor: string;
+}
+
 // In-memory singletons to avoid re-fetching
 let cachedProvince: GeoJSONFeatureCollection<ProvinceFeatureProperties> | null = null;
 let cachedMunicipalities: GeoJSONFeatureCollection<MunicipalityFeatureProperties> | null = null;
 let cachedInvertedMask: GeoJSONFeature | null = null;
+let cachedProtectedZones: GeoJSONFeatureCollection<ProtectedZoneFeatureProperties> | null = null;
 
 const WORLD_MASK_RING: [number, number][] = [
   [-180, 85],
@@ -58,6 +71,34 @@ export async function fetchRizalMunicipalitiesGeoJSON(): Promise<GeoJSONFeatureC
   return cachedMunicipalities!;
 }
 
+export async function fetchRizalProtectedZonesGeoJSON(): Promise<GeoJSONFeatureCollection<ProtectedZoneFeatureProperties>> {
+  if (cachedProtectedZones) return cachedProtectedZones;
+  const res = await fetch('/geojson/rizal-protected-zones.geojson');
+  if (!res.ok) throw new Error(`Failed to load rizal-protected-zones.geojson: ${res.statusText}`);
+  cachedProtectedZones = await res.json();
+  return cachedProtectedZones!;
+}
+
+/**
+ * Identifies if a given coordinate falls within any curated protected zone in Rizal
+ */
+export async function findProtectedZoneByCoordinates(lat: number, lng: number): Promise<ProtectedZoneFeatureProperties | null> {
+  try {
+    const zones = await fetchRizalProtectedZonesGeoJSON();
+    if (!zones?.features?.length) return null;
+
+    for (const feature of zones.features) {
+      if (isPointInGeometry([lng, lat], feature.geometry)) {
+        return feature.properties;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.warn('[geojsonService] Protected zone lookup error:', err);
+    return null;
+  }
+}
+
 /**
  * Generates an inverted polygon GeoJSON feature covering the entire world
  * with interior holes cut out precisely for Rizal Province mainland and islands.
@@ -77,6 +118,28 @@ export async function fetchRizalInvertedMaskGeoJSON(): Promise<GeoJSONFeature> {
     },
   };
   return cachedInvertedMask;
+}
+
+let cachedProtectedZonesInvertedMask: GeoJSONFeature | null = null;
+
+/**
+ * Generates an inverted polygon GeoJSON feature covering the entire world
+ * with interior holes cut out precisely for the 4 curated protected ecological zones.
+ * Rendered with SVG evenodd fill-rule, this dims everything except the protected zones.
+ */
+export async function fetchProtectedZonesInvertedMaskGeoJSON(): Promise<GeoJSONFeature> {
+  if (cachedProtectedZonesInvertedMask) return cachedProtectedZonesInvertedMask;
+  const zones = await fetchRizalProtectedZonesGeoJSON();
+  const holes = zones.features.map((f: any) => f.geometry.coordinates[0]);
+  cachedProtectedZonesInvertedMask = {
+    type: 'Feature',
+    properties: { name: 'Protected Zones Inverted Mask' },
+    geometry: {
+      type: 'Polygon',
+      coordinates: [WORLD_MASK_RING, ...holes],
+    },
+  };
+  return cachedProtectedZonesInvertedMask;
 }
 
 /**

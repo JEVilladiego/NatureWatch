@@ -30,6 +30,25 @@ export interface RawInput {
   hasImage: boolean;
 }
 
+export interface WeatherContext {
+  temperature: number; // in °C
+  humidity: number; // in %
+  precipitation: number; // in mm
+  windSpeed: number; // in km/h
+  windGusts?: number; // in km/h
+  fetchedAt: string;
+}
+
+export interface ProtectedZoneHit {
+  id: string;
+  name: string;
+  shortName: string;
+  type: 'sanctuary' | 'shoreline_easement' | 'watershed' | 'national_park';
+  severityBonus: number;
+  municipality: string;
+  legalNote: string;
+}
+
 export interface AITriage {
   category: IncidentCategory;
   severity: 1 | 2 | 3 | 4 | 5;
@@ -38,6 +57,8 @@ export interface AITriage {
   reasoning: string; // Explanation shown to officials only
   model: string;
   triagedAt: string;
+  weather?: WeatherContext | null;
+  protectedZone?: ProtectedZoneHit | null;
 }
 
 export interface FinalReview {
