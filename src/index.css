@@ -175,3 +175,78 @@
   background: #ffffff !important;
 }
 
+/* ========================================================= */
+/* NATUREWATCH NAVIGATION MOTION SYSTEM                     */
+/* ========================================================= */
+
+@keyframes navDropdownEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes navDrawerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes navPillFloat {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes navContentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-nav-dropdown {
+  animation: navDropdownEnter 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-mobile-drawer {
+  animation: navDrawerEnter 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-nav-pill {
+  animation: navPillFloat 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-sheet-morph {
+  animation: navContentFadeIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-nav-dropdown,
+  .animate-mobile-drawer,
+  .animate-nav-pill,
+  .animate-sheet-morph {
+    animation: none !important;
+    transition: opacity 150ms ease-out !important;
+    transform: none !important;
+  }
+}
+

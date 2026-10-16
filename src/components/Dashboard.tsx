@@ -19,6 +19,9 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  ZoomIn,
   ArrowLeft,
   Layout,
   Maximize2,
@@ -27,6 +30,9 @@ import {
   Thermometer,
   Wind,
   Droplets,
+  ShieldCheck,
+  LogOut,
+  Map as MapIcon,
 } from 'lucide-react';
 import {
   IncidentReport,
@@ -59,18 +65,24 @@ import { authHeaders } from '../lib/auth';
 
 interface DashboardProps {
   lang: Language;
+  setLang?: (lang: Language) => void;
   officialUser: any | null;
   onOpenLogin: () => void;
   viewMode?: 'workbench' | 'full_map';
   onViewModeChange?: (mode: 'workbench' | 'full_map') => void;
+  onNavigateTab?: (tab: string) => void;
+  onLogout?: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   lang,
+  setLang,
   officialUser,
   onOpenLogin,
   viewMode: controlledViewMode,
   onViewModeChange,
+  onNavigateTab,
+  onLogout,
 }) => {
   const t = translations[lang];
 
@@ -135,6 +147,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [actionError, setActionError] = useState<string | null>(null);
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [isRetryingTriage, setIsRetryingTriage] = useState<boolean>(false);
+
+  // Floating Left Sheet, Lightbox and Unified Action states
+  const [isSheetOpen, setIsSheetOpen] = useState<boolean>(true);
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+  const [isLegalNoteExpanded, setIsLegalNoteExpanded] = useState<boolean>(false);
+  const [isReasoningExpanded, setIsReasoningExpanded] = useState<boolean>(false);
+  const [isSavingUnified, setIsSavingUnified] = useState<boolean>(false);
+  const [unifiedSuccess, setUnifiedSuccess] = useState<boolean>(false);
 
   // Map viewport & layer state
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 14.5800, lng: 121.2800 });
@@ -211,25 +231,47 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   // Protected Ecological Zone alert banner
-  const renderProtectedZoneBadge = (zone?: ProtectedZoneHit | null) => {
+  const renderProtectedZoneBadge = (zone?: ProtectedZoneHit | null, compact?: boolean) => {
     if (!zone) return null;
     return (
-      <div className="p-3 bg-emerald-950 text-emerald-100 rounded-xl border border-emerald-500/40 shadow-xs space-y-1 my-2">
-        <div className="flex items-center gap-1.5">
-          <ShieldAlert className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span className="font-display text-[10px] font-bold uppercase tracking-wider text-emerald-300">
-            {t.protectedZoneAlertTitle}
-          </span>
-          <span className="ml-auto text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-900 text-emerald-200 border border-emerald-700/60 uppercase">
+      <div className="p-2.5 bg-emerald-50/90 text-emerald-950 rounded-xl border border-emerald-200/90 shadow-xs space-y-1.5 my-1.5">
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <ShieldAlert className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+            <span className="font-display text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+              {t.protectedZoneAlertTitle}
+            </span>
+          </div>
+          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase shrink-0">
             {zone.type.replace(/_/g, ' ')}
           </span>
         </div>
-        <div className="text-xs font-bold text-white leading-tight">
+        <div className="text-xs font-bold text-emerald-950 leading-tight">
           {zone.name}
         </div>
-        <div className="text-[11px] text-emerald-200/90 leading-relaxed font-sans">
-          {zone.legalNote}
-        </div>
+        {zone.legalNote && (
+          compact ? (
+            <div>
+              <button
+                type="button"
+                onClick={() => setIsLegalNoteExpanded(!isLegalNoteExpanded)}
+                className="text-[10px] text-emerald-800 hover:text-emerald-950 font-medium flex items-center gap-0.5 cursor-pointer mt-0.5"
+              >
+                <span>{isLegalNoteExpanded ? 'Hide legal basis' : 'View statutory basis'}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${isLegalNoteExpanded ? 'rotate-180' : ''}`} />
+              </button>
+              {isLegalNoteExpanded && (
+                <div className="text-[10px] text-emerald-900 leading-tight pt-1 font-sans">
+                  {zone.legalNote}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-[11px] text-emerald-900 leading-relaxed font-sans">
+              {zone.legalNote}
+            </div>
+          )
+        )}
       </div>
     );
   };
@@ -268,6 +310,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setNewStatus(selectedReport.status);
       setStatusChangeNotes('');
       setOverrideSuccess(false);
+      setUnifiedSuccess(false);
+      setIsLightboxOpen(false);
+      setIsLegalNoteExpanded(false);
+      setIsReasoningExpanded(false);
       if (selectedReport.location) {
         const coords = resolveReportCoordinates(selectedReport);
         setMapCenter(coords);
@@ -276,10 +322,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [selectedReport?.id]);
 
-  // Keyboard shortcut: Esc closes selected incident drawer, or returns to Workbench
+  // Keyboard shortcut: Esc closes lightbox, bottom inspection dock, or returns to Workbench
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (isLightboxOpen) {
+          setIsLightboxOpen(false);
+          return;
+        }
         if (viewMode === 'full_map') {
           if (selectedReport) {
             setSelectedReport(null);
@@ -292,7 +342,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewMode, selectedReport]);
+  }, [viewMode, selectedReport, isLightboxOpen]);
 
   // Firestore live listener: newest 100 reports. Status filtering happens client-side.
   useEffect(() => {
@@ -512,6 +562,58 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setActionError('Could not update the status. You may not have permission, or you are offline.');
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  // Unified Save & Update Action for the Bottom Command Dock
+  const handleSaveUnifiedAction = async () => {
+    if (!selectedReport || !officialUser) return;
+    setIsSavingUnified(true);
+    setUnifiedSuccess(false);
+    setActionError(null);
+
+    const notes = officerNotes.trim() || statusChangeNotes.trim();
+    const finalData = {
+      category: overrideCategory,
+      severity: overrideSeverity,
+      reviewedBy: officialUser.uid,
+      reviewedAt: new Date().toISOString(),
+      notes: notes,
+    };
+
+    const statusChanged = newStatus !== selectedReport.status;
+    let updatedHistory = selectedReport.statusHistory || [];
+    const updates: Record<string, any> = { final: finalData };
+
+    if (statusChanged || notes) {
+      const newHistoryItem = {
+        status: newStatus,
+        changedBy: officialUser.displayName || officialUser.email || 'PG-ENRO Officer',
+        changedAt: new Date().toISOString(),
+        ...(notes ? { notes } : {}),
+      };
+      updatedHistory = [...updatedHistory, newHistoryItem];
+      updates.status = newStatus;
+      updates.statusHistory = updatedHistory;
+    }
+
+    try {
+      await updateDoc(doc(db, 'reports', selectedReport.id), updates);
+
+      const updated = {
+        ...selectedReport,
+        final: finalData,
+        ...(updates.status ? { status: updates.status, statusHistory: updatedHistory } : {}),
+      };
+      setReports((prev) => prev.map((r) => (r.id === selectedReport.id ? updated : r)));
+      setSelectedReport(updated);
+      setUnifiedSuccess(true);
+      setTimeout(() => setUnifiedSuccess(false), 3500);
+    } catch (err) {
+      console.error('Unified update failed:', err);
+      setActionError('Could not save the assessment. You may not have permission or are offline.');
+    } finally {
+      setIsSavingUnified(false);
     }
   };
 
@@ -1345,783 +1447,882 @@ export const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* ========================================================= */}
-      {/* VIEW MODE 2: LIKASMAP-INSPIRED INTEGRATED FULL MAP CANVAS */}
+      {/* VIEW MODE 2: FULL MAP CANVAS (GOOGLE / APPLE MAPS GIS UI) */}
       {/* ========================================================= */}
       {viewMode === 'full_map' && (
-        <div className="relative w-full h-full overflow-hidden bg-stone-100 flex flex-col">
+        <div className="relative w-full h-full overflow-hidden bg-stone-100">
           {/* ========================================================= */}
-          {/* 1. ANCHORED TOP SUB-BAR (Flush below navbar)              */}
+          {/* 1. EDGE-TO-EDGE GEOSPATIAL MAP CANVAS (100% Full Screen)  */}
           {/* ========================================================= */}
-          <div className="h-14 shrink-0 bg-white/95 backdrop-blur-md border-b border-stone-200/90 px-3 sm:px-4 flex items-center justify-between gap-2.5 z-30 shadow-xs">
-            {/* Left: Search input + LGU Horizontal Scrollable Tabs */}
-            <div className="flex items-center gap-2.5 flex-1 min-w-0">
-              {/* Search Input */}
-              <div className="relative w-40 sm:w-56 shrink-0">
-                <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search ref, barangay..."
-                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-stone-100/70 focus:bg-white border border-stone-200 focus:border-tagapo-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 font-sans transition placeholder:text-stone-400"
-                />
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchTerm('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 cursor-pointer"
-                    title="Clear search"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-
-              {/* LGU Filter Tabs (horizontal scrollable bar) */}
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-                <button
-                  type="button"
-                  onClick={() => handleQuickJump('all')}
-                  className={`px-2.5 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
-                    municipalityFilter === 'all'
-                      ? 'bg-tagapo-800 text-white shadow-xs'
-                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-                  }`}
-                >
-                  All Rizal
-                </button>
-                {RIZAL_MUNICIPALITIES.map((mun) => {
-                  const shortName = mun.replace(' City', '').replace(' (Montalban)', '');
-                  const isSelected = municipalityFilter === mun;
-                  return (
-                    <button
-                      key={mun}
-                      type="button"
-                      onClick={() => handleQuickJump(mun)}
-                      className={`px-2.5 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
-                        isSelected
-                          ? 'bg-tagapo-800 text-white shadow-xs'
-                          : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-                      }`}
-                    >
-                      {shortName}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Right: Telemetry & Actions */}
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Telemetry Metrics */}
-              <div className="hidden xl:flex items-center gap-3 text-xs px-2 border-r border-stone-200">
-                <span className="flex items-center gap-1.5 font-semibold text-stone-700">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-mono font-bold text-stone-900">{stats.openCount}</span> Active
-                </span>
-                <span className="flex items-center gap-1.5 font-semibold text-rose-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
-                  <span className="font-mono font-bold text-rose-800">{stats.urgentCount}</span> Urgent
-                </span>
-                <span className="flex items-center gap-1.5 font-semibold text-emerald-700">
-                  <span className="font-mono font-bold text-emerald-800">{stats.resolvedCount}</span> Resolved
-                </span>
-              </div>
-
-              {/* Rerun AI Triage on selection (if selected report) */}
-              {selectedReport && (
-                <button
-                  type="button"
-                  onClick={handleRetryTriage}
-                  disabled={isRetryingTriage}
-                  title="Re-run AI triage on selected incident"
-                  className="px-2.5 py-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:bg-stone-200 disabled:opacity-40 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer border border-stone-200/80"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
-                  <span className="hidden lg:inline">{isRetryingTriage ? 'Triaging...' : 'AI Triage'}</span>
-                </button>
-              )}
-
-              {/* Switch to Workbench */}
-              <button
-                type="button"
-                onClick={() => handleViewModeChange('workbench')}
-                className="px-2.5 py-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:bg-stone-200 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer border border-stone-200/80"
-                title="Switch back to split-screen Workbench"
-              >
-                <Layout className="w-3.5 h-3.5 text-tagapo-800" />
-                <span className="hidden sm:inline">Workbench</span>
-              </button>
-
-              {/* Sidebar Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer border ${
-                  isSidebarOpen
-                    ? 'bg-tagapo-800 text-white border-tagapo-900 shadow-xs'
-                    : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
-                }`}
-                title={isSidebarOpen ? 'Hide side panel' : 'Show side panel'}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>
-                  {selectedReport ? 'Dossier' : `Queue (${filteredReports.length})`}
-                </span>
-              </button>
-            </div>
+          <div className="absolute inset-0 z-0">
+            <LeafletMap
+              mode="dashboard"
+              center={mapCenter}
+              zoom={mapZoom}
+              fitProvinceKey={fitProvinceKey}
+              reports={filteredReports}
+              selectedReportId={selectedReport?.id}
+              layerMode={mapLayerMode}
+              activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
+              onMunicipalityClick={(mun) => handleQuickJump(mun)}
+              choroplethCounts={choroplethCounts}
+              maskNonRizal={isMaskActive}
+              onSelectReport={(r) => {
+                setSelectedReport(r);
+                setIsSheetOpen(true);
+                const coords = resolveReportCoordinates(r);
+                setMapCenter(coords);
+                setMapZoom(14);
+              }}
+              className="h-full w-full"
+            />
           </div>
 
           {/* ========================================================= */}
-          {/* 2. SPLIT WORKSPACE: MAP CANVAS + DOCKED RIGHT SIDEBAR     */}
+          {/* 2. FLOATING TOP-LEFT GLASS NAVIGATION PILL                */}
           {/* ========================================================= */}
-          <div className="flex-1 flex overflow-hidden relative">
-            {/* Map Canvas (Expands to 100% when sidebar is collapsed) */}
-            <div className="flex-1 h-full relative min-w-0">
-              <LeafletMap
-                mode="dashboard"
-                center={mapCenter}
-                zoom={mapZoom}
-                fitProvinceKey={fitProvinceKey}
-                reports={filteredReports}
-                selectedReportId={selectedReport?.id}
-                layerMode={mapLayerMode}
-                activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
-                onMunicipalityClick={(mun) => handleQuickJump(mun)}
-                choroplethCounts={choroplethCounts}
-                maskNonRizal={isMaskActive}
-                onSelectReport={(r) => {
-                  setSelectedReport(r);
-                  setIsSidebarOpen(true);
-                  const coords = resolveReportCoordinates(r);
-                  setMapCenter(coords);
-                  setMapZoom(14);
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-40 flex items-center gap-2 bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-md rounded-2xl p-1.5 pointer-events-auto animate-nav-pill transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
+            {/* NatureWatch GIS brand mark */}
+            <div className="flex items-center gap-1.5 px-2 py-0.5">
+              <div className="w-6 h-6 rounded-lg bg-tagapo-800 text-white flex items-center justify-center font-display font-black text-xs shadow-xs">
+                NW
+              </div>
+              <span className="font-display font-extrabold text-xs tracking-tight text-stone-900 hidden sm:inline">
+                LikasMap <span className="text-tagapo-800 font-mono text-[10px] font-bold">GIS</span>
+              </span>
+            </div>
+
+            <div className="h-4 w-px bg-stone-200 hidden sm:block" />
+
+            {/* Tab Navigation Pill Group */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className="px-2.5 py-1 rounded-lg text-xs font-display font-bold uppercase tracking-wider bg-tagapo-800 text-white shadow-xs cursor-default flex items-center gap-1 transition-all duration-150"
+              >
+                <MapIcon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Map</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (onNavigateTab) onNavigateTab('workbench');
+                  else handleViewModeChange('workbench');
                 }}
-                className="h-full w-full"
-              />
+                className="px-2.5 py-1 rounded-lg text-xs font-display font-bold uppercase tracking-wider text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:scale-95 transition-all duration-150 cursor-pointer flex items-center gap-1"
+                title="Switch to split-screen Workbench"
+              >
+                <Layout className="w-3.5 h-3.5 text-stone-500" />
+                <span className="hidden sm:inline">Workbench</span>
+              </button>
 
-              {/* Bottom-Left Tucked Legend Card */}
-              <div className="absolute bottom-4 left-4 z-20 pointer-events-auto bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-md rounded-xl p-2.5 space-y-2 max-w-[280px]">
-                <div className="flex items-center justify-between gap-2 pb-1 border-b border-stone-100">
-                  <span className="font-display font-bold text-[10px] uppercase tracking-wider text-stone-500">
-                    Map Layers
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setIsLegendExpanded(!isLegendExpanded)}
-                    className="text-stone-400 hover:text-stone-700 p-0.5 rounded cursor-pointer"
-                    title={isLegendExpanded ? 'Collapse legend' : 'Expand legend'}
-                  >
-                    <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${isLegendExpanded ? '-rotate-90' : 'rotate-90'}`} />
-                  </button>
-                </div>
-
-                {/* Layer Mode Switcher Tabs (Mutually Exclusive) */}
-                <div className="grid grid-cols-3 gap-1 bg-stone-100/90 p-0.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider">
-                  <button
-                    type="button"
-                    onClick={() => setMapLayerMode('boundaries')}
-                    className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
-                      mapLayerMode === 'boundaries' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                    }`}
-                    title="Municipal vector boundaries across all 14 LGUs"
-                  >
-                    Boundaries
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMapLayerMode('choropleth')}
-                    className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
-                      mapLayerMode === 'choropleth' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                    }`}
-                    title="Incident density volume"
-                  >
-                    Choropleth
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMapLayerMode('protected_zones')}
-                    className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
-                      mapLayerMode === 'protected_zones' ? 'bg-emerald-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                    }`}
-                    title="Curated protected ecological reserves & buffers"
-                  >
-                    Protected
-                  </button>
-                </div>
-
-                {/* Jurisdiction Focus (Mask Non-Rizal) / Dimming Toggle */}
+              {onNavigateTab && (
                 <button
                   type="button"
-                  onClick={() => setIsMaskActive(!isMaskActive)}
-                  className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider flex items-center justify-between transition cursor-pointer border ${
-                    isMaskActive
-                      ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-950/20 text-emerald-950 border-emerald-300' : 'bg-tagapo-50 text-tagapo-950 border-tagapo-300')
-                      : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
-                  }`}
-                  title={
-                    mapLayerMode === 'protected_zones'
-                      ? (isMaskActive ? "Click to disable dimming of surrounding terrain" : "Click to dim surroundings and spotlight protected reserves")
-                      : (isMaskActive ? "Click to disable non-Rizal dimming mask" : "Click to gray out non-Rizal regions")
-                  }
+                  onClick={() => onNavigateTab('status')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-display font-bold uppercase tracking-wider text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:scale-95 transition-all duration-150 cursor-pointer hidden md:flex items-center gap-1"
+                  title="Track Status"
                 >
-                  <span className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${isMaskActive ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-600 animate-pulse' : 'bg-tagapo-700 animate-pulse') : 'bg-stone-400'}`} />
-                    <span>{mapLayerMode === 'protected_zones' ? 'Dim Outside Reserves' : 'Focus: Rizal Only'}</span>
-                  </span>
-                  <span className={`text-[9px] font-mono px-1 py-0.2 rounded font-bold ${
-                    isMaskActive
-                      ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-200/90 text-emerald-950' : 'bg-tagapo-200/80 text-tagapo-900')
-                      : 'bg-stone-100 text-stone-500'
-                  }`}>
-                    {isMaskActive ? 'ON' : 'OFF'}
-                  </span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-stone-500" />
+                  <span>Track Status</span>
                 </button>
+              )}
+            </div>
 
-                {/* Contextual Sub-Legend depending on active layer */}
-                {isLegendExpanded && (
-                  <div className="pt-1 text-[10px]">
-                    {mapLayerMode === 'choropleth' && (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-stone-500 font-mono mb-1 text-[9px]">
-                          <span>0</span>
-                          <span>1 (20%)</span>
-                          <span>2 (40%)</span>
-                          <span>3 (60%)</span>
-                          <span>4 (80%)</span>
-                          <span>5+ (100%)</span>
-                        </div>
-                        <div className="grid grid-cols-5 gap-0.5 h-2 w-full rounded-full overflow-hidden border border-stone-200 bg-stone-100">
-                          <div className="h-full bg-emerald-600 opacity-20" title="1 report: 20% opacity" />
-                          <div className="h-full bg-emerald-600 opacity-40" title="2 reports: 40% opacity" />
-                          <div className="h-full bg-emerald-600 opacity-60" title="3 reports: 60% opacity" />
-                          <div className="h-full bg-emerald-600 opacity-80" title="4 reports: 80% opacity" />
-                          <div className="h-full bg-emerald-800 opacity-100" title="5+ reports: 100% opacity" />
-                        </div>
-                        <div className="text-stone-400 text-[9px] mt-1 text-center font-display font-medium">
-                          Incident Density Scale (20% – 100% Opacity)
-                        </div>
+            {/* Language Switcher */}
+            {setLang && (
+              <>
+                <div className="h-4 w-px bg-stone-200" />
+                <button
+                  type="button"
+                  onClick={() => setLang(lang === 'fil' ? 'en' : 'fil')}
+                  className="px-2 py-1 rounded-md text-[11px] font-display font-bold uppercase text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:scale-90 transition-all duration-150 cursor-pointer"
+                  title="Switch language"
+                >
+                  {lang === 'fil' ? 'EN' : 'FIL'}
+                </button>
+              </>
+            )}
+
+            {/* Officer Logout */}
+            {onLogout && (
+              <>
+                <div className="h-4 w-px bg-stone-200" />
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 active:scale-90 rounded-lg transition-all duration-150 cursor-pointer"
+                  title="Sign out of Officer Portal"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* ========================================================= */}
+          {/* 3. FLOATING LEFT SHEET (Google Maps / Apple Maps Paradigm) */}
+          {/* ========================================================= */}
+          {!isSheetOpen ? (
+            <button
+              type="button"
+              onClick={() => setIsSheetOpen(true)}
+              className="absolute top-16 left-3 sm:left-4 z-30 pointer-events-auto px-3.5 py-2.5 bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-lg rounded-2xl text-xs font-display font-bold uppercase tracking-wider text-stone-800 hover:bg-stone-50 active:scale-95 transition-all duration-200 animate-nav-pill flex items-center gap-2 cursor-pointer"
+              title="Show Queue & Inspector"
+            >
+              <Layers className="w-4 h-4 text-tagapo-800" />
+              <span>{selectedReport ? selectedReport.referenceCode : `Queue (${filteredReports.length})`}</span>
+              <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+            </button>
+          ) : (
+            <div className="absolute top-16 left-3 sm:left-4 z-30 pointer-events-auto w-[calc(100vw-24px)] sm:w-[410px] max-h-[calc(100vh-80px)] bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-2xl rounded-2xl overflow-hidden flex flex-col transition-all duration-300 animate-nav-pill">
+              {/* ------------------------------------------------------- */}
+              {/* SHEET MODE 1: SEARCH, FILTERS & QUEUE STREAM            */}
+              {/* ------------------------------------------------------- */}
+              {!selectedReport ? (
+                <div key="queue-mode" className="flex flex-col h-full overflow-hidden animate-sheet-morph">
+                  {/* Search and Header */}
+                  <div className="p-3 bg-stone-50 border-b border-stone-200 flex items-center justify-between gap-2 shrink-0">
+                    <div className="relative flex-1">
+                      <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search ref, barangay..."
+                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-white hover:bg-stone-50 focus:bg-white border border-stone-200 focus:border-tagapo-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 font-sans transition placeholder:text-stone-400"
+                      />
+                      {searchTerm && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchTerm('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 cursor-pointer"
+                          title="Clear search"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsSheetOpen(false)}
+                      className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded-lg transition cursor-pointer"
+                      title="Collapse panel"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Quick telemetry chips & LGU horizontal scroll */}
+                  <div className="px-3 py-2 bg-stone-50/50 border-b border-stone-200/80 space-y-2 shrink-0">
+                    {/* Active count badge summary */}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-display font-bold uppercase tracking-wider text-stone-600">
+                        Incident Queue ({filteredReports.length})
+                      </span>
+                      <div className="flex items-center gap-2 text-[11px] font-mono font-bold">
+                        <span className="text-stone-700"><span className="text-emerald-600">●</span> {stats.openCount} Open</span>
+                        <span className="text-rose-700"><span className="text-rose-600">●</span> {stats.urgentCount} Urgent</span>
+                      </div>
+                    </div>
+
+                    {/* Horizontal LGU Filter Chips */}
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+                      <button
+                        type="button"
+                        onClick={() => handleQuickJump('all')}
+                        className={`px-2.5 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
+                          municipalityFilter === 'all'
+                            ? 'bg-tagapo-800 text-white shadow-xs'
+                            : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100 bg-white border border-stone-200/70'
+                        }`}
+                      >
+                        All LGUs
+                      </button>
+                      {RIZAL_MUNICIPALITIES.map((mun) => {
+                        const isSelected = municipalityFilter === mun;
+                        const shortName = mun.replace('Municipality of ', '').replace('City of ', '');
+                        return (
+                          <button
+                            key={mun}
+                            type="button"
+                            onClick={() => handleQuickJump(mun)}
+                            className={`px-2.5 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
+                              isSelected
+                                ? 'bg-tagapo-800 text-white shadow-xs'
+                                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100 bg-white border border-stone-200/70'
+                            }`}
+                          >
+                            {shortName}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Secondary Filters: Category & Severity */}
+                    <div className="grid grid-cols-2 gap-2 pt-0.5">
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="text-[11px] font-semibold px-2 py-1 bg-white border border-stone-200 rounded-lg focus:outline-none truncate"
+                      >
+                        <option value="all">All Categories</option>
+                        {Object.entries(CATEGORIES).map(([key, cat]) => (
+                          <option key={key} value={key}>
+                            {lang === 'fil' ? cat.labelFil : cat.labelEn}
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
+                        value={severityFilter}
+                        onChange={(e) => setSeverityFilter(e.target.value)}
+                        className="text-[11px] font-semibold px-2 py-1 bg-white border border-stone-200 rounded-lg focus:outline-none truncate"
+                      >
+                        <option value="all">All Severities</option>
+                        <option value="urgent">Urgent (4-5)</option>
+                        <option value="1">1 - Minor</option>
+                        <option value="2">2 - Low</option>
+                        <option value="3">3 - Moderate</option>
+                        <option value="4">4 - High</option>
+                        <option value="5">5 - Critical</option>
+                      </select>
+                    </div>
+
+                    {(municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
+                      <div className="flex items-center justify-between pt-0.5">
+                        <span className="text-[10px] text-stone-500 font-medium">Filters active</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMunicipalityFilter('all');
+                            setStatusFilter('all');
+                            setCategoryFilter('all');
+                            setSeverityFilter('all');
+                            setSearchTerm('');
+                            setMapCenter({ lat: 14.5800, lng: 121.2800 });
+                            setMapZoom(11);
+                          }}
+                          className="font-display text-[10px] font-bold uppercase tracking-wider text-rose-700 hover:text-rose-900 cursor-pointer"
+                        >
+                          Reset Filters
+                        </button>
                       </div>
                     )}
+                  </div>
 
-                    {mapLayerMode === 'protected_zones' && (
-                      <div className="p-2 rounded-lg bg-emerald-50/70 border border-emerald-200/60 space-y-1.5">
-                        <div className="font-display text-[9px] font-bold uppercase tracking-wider text-emerald-950 flex items-center gap-1">
-                          <ShieldAlert className="w-3 h-3 text-emerald-700" />
-                          <span>Protected Reserves</span>
-                        </div>
-                        <div className="space-y-1 text-[10px]">
-                          <div className="flex items-center gap-1.5 text-stone-700">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                            <span className="font-semibold text-emerald-950">Mt. Tagapo Sanctuary</span>
-                            <span className="text-[9px] text-stone-400 ml-auto">Talim Is.</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-stone-700">
-                            <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
-                            <span className="font-semibold text-sky-950">Laguna Lake 50m Buffer</span>
-                            <span className="text-[9px] text-stone-400 ml-auto">Coast</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-stone-700">
-                            <span className="w-2 h-2 rounded-full bg-green-700 shrink-0" />
-                            <span className="font-semibold text-green-950">Upper Marikina Watershed</span>
-                            <span className="text-[9px] text-stone-400 ml-auto">Sierra Madre</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-stone-700">
-                            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                            <span className="font-semibold text-amber-950">Hinulugang Taktak</span>
-                            <span className="text-[9px] text-stone-400 ml-auto">Antipolo</span>
-                          </div>
-                        </div>
-                        <div className="text-[9px] text-emerald-800/80 font-medium pt-1 border-t border-emerald-200/60 flex items-center gap-1">
-                          <span>✨ Surroundings dimmed to highlight ecological zones</span>
-                        </div>
+                  {/* Scrollable Incident Stream */}
+                  <div className="flex-1 overflow-y-auto divide-y divide-stone-100">
+                    {filteredReports.length === 0 ? (
+                      <div className="p-8 text-center text-xs text-stone-500 space-y-1">
+                        <p className="font-semibold text-stone-700">No incident reports found</p>
+                        <p className="text-stone-400">Try adjusting your municipality or severity filters.</p>
                       </div>
-                    )}
+                    ) : (
+                      filteredReports.map((report) => {
+                        const sev = report.final?.severity || report.aiTriage?.severity || 3;
+                        const cat = report.final?.category || report.aiTriage?.category || 'other';
+                        const catMeta = CATEGORIES[cat as IncidentCategory] || CATEGORIES.other;
 
-                    {(mapLayerMode === 'boundaries' || mapLayerMode === 'standard') && (
-                      <div className="pt-0.5 space-y-1">
-                        <div className="flex items-center justify-between gap-1 text-stone-700 font-display font-bold uppercase tracking-wider">
-                          <span className="flex items-center gap-1 text-emerald-800">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                            1-2 Minor
-                          </span>
-                          <span className="flex items-center gap-1 text-amber-800">
-                            <span className="w-2 h-2 rounded-full bg-amber-500" />
-                            3 Mod
-                          </span>
-                          <span className="flex items-center gap-1 text-rose-800">
-                            <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
-                            4-5 Urgent
-                          </span>
-                        </div>
-                        {mapLayerMode === 'boundaries' && (
-                          <div className="text-[9px] text-stone-400 font-display text-center pt-0.5">
-                            14 LGUs of Rizal • Click to filter
+                        return (
+                          <div
+                            key={report.id}
+                            onClick={() => {
+                              setSelectedReport(report);
+                              const coords = resolveReportCoordinates(report);
+                              setMapCenter(coords);
+                              setMapZoom(14);
+                            }}
+                            className="p-3 cursor-pointer transition hover:bg-stone-50/90 flex items-start justify-between gap-2.5"
+                          >
+                            <div className="space-y-1 flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-mono font-bold text-xs text-stone-900">
+                                  {report.referenceCode}
+                                </span>
+                                <span className={`text-[10px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${catMeta.badgeColor}`}>
+                                  {lang === 'fil' ? catMeta.labelFil : catMeta.labelEn}
+                                </span>
+                                {report.duplicateClusterId && (
+                                  <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-stone-200 text-stone-700 flex items-center gap-0.5">
+                                    <Layers className="w-2.5 h-2.5" />
+                                    Cluster
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="text-xs text-stone-600 line-clamp-2">
+                                {report.aiTriage?.summary || report.rawInput.description}
+                              </p>
+
+                              <div className="flex items-center gap-1.5 text-[11px] text-stone-400 font-mono">
+                                <span className="truncate">
+                                  {[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
+                                </span>
+                                <span>•</span>
+                                <span className="shrink-0">{new Date(report.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col items-end gap-1 shrink-0 pt-0.5">
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-display font-black uppercase tracking-wider ${
+                                  sev >= 4
+                                    ? 'bg-rose-700 text-white animate-pulse'
+                                    : sev === 3
+                                    ? 'bg-amber-600 text-white'
+                                    : 'bg-tagapo-800 text-white'
+                                }`}
+                              >
+                                Sev {sev}
+                              </span>
+                              {report.status === 'resolved' ? (
+                                <span className="text-[9px] font-display font-bold uppercase text-emerald-700">
+                                  Closed
+                                </span>
+                              ) : report.status === 'in_progress' ? (
+                                <span className="text-[9px] font-display font-bold uppercase text-amber-700">
+                                  In Prog
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-display font-bold uppercase text-rose-700">
+                                  Pending
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* ------------------------------------------------------- */
+                /* SHEET MODE 2: CASE INSPECTOR & DECISION CONSOLE         */
+                /* ------------------------------------------------------- */
+                <div key={`dossier-mode-${selectedReport.id}`} className="flex flex-col h-full overflow-hidden animate-sheet-morph">
+                  {/* Header with Back to Queue button */}
+                  <div className="px-3.5 py-2.5 bg-stone-50 border-b border-stone-200 flex items-center justify-between shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedReport(null)}
+                      className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-stone-700 hover:text-stone-950 hover:bg-stone-200/60 px-2 py-1 rounded-lg transition cursor-pointer"
+                      title="Return to Incident Queue"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5 text-tagapo-800" />
+                      <span>{t.backToQueueBtn || 'Queue'}</span>
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-xs text-stone-900">
+                        {selectedReport.referenceCode}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-display font-bold uppercase tracking-wider ${
+                          selectedReport.status === 'resolved'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : selectedReport.status === 'in_progress'
+                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                            : 'bg-rose-50 text-rose-800 border border-rose-200'
+                        }`}
+                      >
+                        {selectedReport.status.replace(/_/g, ' ')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsSheetOpen(false)}
+                        className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded-md transition cursor-pointer"
+                        title="Collapse panel"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Scrollable Dossier Body */}
+                  <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+                    {/* Citizen Evidence & Photo */}
+                    <div className="space-y-2">
+                      <div
+                        onClick={() => photoDataUrl && setIsLightboxOpen(true)}
+                        className={`relative rounded-xl overflow-hidden bg-stone-950 h-36 sm:h-40 flex items-center justify-center border border-stone-200 group ${
+                          photoDataUrl ? 'cursor-pointer' : ''
+                        }`}
+                        title={photoDataUrl ? t.photoExpandHint : undefined}
+                      >
+                        {photoDataUrl ? (
+                          <>
+                            <img
+                              src={photoDataUrl}
+                              alt="Incident evidence"
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                            />
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <span className="px-2 py-1 rounded bg-black/75 text-white text-[10px] font-display font-bold uppercase tracking-wider flex items-center gap-1 shadow-md">
+                                <ZoomIn className="w-3.5 h-3.5" />
+                                <span>Expand</span>
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center p-2 text-stone-400 text-xs">
+                            <Eye className="w-5 h-5 mx-auto mb-1 text-stone-500" />
+                            <span className="text-[11px]">{selectedReport.rawInput.hasImage ? 'Loading photo...' : 'No photo submitted'}</span>
                           </div>
                         )}
+                        <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/70 backdrop-blur-xs text-[9px] font-mono text-tagapo-300 rounded border border-white/10">
+                          RA 10173 SECURED
+                        </div>
+                      </div>
+
+                      {/* Citizen Description Card */}
+                      <div className="bg-stone-50 rounded-xl p-3 border border-stone-200/80 space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] font-display font-bold uppercase tracking-wider text-stone-500">
+                          <span>Citizen Report</span>
+                          <span className="text-[9px] text-amber-800 bg-amber-100/80 px-1 py-0.2 rounded border border-amber-200">
+                            Untrusted Input
+                          </span>
+                        </div>
+                        <p className="text-xs text-stone-800 italic leading-relaxed">
+                          "{selectedReport.rawInput.description}"
+                        </p>
+                        <div className="text-[10px] text-stone-500 font-mono pt-1 border-t border-stone-200/60 flex items-center justify-between">
+                          <span>
+                            {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
+                          </span>
+                          <span>
+                            GPS: {selectedReport.location.lat.toFixed(4)}, {selectedReport.location.lng.toFixed(4)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Gemini AI Triage Card */}
+                    <div className="p-3 bg-tagapo-50/50 rounded-xl border border-tagapo-200/70 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-tagapo-950">
+                          <Sparkles className="w-3.5 h-3.5 text-tagapo-700" />
+                          <span>Gemini AI Triage</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {selectedReport.aiTriage?.confidence && (
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-tagapo-100 text-tagapo-800 border border-tagapo-200">
+                              {Math.round(selectedReport.aiTriage.confidence * 100)}% Conf
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleRetryTriage}
+                            disabled={isRetryingTriage}
+                            title="Re-run AI triage on this report"
+                            className="p-1 text-tagapo-700 hover:text-tagapo-950 hover:bg-tagapo-100/80 rounded transition cursor-pointer"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-stone-800 leading-relaxed font-sans">
+                        {selectedReport.aiTriage?.summary || 'AI triage assessment not available or pending.'}
+                      </p>
+
+                      {/* Collapsible AI Reasoning */}
+                      {selectedReport.aiTriage?.reasoning && (
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
+                            className="text-[10px] text-tagapo-800 hover:text-tagapo-950 font-medium flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>{isReasoningExpanded ? 'Hide AI reasoning' : 'View AI reasoning'}</span>
+                            <ChevronDown className={`w-3 h-3 transition-transform ${isReasoningExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+                          {isReasoningExpanded && (
+                            <div className="mt-1.5 p-2 rounded-lg bg-white/90 border border-tagapo-200/80 text-[10px] text-stone-700 leading-relaxed font-sans">
+                              {selectedReport.aiTriage.reasoning}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Protected Zone Alert (if applicable) */}
+                    {renderProtectedZoneBadge(
+                      selectedReport.aiTriage?.protectedZone,
+                      true
+                    )}
+
+                    {/* Weather Telemetry */}
+                    {(() => {
+                      const weather = selectedReport.aiTriage?.weather;
+                      if (!weather) return null;
+                      return (
+                        <div className="p-2.5 bg-stone-50 rounded-xl border border-stone-200/80 space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] font-display font-bold uppercase tracking-wider text-stone-600">
+                            <span className="flex items-center gap-1">
+                              <Wind className="w-3 h-3 text-stone-500" />
+                              {t.weatherTelemetryTitle}
+                            </span>
+                            <span className="text-[9px] text-stone-400 font-mono">
+                              {new Date(weather.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-1.5 text-center">
+                            <div className="p-1.5 rounded-lg bg-white border border-stone-200">
+                              <span className="text-[9px] text-stone-400 block leading-none">{t.weatherTemp}</span>
+                              <span className="font-mono font-bold text-xs text-stone-900">{weather.temperature}°C</span>
+                            </div>
+                            <div className="p-1.5 rounded-lg bg-white border border-stone-200">
+                              <span className="text-[9px] text-stone-400 block leading-none">{t.weatherWind}</span>
+                              <span className="font-mono font-bold text-xs text-stone-900 truncate">{weather.windSpeed} km/h</span>
+                            </div>
+                            <div className="p-1.5 rounded-lg bg-white border border-stone-200">
+                              <span className="text-[9px] text-stone-400 block leading-none">{t.weatherHumidity}</span>
+                              <span className="font-mono font-bold text-xs text-stone-900">{weather.humidity}%</span>
+                            </div>
+                            <div className="p-1.5 rounded-lg bg-white border border-stone-200">
+                              <span className="text-[9px] text-stone-400 block leading-none">{t.weatherPrecipitation}</span>
+                              <span className="font-mono font-bold text-xs text-stone-900">{weather.precipitation} mm</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Duplicate Cluster Alert */}
+                    {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId && (
+                      <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 flex items-center gap-2">
+                        <Layers className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                        <span className="font-medium">{t.duplicateClusterDetected}</span>
+                      </div>
+                    )}
+
+                    {/* Officer Decision Console */}
+                    <div className="bg-stone-50/80 p-3 rounded-xl border border-stone-200/90 space-y-2.5">
+                      <span className="font-display font-bold text-[10px] uppercase tracking-wider text-stone-600 block">
+                        Officer Decision Console
+                      </span>
+
+                      {/* Operational Status Selector */}
+                      <div>
+                        <label className="text-[9px] font-display font-bold uppercase tracking-wider text-stone-500 block mb-1">
+                          Operational Status
+                        </label>
+                        <div className="grid grid-cols-3 gap-1">
+                          {(['pending', 'in_progress', 'resolved'] as ReportStatus[]).map((status) => (
+                            <button
+                              key={status}
+                              type="button"
+                              onClick={() => setNewStatus(status)}
+                              className={`py-1.5 px-1 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider border transition cursor-pointer text-center truncate ${
+                                newStatus === status
+                                  ? status === 'resolved'
+                                    ? 'bg-emerald-700 text-white border-emerald-800 shadow-xs'
+                                    : status === 'in_progress'
+                                    ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
+                                    : 'bg-rose-700 text-white border-rose-800 shadow-xs'
+                                  : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-100'
+                              }`}
+                            >
+                              {status.replace(/_/g, ' ')}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Category & Severity Override Dropdowns */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[9px] font-display font-bold uppercase tracking-wider text-stone-500 block mb-0.5">
+                            Category
+                          </label>
+                          <select
+                            value={overrideCategory}
+                            onChange={(e) => setOverrideCategory(e.target.value as any)}
+                            className="w-full text-xs font-semibold px-2 py-1 bg-white border border-stone-200 rounded-md focus:outline-none focus:ring-1 focus:ring-tagapo-800 truncate"
+                          >
+                            {Object.entries(CATEGORIES).map(([key, cat]) => (
+                              <option key={key} value={key}>
+                                {lang === 'fil' ? cat.labelFil : cat.labelEn}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-display font-bold uppercase tracking-wider text-stone-500 block mb-0.5">
+                            Severity
+                          </label>
+                          <select
+                            value={overrideSeverity}
+                            onChange={(e) => setOverrideSeverity(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)}
+                            className="w-full text-xs font-semibold px-2 py-1 bg-white border border-stone-200 rounded-md focus:outline-none focus:ring-1 focus:ring-tagapo-800 truncate"
+                          >
+                            {Object.entries(SEVERITY_LEVELS).map(([lvl, meta]) => (
+                              <option key={lvl} value={lvl}>
+                                {lvl} - {lang === 'fil' ? meta.labelFil : meta.labelEn}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Action Directives / Notes */}
+                      <div>
+                        <label className="text-[9px] font-display font-bold uppercase tracking-wider text-stone-500 block mb-0.5">
+                          Action Directives / Notes
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={officerNotes}
+                          onChange={(e) => setOfficerNotes(e.target.value)}
+                          placeholder="Action directives, dispatch instructions, or closure remarks..."
+                          className="w-full text-xs px-2.5 py-1.5 bg-white border border-stone-200 rounded-md focus:outline-none focus:ring-1 focus:ring-tagapo-800 placeholder:text-stone-400 resize-none font-sans"
+                        />
+                      </div>
+
+                      {/* Unified Save CTA */}
+                      <div>
+                        <button
+                          type="button"
+                          onClick={handleSaveUnifiedAction}
+                          disabled={isSavingUnified}
+                          className={`w-full py-2 px-3 rounded-lg text-xs font-display font-bold uppercase tracking-wider text-white transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
+                            unifiedSuccess
+                              ? 'bg-emerald-600 hover:bg-emerald-700'
+                              : 'bg-tagapo-900 hover:bg-tagapo-800 disabled:bg-stone-300'
+                          }`}
+                        >
+                          {isSavingUnified ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Saving...</span>
+                            </>
+                          ) : unifiedSuccess ? (
+                            <>
+                              <Check className="w-4 h-4 text-emerald-100" />
+                              <span>{t.saveSuccessMsg}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Edit3 className="w-3.5 h-3.5" />
+                              <span>{t.saveAndApplyBtn}</span>
+                            </>
+                          )}
+                        </button>
+
+                        {/* Audit Log / Reviewer Timestamp */}
+                        {selectedReport.final?.reviewedAt && (
+                          <div className="text-[10px] text-stone-500 font-mono flex items-center justify-between pt-1">
+                            <span>Reviewed: {new Date(selectedReport.final.reviewedAt).toLocaleDateString()}</span>
+                            <span className="text-emerald-700 font-semibold">Assessment Logged</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* 4. FLOATING BOTTOM-RIGHT MAP CONTROLS & LEGEND            */}
+          {/* ========================================================= */}
+          <div className="absolute bottom-4 right-4 z-20 pointer-events-auto bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-md rounded-2xl p-2.5 space-y-2 max-w-[280px] transition-all duration-300">
+            <div className="flex items-center justify-between gap-2 pb-1 border-b border-stone-100">
+              <span className="font-display font-bold text-[10px] uppercase tracking-wider text-stone-500">
+                Map Layers
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsLegendExpanded(!isLegendExpanded)}
+                className="text-stone-400 hover:text-stone-700 p-0.5 rounded cursor-pointer"
+                title={isLegendExpanded ? 'Collapse legend' : 'Expand legend'}
+              >
+                <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${isLegendExpanded ? '-rotate-90' : 'rotate-90'}`} />
+              </button>
+            </div>
+
+            {/* Layer Mode Switcher Tabs (Mutually Exclusive) */}
+            <div className="grid grid-cols-3 gap-1 bg-stone-100/90 p-0.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider">
+              <button
+                type="button"
+                onClick={() => setMapLayerMode('boundaries')}
+                className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
+                  mapLayerMode === 'boundaries' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                }`}
+                title="Municipal vector boundaries across all 14 LGUs"
+              >
+                Boundaries
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapLayerMode('choropleth')}
+                className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
+                  mapLayerMode === 'choropleth' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                }`}
+                title="Incident density volume"
+              >
+                Choropleth
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapLayerMode('protected_zones')}
+                className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
+                  mapLayerMode === 'protected_zones' ? 'bg-emerald-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                }`}
+                title="Curated protected ecological reserves & buffers"
+              >
+                Protected
+              </button>
+            </div>
+
+            {/* Jurisdiction Focus (Mask Non-Rizal) / Dimming Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsMaskActive(!isMaskActive)}
+              className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider flex items-center justify-between transition cursor-pointer border ${
+                isMaskActive
+                  ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-950/20 text-emerald-950 border-emerald-300' : 'bg-tagapo-50 text-tagapo-950 border-tagapo-300')
+                  : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+              }`}
+              title={
+                mapLayerMode === 'protected_zones'
+                  ? (isMaskActive ? "Click to disable dimming of surrounding terrain" : "Click to dim surroundings and spotlight protected reserves")
+                  : (isMaskActive ? "Click to disable non-Rizal dimming mask" : "Click to gray out non-Rizal regions")
+              }
+            >
+              <span className="flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${isMaskActive ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-600 animate-pulse' : 'bg-tagapo-700 animate-pulse') : 'bg-stone-400'}`} />
+                <span>{mapLayerMode === 'protected_zones' ? 'Dim Outside Reserves' : 'Focus: Rizal Only'}</span>
+              </span>
+              <span className={`text-[9px] font-mono px-1 py-0.2 rounded font-bold ${
+                isMaskActive
+                  ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-200/90 text-emerald-950' : 'bg-tagapo-200/80 text-tagapo-900')
+                  : 'bg-stone-100 text-stone-500'
+              }`}>
+                {isMaskActive ? 'ON' : 'OFF'}
+              </span>
+            </button>
+
+            {/* Contextual Sub-Legend depending on active layer */}
+            {isLegendExpanded && (
+              <div className="pt-1 text-[10px]">
+                {mapLayerMode === 'choropleth' && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-stone-500 font-mono mb-1 text-[9px]">
+                      <span>0</span>
+                      <span>1 (20%)</span>
+                      <span>2 (40%)</span>
+                      <span>3 (60%)</span>
+                      <span>4 (80%)</span>
+                      <span>5+ (100%)</span>
+                    </div>
+                    <div className="grid grid-cols-5 gap-0.5 h-2 w-full rounded-full overflow-hidden border border-stone-200 bg-stone-100">
+                      <div className="h-full bg-emerald-600 opacity-20" title="1 report: 20% opacity" />
+                      <div className="h-full bg-emerald-600 opacity-40" title="2 reports: 40% opacity" />
+                      <div className="h-full bg-emerald-600 opacity-60" title="3 reports: 60% opacity" />
+                      <div className="h-full bg-emerald-600 opacity-80" title="4 reports: 80% opacity" />
+                      <div className="h-full bg-emerald-800 opacity-100" title="5+ reports: 100% opacity" />
+                    </div>
+                    <div className="text-stone-400 text-[9px] mt-1 text-center font-display font-medium">
+                      Incident Density Scale (20% – 100% Opacity)
+                    </div>
+                  </div>
+                )}
+
+                {mapLayerMode === 'protected_zones' && (
+                  <div className="p-2 rounded-lg bg-emerald-50/70 border border-emerald-200/60 space-y-1.5">
+                    <div className="font-display text-[9px] font-bold uppercase tracking-wider text-emerald-950 flex items-center gap-1">
+                      <ShieldAlert className="w-3 h-3 text-emerald-700" />
+                      <span>Protected Reserves</span>
+                    </div>
+                    <div className="space-y-1 text-[10px]">
+                      <div className="flex items-center gap-1.5 text-stone-700">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="font-semibold text-emerald-950">Mt. Tagapo Sanctuary</span>
+                        <span className="text-[9px] text-stone-400 ml-auto">Talim Is.</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-stone-700">
+                        <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
+                        <span className="font-semibold text-sky-950">Laguna Lake 50m Buffer</span>
+                        <span className="text-[9px] text-stone-400 ml-auto">Coast</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-stone-700">
+                        <span className="w-2 h-2 rounded-full bg-green-700 shrink-0" />
+                        <span className="font-semibold text-green-950">Upper Marikina Watershed</span>
+                        <span className="text-[9px] text-stone-400 ml-auto">Sierra Madre</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-stone-700">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                        <span className="font-semibold text-amber-950">Hinulugang Taktak</span>
+                        <span className="text-[9px] text-stone-400 ml-auto">Antipolo</span>
+                      </div>
+                    </div>
+                    <div className="text-[9px] text-emerald-800/80 font-medium pt-1 border-t border-emerald-200/60 flex items-center gap-1">
+                      <span>✨ Surroundings dimmed to highlight ecological zones</span>
+                    </div>
+                  </div>
+                )}
+
+                {(mapLayerMode === 'boundaries' || mapLayerMode === 'standard') && (
+                  <div className="pt-0.5 space-y-1">
+                    <div className="flex items-center justify-between gap-1 text-stone-700 font-display font-bold uppercase tracking-wider">
+                      <span className="flex items-center gap-1 text-emerald-800">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        1-2 Minor
+                      </span>
+                      <span className="flex items-center gap-1 text-amber-800">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        3 Mod
+                      </span>
+                      <span className="flex items-center gap-1 text-rose-800">
+                        <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
+                        4-5 Urgent
+                      </span>
+                    </div>
+                    {mapLayerMode === 'boundaries' && (
+                      <div className="text-[9px] text-stone-400 font-display text-center pt-0.5">
+                        14 LGUs of Rizal • Click to filter
                       </div>
                     )}
                   </div>
                 )}
               </div>
-
-              {/* Edge tab to open sidebar when collapsed */}
-              {!isSidebarOpen && (
-                <button
-                  type="button"
-                  onClick={() => setIsSidebarOpen(true)}
-                  className="absolute top-4 right-0 z-20 pointer-events-auto px-3 py-2 bg-white/95 backdrop-blur-md border-y border-l border-stone-300 shadow-md rounded-l-xl text-xs font-display font-bold uppercase tracking-wider text-stone-800 hover:bg-stone-50 flex items-center gap-1.5 cursor-pointer transition hover:pr-4"
-                  title="Expand side panel"
-                >
-                  <ChevronLeft className="w-4 h-4 text-tagapo-800" />
-                  <span>{selectedReport ? 'View Dossier' : `Queue (${filteredReports.length})`}</span>
-                </button>
-              )}
-            </div>
-
-            {/* Docked Right Sidebar (Queue Stream or Selected Dossier) */}
-            {isSidebarOpen && (
-              <aside className="w-full sm:w-[380px] lg:w-[420px] h-full shrink-0 bg-white border-l border-stone-200 shadow-sm flex flex-col z-20 transition-all duration-300 absolute sm:relative inset-y-0 right-0">
-                {selectedReport ? (
-                  /* ===================================================== */
-                  /* A. TARGET INCIDENT DOSSIER & ACTION CONSOLE            */
-                  /* ===================================================== */
-                  <div className="h-full flex flex-col overflow-hidden">
-                    {/* Header with Back to Queue button */}
-                    <div className="px-3.5 py-2.5 bg-stone-50 border-b border-stone-200 flex items-center justify-between text-stone-900 shrink-0">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedReport(null)}
-                          className="flex items-center gap-1 text-xs font-display font-bold uppercase tracking-wider text-tagapo-800 hover:text-tagapo-950 hover:bg-stone-200/60 px-2 py-1 rounded-md transition cursor-pointer shrink-0"
-                          title="Return to incident queue"
-                        >
-                          <ArrowLeft className="w-3.5 h-3.5" />
-                          <span>Queue</span>
-                        </button>
-                        <span className="text-stone-300">|</span>
-                        <span className="font-mono font-bold text-xs sm:text-sm text-stone-950 truncate">
-                          {selectedReport.referenceCode}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-display font-bold uppercase tracking-wider ${
-                            selectedReport.status === 'resolved'
-                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                              : selectedReport.status === 'in_progress'
-                              ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                              : 'bg-rose-50 text-rose-800 border border-rose-200'
-                          }`}
-                        >
-                          {selectedReport.status.replace(/_/g, ' ')}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setIsSidebarOpen(false)}
-                          title="Collapse side panel"
-                          className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded transition cursor-pointer"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Dossier Scrollable Body */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      {/* Duplicate Cluster Notice */}
-                      {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId && (
-                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 space-y-1">
-                          <div className="font-display font-bold uppercase tracking-wide flex items-center gap-1.5 text-amber-900">
-                            <Layers className="w-4 h-4 text-amber-700" />
-                            <span>{t.duplicateClusterDetected}</span>
-                          </div>
-                          <p className="text-[11px] leading-tight text-amber-800">
-                            {t.duplicateClusterDesc}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Photo Display (Secured Image Preview) */}
-                      <div className="space-y-1">
-                        <label className="font-display text-xs font-bold uppercase tracking-wide text-stone-600 block">
-                          Incident Photo (Secured Access)
-                        </label>
-                        <div className="relative rounded-xl overflow-hidden bg-stone-950 aspect-video flex items-center justify-center border border-stone-300">
-                          {photoDataUrl ? (
-                            <img
-                              src={photoDataUrl}
-                              alt="Incident evidence"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="text-center p-4 text-stone-400 text-xs">
-                              <Eye className="w-6 h-6 mx-auto mb-1 text-stone-500" />
-                              <span>{selectedReport.rawInput.hasImage ? 'Loading photo...' : 'No photo was submitted'}</span>
-                            </div>
-                          )}
-                          <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/75 backdrop-blur-xs text-[10px] font-mono font-bold text-tagapo-300 rounded border border-white/10">
-                            RA 10173 SECURED TELEMETRY
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Resident Description */}
-                      <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 space-y-1.5">
-                        <div className="flex items-center justify-between text-[11px] font-display font-bold uppercase tracking-wide text-stone-600">
-                          <span>Resident Description</span>
-                          <span className="text-[10px] text-amber-800 bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-200">
-                            Untrusted Input
-                          </span>
-                        </div>
-                        <p className="text-xs text-stone-900 italic leading-relaxed">
-                          "{selectedReport.rawInput.description}"
-                        </p>
-                        <div className="text-xs text-stone-500 font-mono pt-1">
-                          Loc: {selectedReport.location.lat.toFixed(4)}, {selectedReport.location.lng.toFixed(4)} • {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
-                        </div>
-                      </div>
-
-                      {/* AI Multimodal Triage Assessment */}
-                      <div className="p-4 bg-tagapo-50/60 rounded-xl border border-tagapo-200 space-y-2.5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wide text-tagapo-950">
-                            <Sparkles className="w-4 h-4 text-tagapo-800" />
-                            <span>{t.aiTriageTitle}</span>
-                          </div>
-                          {selectedReport.aiTriage && (
-                            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-tagapo-200 text-tagapo-950 border border-tagapo-300">
-                              {t.aiConfidence}: {(selectedReport.aiTriage.confidence * 100).toFixed(0)}%
-                            </span>
-                          )}
-                        </div>
-
-                        {selectedReport.triageStatus === 'failed' ? (
-                          <div className="space-y-2">
-                            <div className="p-2.5 bg-rose-100/80 rounded-lg text-rose-800 text-xs font-bold flex items-center gap-2">
-                              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                              <span>{t.needsReviewBadge}</span>
-                            </div>
-                            {retryTriageButton}
-                          </div>
-                        ) : selectedReport.aiTriage ? (
-                          <div className="space-y-2 text-xs">
-                            <div>
-                              <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
-                                {t.aiSummary}
-                              </span>
-                              <p className="text-stone-900 font-semibold mt-0.5">
-                                {selectedReport.aiTriage.summary}
-                              </p>
-                            </div>
-
-                            {renderProtectedZoneBadge(selectedReport.aiTriage.protectedZone)}
-
-                            <div className="pt-2 border-t border-tagapo-100">
-                              <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
-                                {t.aiReasoning}
-                              </span>
-                              <p className="text-stone-700 text-xs mt-0.5 leading-relaxed">
-                                {selectedReport.aiTriage.reasoning}
-                              </p>
-                            </div>
-
-                            {renderWeatherWidget(selectedReport.aiTriage.weather)}
-
-                            <div className="text-[11px] text-stone-400 font-mono">
-                              Engine: {selectedReport.aiTriage.model}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <p className="text-xs text-stone-500 italic">Triage in progress...</p>
-                            {retryTriageButton}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Human-in-the-Loop Override Form */}
-                      <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-display text-xs font-bold uppercase tracking-wide text-stone-900 flex items-center gap-1.5">
-                            <Edit3 className="w-3.5 h-3.5 text-tagapo-800" />
-                            <span>{t.humanOverrideTitle}</span>
-                          </h3>
-                          {selectedReport.final && (
-                            <span className="font-display text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-navy-100 text-navy-900 border border-navy-200">
-                              Human Verified
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <label className="block font-display text-[11px] font-bold uppercase tracking-wide text-stone-600 mb-1">
-                              {t.overrideCategory}
-                            </label>
-                            <select
-                              value={overrideCategory}
-                              onChange={(e) => setOverrideCategory(e.target.value as any)}
-                              className="w-full text-xs px-2.5 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
-                            >
-                              {Object.entries(CATEGORIES).map(([key, cat]) => (
-                                <option key={key} value={key}>
-                                  {lang === 'fil' ? cat.labelFil : cat.labelEn}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="block font-display text-[11px] font-bold uppercase tracking-wide text-stone-600 mb-1">
-                              {t.overrideSeverity}
-                            </label>
-                            <select
-                              value={overrideSeverity}
-                              onChange={(e) => setOverrideSeverity(Number(e.target.value) as any)}
-                              className="w-full text-xs px-2.5 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 font-bold"
-                            >
-                              <option value="1">1 - Minor / Cosmetic</option>
-                              <option value="2">2 - Low Concern</option>
-                              <option value="3">3 - Moderate</option>
-                              <option value="4">4 - High Hazard</option>
-                              <option value="5">5 - Critical Emergency</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block font-display text-[11px] font-bold uppercase tracking-wide text-stone-600 mb-1">
-                            {t.officerNotes}
-                          </label>
-                          <textarea
-                            value={officerNotes}
-                            onChange={(e) => setOfficerNotes(e.target.value)}
-                            rows={2}
-                            placeholder="Enter assessment findings or regulatory directives..."
-                            className="w-full text-xs px-3 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
-                          />
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={handleSaveOverride}
-                          disabled={isSavingOverride}
-                          className="w-full py-2.5 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 text-white font-display font-bold uppercase tracking-wider text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>{isSavingOverride ? 'Saving...' : t.saveOverrideBtn}</span>
-                        </button>
-
-                        {overrideSuccess && (
-                          <p className="text-xs text-tagapo-800 font-bold text-center">
-                            Final assessment saved and applied to live dashboard!
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Status Transition Workflow */}
-                      <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
-                        <label className="font-display text-xs font-bold uppercase tracking-wide text-stone-800 block">
-                          Update Incident Status
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {(['pending', 'in_progress', 'resolved'] as ReportStatus[]).map((st) => (
-                            <button
-                              key={st}
-                              type="button"
-                              onClick={() => setNewStatus(st)}
-                              className={`py-2 text-xs font-display font-bold uppercase tracking-wider rounded-lg border transition cursor-pointer ${
-                                newStatus === st
-                                  ? 'bg-tagapo-900 text-white border-tagapo-950 shadow-xs'
-                                  : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-100'
-                              }`}
-                            >
-                              {st.replace(/_/g, ' ')}
-                            </button>
-                          ))}
-                        </div>
-
-                        <input
-                          type="text"
-                          value={statusChangeNotes}
-                          onChange={(e) => setStatusChangeNotes(e.target.value)}
-                          placeholder="Notes (e.g. 'Field team dispatched', 'Cleanup finished')..."
-                          className="w-full text-xs px-3 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
-                        />
-
-                        <button
-                          type="button"
-                          onClick={handleUpdateStatus}
-                          disabled={isUpdatingStatus || newStatus === selectedReport.status}
-                          className="w-full py-2.5 bg-tagapo-900 hover:bg-tagapo-800 disabled:bg-stone-200 text-white font-display font-bold uppercase tracking-wider text-xs rounded-lg transition shadow-xs cursor-pointer"
-                        >
-                          {isUpdatingStatus ? 'Updating...' : 'Log Status Transition'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* ===================================================== */
-                  /* B. INCIDENT QUEUE STREAM (Browse & Filter List)       */
-                  /* ===================================================== */
-                  <div className="h-full flex flex-col overflow-hidden">
-                    {/* Header */}
-                    <div className="px-4 py-3 bg-stone-50 border-b border-stone-200 flex items-center justify-between text-stone-900 shrink-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-display font-bold text-xs uppercase tracking-wider text-stone-900">
-                          Incident Queue
-                        </span>
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-tagapo-100 text-tagapo-800 border border-tagapo-200">
-                          {filteredReports.length}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsSidebarOpen(false)}
-                        title="Collapse side panel"
-                        className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded transition cursor-pointer"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Secondary Quick Filter bar inside Sidebar */}
-                    <div className="p-3 border-b border-stone-200 bg-white/70 space-y-2 shrink-0">
-                      <div className="grid grid-cols-2 gap-2">
-                        <select
-                          value={categoryFilter}
-                          onChange={(e) => setCategoryFilter(e.target.value)}
-                          className="text-[11px] font-semibold px-2 py-1.5 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none truncate"
-                        >
-                          <option value="all">All Categories</option>
-                          {Object.entries(CATEGORIES).map(([key, cat]) => (
-                            <option key={key} value={key}>
-                              {lang === 'fil' ? cat.labelFil : cat.labelEn}
-                            </option>
-                          ))}
-                        </select>
-
-                        <select
-                          value={severityFilter}
-                          onChange={(e) => setSeverityFilter(e.target.value)}
-                          className="text-[11px] font-semibold px-2 py-1.5 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none truncate"
-                        >
-                          <option value="all">All Severities</option>
-                          <option value="urgent">Urgent (4-5)</option>
-                          <option value="1">1 - Minor</option>
-                          <option value="2">2 - Low</option>
-                          <option value="3">3 - Moderate</option>
-                          <option value="4">4 - High</option>
-                          <option value="5">5 - Critical</option>
-                        </select>
-                      </div>
-
-                      {(municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
-                        <div className="flex items-center justify-between pt-0.5">
-                          <span className="text-[10px] text-stone-500 font-medium">Filters active</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMunicipalityFilter('all');
-                              setStatusFilter('all');
-                              setCategoryFilter('all');
-                              setSeverityFilter('all');
-                              setSearchTerm('');
-                              setMapCenter({ lat: 14.5800, lng: 121.2800 });
-                              setMapZoom(11);
-                            }}
-                            className="font-display text-[10px] font-bold uppercase tracking-wider text-rose-700 hover:text-rose-900 cursor-pointer"
-                          >
-                            Reset Filters
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Scrollable Incident Stream */}
-                    <div className="flex-1 overflow-y-auto divide-y divide-stone-100">
-                      {filteredReports.length === 0 ? (
-                        <div className="p-8 text-center text-xs text-stone-500 space-y-1">
-                          <p className="font-semibold text-stone-700">No incident reports found</p>
-                          <p className="text-stone-400">Try adjusting your municipality or severity filters.</p>
-                        </div>
-                      ) : (
-                        filteredReports.map((report) => {
-                          const sev = report.final?.severity || report.aiTriage?.severity || 3;
-                          const cat = report.final?.category || report.aiTriage?.category || 'other';
-                          const catMeta = CATEGORIES[cat as IncidentCategory] || CATEGORIES.other;
-
-                          return (
-                            <div
-                              key={report.id}
-                              onClick={() => {
-                                setSelectedReport(report);
-                                const coords = resolveReportCoordinates(report);
-                                setMapCenter(coords);
-                                setMapZoom(14);
-                              }}
-                              className="p-3.5 hover:bg-stone-50/90 cursor-pointer transition flex items-start justify-between gap-2.5"
-                            >
-                              <div className="space-y-1 flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="font-mono font-bold text-xs text-stone-900">
-                                    {report.referenceCode}
-                                  </span>
-                                  <span
-                                    className={`text-[10px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${catMeta.badgeColor}`}
-                                  >
-                                    {lang === 'fil' ? catMeta.labelFil : catMeta.labelEn}
-                                  </span>
-                                  {report.duplicateClusterId && (
-                                    <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-stone-200 text-stone-700 flex items-center gap-0.5">
-                                      <Layers className="w-2.5 h-2.5" />
-                                      Cluster
-                                    </span>
-                                  )}
-                                </div>
-
-                                <p className="text-xs text-stone-600 line-clamp-2">
-                                  {report.aiTriage?.summary || report.rawInput.description}
-                                </p>
-
-                                <div className="flex items-center gap-1.5 text-[11px] text-stone-400 font-mono">
-                                  <span className="truncate">
-                                    {[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
-                                  </span>
-                                  <span>•</span>
-                                  <span className="shrink-0">{new Date(report.createdAt).toLocaleDateString()}</span>
-                                </div>
-                              </div>
-
-                              <div className="flex flex-col items-end gap-1 shrink-0 pt-0.5">
-                                <span
-                                  className={`px-1.5 py-0.5 rounded text-[10px] font-display font-black uppercase tracking-wider ${
-                                    sev >= 4
-                                      ? 'bg-rose-700 text-white animate-pulse'
-                                      : sev === 3
-                                      ? 'bg-amber-600 text-white'
-                                      : 'bg-tagapo-800 text-white'
-                                  }`}
-                                >
-                                  Sev {sev}
-                                </span>
-                                {report.status === 'resolved' && (
-                                  <span className="text-[9px] font-display font-bold uppercase text-tagapo-800">
-                                    Closed
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-                )}
-              </aside>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* High-Resolution Photo Lightbox Modal */}
+      {isLightboxOpen && photoDataUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setIsLightboxOpen(false)}
+              className="absolute -top-10 right-0 text-white/80 hover:text-white flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider p-1.5 cursor-pointer rounded hover:bg-white/10 transition"
+              title="Close (Esc)"
+            >
+              <X className="w-5 h-5" />
+              <span>Close (Esc)</span>
+            </button>
+            <img
+              src={photoDataUrl}
+              alt="Incident high-resolution evidence"
+              className="max-h-[80vh] w-auto max-w-full rounded-xl shadow-2xl object-contain border border-white/10"
+            />
+            <div className="mt-3 text-center text-xs text-stone-300 font-mono">
+              {selectedReport?.referenceCode} • High-Resolution Telemetry Preview
+            </div>
           </div>
         </div>
       )}

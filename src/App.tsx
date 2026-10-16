@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Navbar } from './components/Navbar';
+import { Navbar, type Tab } from './components/Navbar';
 import { ResidentReporter } from './components/ResidentReporter';
 import { PublicStatusPage } from './components/PublicStatusPage';
 import { Dashboard } from './components/Dashboard';
@@ -16,16 +16,15 @@ import { isOfficialUser } from './lib/auth';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState<'report' | 'status' | 'dashboard'>('report');
+  const [currentTab, setCurrentTab] = useState<Tab>('report');
   const [lang, setLang] = useState<Language>('fil');
   const [statusLookupCode, setStatusLookupCode] = useState<string>('');
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
   const [officialUser, setOfficialUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-  const [dashboardViewMode, setDashboardViewMode] = useState<'workbench' | 'full_map'>('workbench');
 
-  const isFullMap = currentTab === 'dashboard' && dashboardViewMode === 'full_map';
+  const isFullMap = !!officialUser && currentTab === 'map';
 
   // Initialize and check connectivity
   useEffect(() => {
@@ -59,10 +58,10 @@ export default function App() {
     };
   }, []);
 
-  // Prevent authenticated officers from accessing citizen reporting form
+  // Prevent authenticated officers from accessing citizen reporting form; default to LikasMap GIS
   useEffect(() => {
     if (officialUser && currentTab === 'report') {
-      setCurrentTab('dashboard');
+      setCurrentTab('map');
     }
   }, [officialUser, currentTab]);
 
@@ -81,21 +80,30 @@ export default function App() {
 
   return (
     <div className={`bg-white flex flex-col font-sans text-stone-900 ${isFullMap ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
-      {/* Navigation */}
-      <Navbar
-        currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
-        lang={lang}
-        setLang={setLang}
-        isOnline={isOnline}
-        pendingSyncCount={pendingSyncCount}
-        officialUser={officialUser}
-        onOpenLogin={() => setIsAuthModalOpen(true)}
-        onLogout={handleLogout}
-      />
+      {/* Primary Navigation Bar (Smoothly glides out of view in LikasMap GIS full-screen mode) */}
+      <div
+        className={`sticky top-0 z-50 w-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${
+          isFullMap
+            ? '-translate-y-full opacity-0 pointer-events-none -mb-14'
+            : 'translate-y-0 opacity-100 shadow-xs'
+        }`}
+        aria-hidden={isFullMap}
+      >
+        <Navbar
+          currentTab={currentTab}
+          setCurrentTab={setCurrentTab}
+          lang={lang}
+          setLang={setLang}
+          isOnline={isOnline}
+          pendingSyncCount={pendingSyncCount}
+          officialUser={officialUser}
+          onOpenLogin={() => setIsAuthModalOpen(true)}
+          onLogout={handleLogout}
+        />
+      </div>
 
       {/* Main Content View */}
-      <main className={isFullMap ? 'flex-1 flex flex-col h-[calc(100dvh-57px)] w-full overflow-hidden p-0 m-0' : 'flex-1 py-4 sm:py-8'}>
+      <main className={isFullMap ? 'w-screen h-screen fixed inset-0 overflow-hidden p-0 m-0 z-0' : 'flex-1 py-4 sm:py-8'}>
         {currentTab === 'report' && (
           <ResidentReporter
             lang={lang}
@@ -113,13 +121,16 @@ export default function App() {
           />
         )}
 
-        {currentTab === 'dashboard' && (
+        {(currentTab === 'workbench' || currentTab === 'map') && (
           <Dashboard
             lang={lang}
+            setLang={setLang}
             officialUser={officialUser}
             onOpenLogin={() => setIsAuthModalOpen(true)}
-            viewMode={dashboardViewMode}
-            onViewModeChange={setDashboardViewMode}
+            viewMode={currentTab === 'map' ? 'full_map' : 'workbench'}
+            onViewModeChange={(mode) => setCurrentTab(mode === 'full_map' ? 'map' : 'workbench')}
+            onNavigateTab={(tab) => setCurrentTab(tab as any)}
+            onLogout={handleLogout}
           />
         )}
       </main>
@@ -147,7 +158,7 @@ export default function App() {
         onClose={() => setIsAuthModalOpen(false)}
         onLoginSuccess={(user) => {
           setOfficialUser(user);
-          setCurrentTab('dashboard');
+          setCurrentTab('map');
         }}
       />
     </div>

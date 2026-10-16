@@ -11,10 +11,12 @@ import {
   ChevronDown,
   Menu,
   X,
+  Map as MapIcon,
+  Layout,
 } from 'lucide-react';
 import { Language, translations } from '../lib/i18n';
 
-type Tab = 'report' | 'status' | 'dashboard';
+export type Tab = 'report' | 'status' | 'workbench' | 'map';
 
 interface NavbarProps {
   currentTab: Tab;
@@ -31,25 +33,33 @@ interface NavbarProps {
 const FOCUS_RING =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tagapo-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
 
-/** Desktop underline text tab. */
-const NavTab: React.FC<{ active: boolean; onClick: () => void; label: string }> = ({
+/** Desktop tab with refined pill background and smooth underline indicator. */
+const NavTab: React.FC<{ active: boolean; onClick: () => void; label: string; icon?: React.ReactNode }> = ({
   active,
   onClick,
   label,
+  icon,
 }) => (
   <button
     type="button"
     onClick={onClick}
     aria-current={active ? 'page' : undefined}
-    className={`relative h-full px-3 flex items-center font-display text-sm font-bold tracking-wide uppercase transition-colors cursor-pointer rounded-md ${FOCUS_RING} ${
-      active ? 'text-stone-950' : 'text-stone-500 hover:text-stone-900'
+    className={`relative h-9 px-3 flex items-center gap-1.5 font-display text-xs font-bold tracking-wider uppercase transition-all duration-200 ease-out cursor-pointer rounded-lg active:scale-95 select-none ${FOCUS_RING} ${
+      active
+        ? 'bg-tagapo-50/90 text-tagapo-950 shadow-2xs font-extrabold'
+        : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100/70'
     }`}
   >
+    {icon && (
+      <span className={`w-3.5 h-3.5 transition-colors duration-200 ${active ? 'text-tagapo-800' : 'text-stone-400'}`}>
+        {icon}
+      </span>
+    )}
     <span>{label}</span>
     <span
       aria-hidden="true"
-      className={`absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-tagapo-900 origin-center transition-transform duration-200 ease-out ${
-        active ? 'scale-x-100' : 'scale-x-0'
+      className={`absolute inset-x-2 -bottom-1 h-0.5 rounded-full bg-tagapo-800 origin-center transition-all duration-250 ease-out ${
+        active ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
       }`}
     />
   </button>
@@ -143,7 +153,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = officialUser
     ? [
-        { id: 'dashboard', label: t.officerNavTriage, icon: <Radio className="w-5 h-5" /> },
+        { id: 'map', label: t.officerNavMap, icon: <MapIcon className="w-5 h-5" /> },
+        { id: 'workbench', label: t.officerNavWorkbench, icon: <Layout className="w-5 h-5" /> },
         { id: 'status', label: t.officerNavStatus, icon: <Search className="w-5 h-5" /> },
       ]
     : [
@@ -192,7 +203,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Brand */}
           <button
             type="button"
-            onClick={() => goTo(officialUser ? 'dashboard' : 'report')}
+            onClick={() => goTo(officialUser ? 'map' : 'report')}
             className={`flex items-center gap-2.5 select-none cursor-pointer rounded-md ${FOCUS_RING}`}
             title="NatureWatch"
           >
@@ -218,6 +229,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 active={currentTab === tab.id}
                 onClick={() => setCurrentTab(tab.id)}
                 label={tab.label}
+                icon={tab.icon}
               />
             ))}
           </nav>
@@ -250,7 +262,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => setIsUserMenuOpen((open) => !open)}
                     aria-expanded={isUserMenuOpen}
                     aria-haspopup="menu"
-                    className={`flex items-center gap-2 pl-1 pr-1.5 py-1 rounded-full hover:bg-stone-100 transition-colors cursor-pointer select-none ${FOCUS_RING}`}
+                    className={`flex items-center gap-2 pl-1 pr-1.5 py-1 rounded-full hover:bg-stone-100 active:scale-95 transition-all duration-150 cursor-pointer select-none ${FOCUS_RING}`}
                   >
                     <span className="w-7 h-7 rounded-full bg-tagapo-900 text-white flex items-center justify-center text-xs font-semibold">
                       {username[0].toUpperCase()}
@@ -259,8 +271,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                       {username}
                     </span>
                     <ChevronDown
-                      className={`w-3.5 h-3.5 text-stone-400 transition-transform duration-150 ${
-                        isUserMenuOpen ? 'rotate-180' : ''
+                      className={`w-3.5 h-3.5 text-stone-400 transition-transform duration-200 ease-out ${
+                        isUserMenuOpen ? 'rotate-180' : 'rotate-0'
                       }`}
                     />
                   </button>
@@ -268,7 +280,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {isUserMenuOpen && (
                     <div
                       role="menu"
-                      className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg ring-1 ring-stone-200 py-1.5"
+                      className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg ring-1 ring-stone-200 py-1.5 animate-nav-dropdown"
                     >
                       <p className="px-3.5 pt-1 pb-2 text-xs text-stone-500 truncate">
                         {officialUser.email}
@@ -300,7 +312,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     type="button"
                     onClick={onOpenLogin}
-                    className={`flex items-center gap-1.5 text-sm font-medium text-stone-500 hover:text-stone-900 transition-colors cursor-pointer rounded-md px-1 py-1 ${FOCUS_RING}`}
+                    className={`flex items-center gap-1.5 text-sm font-medium text-stone-500 hover:text-stone-900 active:scale-95 transition-all cursor-pointer rounded-md px-1 py-1 ${FOCUS_RING}`}
                   >
                     <Lock className="w-4 h-4" />
                     <span>{t.officerLoginBtn}</span>
@@ -316,9 +328,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               aria-expanded={isMobileOpen}
               aria-controls="mobile-nav-panel"
               aria-label={isMobileOpen ? 'Close menu' : 'Open menu'}
-              className={`sm:hidden -mr-2 w-11 h-11 flex items-center justify-center rounded-lg text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer ${FOCUS_RING}`}
+              className={`sm:hidden -mr-2 w-11 h-11 flex items-center justify-center rounded-lg text-stone-700 hover:bg-stone-100 active:scale-90 transition-all cursor-pointer ${FOCUS_RING}`}
             >
-              {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <span className={`transition-transform duration-200 ease-out ${isMobileOpen ? 'rotate-90' : 'rotate-0'}`}>
+                {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </span>
             </button>
           </div>
         </div>
@@ -328,7 +342,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       {isMobileOpen && (
         <div
           id="mobile-nav-panel"
-          className="sm:hidden absolute inset-x-0 top-full bg-white border-b border-stone-200 shadow-lg"
+          className="sm:hidden absolute inset-x-0 top-full bg-white border-b border-stone-200 shadow-lg animate-mobile-drawer"
         >
           <nav className="px-3 py-2" aria-label="Primary">
             {tabs.map((tab) => (
