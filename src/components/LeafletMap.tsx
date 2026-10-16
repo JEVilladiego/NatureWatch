@@ -62,6 +62,13 @@ interface LeafletMapProps {
   reports?: IncidentReport[];
   selectedReportId?: string | null;
   onSelectReport?: (report: IncidentReport) => void;
+  onClusterClick?: (group: {
+    reports: IncidentReport[];
+    municipality?: string;
+    barangay?: string;
+    lat: number;
+    lng: number;
+  }) => void;
   className?: string;
   // GeoJSON enhancement props
   layerMode?: MapLayerMode;
@@ -83,6 +90,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   reports = [],
   selectedReportId = null,
   onSelectReport,
+  onClusterClick,
   className = 'h-72 w-full rounded-xl overflow-hidden shadow-inner',
   layerMode = 'standard',
   basemap = 'street',
@@ -786,76 +794,146 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         const report = group.reports[0];
         const statusBadge =
           report.status === 'resolved'
-            ? '<span style="color:#059669; font-weight:bold; font-size:10px;">RESOLVED</span>'
+            ? '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:#292524;"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span>Closed</span>'
             : report.status === 'in_progress'
-              ? '<span style="color:#d97706; font-weight:bold; font-size:10px;">IN PROGRESS</span>'
-              : '<span style="color:#dc2626; font-weight:bold; font-size:10px;">PENDING</span>';
+              ? '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:#292524;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span>In Prog</span>'
+              : '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:#292524;"><span style="width:6px;height:6px;border-radius:50%;background:#f43f5e;"></span>Pending</span>';
 
         marker.bindPopup(`
           <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; max-width: 220px;">
-            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px;">
-              <strong style="font-family: monospace; font-size: 13px;">${report.referenceCode}</strong>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+              <strong style="font-family: monospace; font-size: 13px; color: #1c1917;">${report.referenceCode}</strong>
               ${statusBadge}
             </div>
-            <div style="margin-bottom: 5px; color: #64748b; font-size: 11px; display: flex; items-center: center;">
-              <svg style="width: 12px; height: 12px; margin-right: 4px; flex-shrink: 0; color: #0f766e;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <div style="margin-bottom: 5px; color: #78716c; font-size: 11px; display: flex; align-items: center;">
+              <svg style="width: 12px; height: 12px; margin-right: 4px; flex-shrink: 0; color: #78716c;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
               <span>${locationLabel}</span>
             </div>
-            <div style="font-size: 11px; color: #1e293b; margin-bottom: 6px;">
+            <div style="font-size: 11px; color: #292524; margin-bottom: 6px;">
               ${report.aiTriage?.summary || report.rawInput.description.slice(0, 80)}...
             </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 4px;">
-              <span style="font-weight:bold; color:${color}; font-size:11px;">Severity ${group.maxSeverity}/5</span>
-              <span style="font-size: 10px; color: #64748b;">Click to inspect</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #f5f5f4; padding-top: 5px;">
+              <span style="font-size: 10px; font-weight: 600; color: #44403c; background: #f5f5f4; border: 1px solid #e7e5e4; padding: 1px 6px; border-radius: 4px; font-family: monospace;">SEV ${group.maxSeverity}</span>
+              <span style="font-size: 10px; color: #a8a29e; font-family: monospace;">${new Date(report.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
         `);
       } else {
         // Multi-incident cluster popup
-        const reportItems = group.reports
+        // Sort reports by severity descending (SEV 5 -> 1) then newest
+        const sortedClusterReports = [...group.reports].sort((a, b) => {
+          const sevA = a.final?.severity || a.aiTriage?.severity || 3;
+          const sevB = b.final?.severity || b.aiTriage?.severity || 3;
+          if (sevB !== sevA) return sevB - sevA;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+
+        const reportItems = sortedClusterReports
           .slice(0, 5)
           .map((r) => {
             const rSev = r.final?.severity || r.aiTriage?.severity || 3;
-            let rColor = '#244460';
-            if (rSev === 1) rColor = '#2a5342';
-            if (rSev === 3) rColor = '#d97706';
-            if (rSev === 4) rColor = '#ea580c';
-            if (rSev === 5) rColor = '#dc2626';
-
+            const rStatus = r.status || 'pending';
+            const dotColor = rStatus === 'resolved' ? '#10b981' : rStatus === 'in_progress' ? '#f59e0b' : '#f43f5e';
+            const isCurrent = r.id === selectedReportId;
             return `
-              <div style="display: flex; align-items: center; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f5f9; font-size: 11px;">
-                <span style="font-family: monospace; font-weight: 700;">${r.referenceCode}</span>
-                <span style="color: ${rColor}; font-weight: 800; font-size: 10px;">Sev ${rSev}</span>
+              <div
+                role="button"
+                tabindex="0"
+                data-report-id="${r.id}"
+                class="nw-cluster-item"
+                style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; margin-bottom: 3px; border-radius: 6px; border: 1px solid ${isCurrent ? '#1c1917' : '#e7e5e4'}; background: ${isCurrent ? '#f5f5f4' : '#ffffff'}; cursor: pointer; transition: all 0.15s ease;"
+              >
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+                  <span style="width: 6px; height: 6px; border-radius: 50%; background: ${dotColor}; flex-shrink: 0;"></span>
+                  <span style="font-family: monospace; font-weight: 700; color: #1c1917; font-size: 11px;">${r.referenceCode}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <span style="font-size: 9px; font-weight: 600; color: #44403c; background: #f5f5f4; border: 1px solid #e7e5e4; padding: 1px 5px; border-radius: 4px; font-family: monospace;">SEV ${rSev}</span>
+                  <span style="color: #a8a29e; font-size: 11px; font-weight: bold;">›</span>
+                </div>
               </div>
             `;
           })
           .join('');
 
-        const extraCount = group.reports.length > 5 ? `<div style="font-size: 10px; color: #64748b; text-align: center; margin-top: 2px;">+${group.reports.length - 5} more incidents</div>` : '';
+        const extraCount = group.reports.length > 5 ? `<div style="font-size: 10px; color: #78716c; text-align: center; margin-top: 3px;">+${group.reports.length - 5} more incidents in cluster</div>` : '';
 
         marker.bindPopup(`
           <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; max-width: 220px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-              <strong style="color: #0f172a; font-size: 13px;">${count} Incidents</strong>
-              <span style="font-weight: 800; color: ${color}; font-size: 11px;">Max Sev ${group.maxSeverity}</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <strong style="color: #1c1917; font-size: 12px;">${count} Incident Cluster</strong>
+              <span style="font-size: 9px; font-weight: 600; color: #44403c; background: #f5f5f4; border: 1px solid #e7e5e4; padding: 1px 5px; border-radius: 4px; font-family: monospace;">MAX SEV ${group.maxSeverity}</span>
             </div>
-            <div style="color: #64748b; font-size: 11px; margin-bottom: 6px; display: flex; align-items: center;">
-              <svg style="width: 12px; height: 12px; margin-right: 4px; flex-shrink: 0; color: #0f766e;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <div style="color: #78716c; font-size: 11px; margin-bottom: 6px; display: flex; align-items: center;">
+              <svg style="width: 12px; height: 12px; margin-right: 4px; flex-shrink: 0; color: #78716c;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
               <span>${locationLabel}</span>
             </div>
-            <div style="margin-bottom: 4px;">
+            <div style="margin-bottom: 3px;">
               ${reportItems}
               ${extraCount}
             </div>
-            <div style="font-size: 10px; color: #64748b; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 3px;">
-              Click dot to open dossier
-            </div>
+            <button
+              type="button"
+              class="nw-cluster-view-queue"
+              style="width: 100%; border: none; margin-top: 5px; padding: 6px 8px; border-radius: 6px; background: #1c1917; color: #ffffff; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;"
+            >
+              <span>View all ${count} in Queue</span>
+              <span>→</span>
+            </button>
           </div>
         `);
       }
 
+      // Handle click events on popup cluster items
+      marker.on('popupopen', (e) => {
+        const popupNode = e.popup.getElement();
+        if (!popupNode) return;
+        const clickableItems = popupNode.querySelectorAll<HTMLElement>('.nw-cluster-item');
+        clickableItems.forEach((item) => {
+          item.onclick = (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const reportId = item.getAttribute('data-report-id');
+            const targetReport = group.reports.find((r) => r.id === reportId);
+            if (targetReport && onSelectReport) {
+              onSelectReport(targetReport);
+            }
+          };
+          item.onmouseenter = () => {
+            item.style.backgroundColor = '#f5f5f4';
+            item.style.borderColor = '#a8a29e';
+          };
+          item.onmouseleave = () => {
+            const reportId = item.getAttribute('data-report-id');
+            const isCurrent = reportId === selectedReportId;
+            item.style.backgroundColor = isCurrent ? '#f5f5f4' : '#ffffff';
+            item.style.borderColor = isCurrent ? '#1c1917' : '#e7e5e4';
+          };
+        });
+
+        const viewQueueBtn = popupNode.querySelector<HTMLElement>('.nw-cluster-view-queue');
+        if (viewQueueBtn) {
+          viewQueueBtn.onclick = (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            marker.closePopup();
+            if (onClusterClick) {
+              onClusterClick(group);
+            }
+          };
+          viewQueueBtn.onmouseenter = () => {
+            viewQueueBtn.style.backgroundColor = '#000000';
+          };
+          viewQueueBtn.onmouseleave = () => {
+            viewQueueBtn.style.backgroundColor = '#1c1917';
+          };
+        }
+      });
+
       marker.on('click', () => {
-        if (onSelectReport) {
+        if (isCluster && onClusterClick) {
+          onClusterClick(group);
+        } else if (onSelectReport) {
           const targetReport =
             group.reports.find((r) => r.id === selectedReportId) ||
             group.reports.reduce((prev, curr) => {
@@ -873,7 +951,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         dashboardMarkersRef.current.set(r.id, marker);
       });
     });
-  }, [mode, reports, selectedReportId, onSelectReport]);
+  }, [mode, reports, selectedReportId, onSelectReport, onClusterClick]);
 
   return <div ref={mapContainerRef} className={`relative isolate z-0 ${className || ''}`} />;
 };

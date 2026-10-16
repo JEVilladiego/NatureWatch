@@ -86,22 +86,22 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
     switch (status) {
       case 'resolved':
         return (
-          <span className="px-2.5 py-1 bg-tagapo-50 text-tagapo-950 border border-tagapo-200 font-display font-bold text-xs uppercase tracking-wider rounded-md flex items-center gap-1.5">
-            <CheckCircle className="w-3.5 h-3.5 text-tagapo-800" />
+          <span className="px-2.5 py-1 bg-stone-100 text-stone-900 border border-stone-200 font-semibold text-xs rounded-md flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
             <span>{t.statusResolved}</span>
           </span>
         );
       case 'in_progress':
         return (
-          <span className="px-2.5 py-1 bg-amber-50 text-amber-950 border border-amber-200 font-display font-bold text-xs uppercase tracking-wider rounded-md flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-amber-700" />
+          <span className="px-2.5 py-1 bg-stone-100 text-stone-900 border border-stone-200 font-semibold text-xs rounded-md flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
             <span>{t.statusInProgress}</span>
           </span>
         );
       default:
         return (
-          <span className="px-2.5 py-1 bg-stone-100 text-stone-900 border border-stone-200 font-display font-bold text-xs uppercase tracking-wider rounded-md flex items-center gap-1.5">
-            <AlertCircle className="w-3.5 h-3.5 text-stone-600" />
+          <span className="px-2.5 py-1 bg-stone-100 text-stone-900 border border-stone-200 font-semibold text-xs rounded-md flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
             <span>{t.statusPending}</span>
           </span>
         );
@@ -115,13 +115,13 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
         {!isOfficial && onBackToReport ? (
           <button
             onClick={onBackToReport}
-            className="inline-flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wider text-tagapo-900 hover:text-tagapo-700 cursor-pointer"
+            className="inline-flex items-center gap-1.5 font-semibold text-xs text-stone-700 hover:text-stone-950 cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{lang === 'fil' ? 'Bumalik sa Pag-uulat' : 'Back to Reporting'}</span>
           </button>
         ) : (
-          <span className="font-display text-xs font-bold uppercase tracking-wider text-stone-500">
+          <span className="font-semibold text-xs text-stone-500">
             {lang === 'fil' ? 'Suriin ang Status ng Code' : 'Reference Code Lookup'}
           </span>
         )}
@@ -129,7 +129,7 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
       </div>
 
       <div className="pt-6 pb-1">
-        <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-stone-950 tracking-tight uppercase leading-none">
+        <h1 className="font-bold text-2xl sm:text-3xl text-stone-900 tracking-tight leading-tight">
           {lang === 'fil' ? 'Subaybayan ang Katayuan ng Ulat' : 'Track Incident Report Status'}
         </h1>
         <p className="text-sm text-stone-600 mt-1.5">
@@ -154,13 +154,13 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             placeholder="Hal. BK-7K2M9"
-            className="w-full pl-10 pr-4 py-2.5 text-sm font-mono uppercase bg-white border border-stone-200 rounded-lg focus:ring-1 focus:ring-tagapo-800 focus:outline-none"
+            className="w-full pl-10 pr-4 py-2.5 text-sm font-mono uppercase bg-white border border-stone-200 rounded-lg focus:ring-1 focus:ring-stone-900 focus:outline-none"
           />
         </div>
         <button
           type="submit"
           disabled={loading || !code.trim()}
-          className="px-5 py-2.5 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 disabled:bg-stone-200 disabled:text-stone-400 text-white font-display font-bold uppercase tracking-wider text-xs rounded-lg shadow-2xs transition cursor-pointer"
+          className="px-5 py-2.5 bg-stone-900 hover:bg-black active:bg-stone-950 disabled:bg-stone-200 disabled:text-stone-400 text-white font-semibold text-xs rounded-lg shadow-2xs transition cursor-pointer"
         >
           {loading ? 'Searching...' : 'Search'}
         </button>
@@ -221,13 +221,13 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
           {/* Action Timeline */}
           {result.statusHistory && result.statusHistory.length > 0 && (
             <div className="border-t border-stone-100 pt-5 space-y-4">
-              <h3 className="font-display text-xs font-bold text-stone-900 uppercase tracking-wider">
+              <h3 className="text-xs font-semibold text-stone-900">
                 Official Action Timeline
               </h3>
               <div className="space-y-4 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-stone-200">
                 {result.statusHistory.map((item, idx) => (
                   <div key={idx} className="relative pl-6 text-xs">
-                    <div className="absolute left-1 top-1.5 w-2 h-2 rounded-full bg-tagapo-900" />
+                    <div className="absolute left-1 top-1.5 w-2 h-2 rounded-full bg-stone-900" />
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-stone-900 capitalize text-sm">
                         {item.status.replace(/_/g, ' ')}
@@ -249,7 +249,7 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
 
           {/* Footnote Privacy Note */}
           <div className="border-t border-stone-100 pt-4 text-[11px] text-stone-400 leading-relaxed flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-tagapo-800 shrink-0" />
+            <ShieldCheck className="w-3.5 h-3.5 text-stone-400 shrink-0" />
             <span>
               <strong className="text-stone-600 font-semibold">RA 10173 Protected: </strong>
               Photos and GPS telemetry are restricted from public disclosure to protect resident anonymity.

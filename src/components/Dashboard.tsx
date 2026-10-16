@@ -33,6 +33,8 @@ import {
   ShieldCheck,
   LogOut,
   Map as MapIcon,
+  Globe,
+  Mountain,
 } from 'lucide-react';
 import {
   IncidentReport,
@@ -117,6 +119,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // LikasMap-inspired Full Map layout states
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isLegendExpanded, setIsLegendExpanded] = useState<boolean>(true);
+  const [isLayersPanelOpen, setIsLayersPanelOpen] = useState<boolean>(true);
 
   // Reports state
   const [reports, setReports] = useState<IncidentReport[]>([]);
@@ -129,6 +132,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  // Active cluster filter from clicking a multi-report map marker
+  const [activeClusterFilter, setActiveClusterFilter] = useState<{
+    reportIds: string[];
+    label: string;
+    municipality?: string;
+    barangay?: string;
+  } | null>(null);
 
   // Human-in-the-loop Override Form state
   const [overrideCategory, setOverrideCategory] = useState<IncidentCategory>('solid_waste');
@@ -177,15 +187,46 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return counts;
   }, [reports]);
 
+  // Cluster marker click handler: filters the Incident Queue to the co-located reports
+  const handleClusterClick = (group: {
+    reports: IncidentReport[];
+    municipality?: string;
+    barangay?: string;
+    lat: number;
+    lng: number;
+  }) => {
+    const label = [group.barangay, group.municipality].filter(Boolean).join(', ') || 'Spatial Cluster';
+    setActiveClusterFilter({
+      reportIds: group.reports.map((r) => r.id),
+      label,
+      municipality: group.municipality,
+      barangay: group.barangay,
+    });
+    if (group.municipality) {
+      const matchedKey =
+        Object.keys(MUNICIPALITY_COORDINATES).find(
+          (k) =>
+            k === group.municipality ||
+            k.toLowerCase().includes(group.municipality!.toLowerCase()) ||
+            group.municipality!.toLowerCase().includes(k.toLowerCase())
+        ) || group.municipality;
+      setMunicipalityFilter(matchedKey);
+    }
+    setSelectedReport(null);
+    setIsSheetOpen(true);
+    setMapCenter({ lat: group.lat, lng: group.lng });
+    setMapZoom(14);
+  };
+
   // Open-Meteo telemetry widget for active report
   const renderWeatherWidget = (weather?: WeatherContext | null) => {
     if (!weather) return null;
     return (
       <div className="pt-2 mt-2 border-t border-stone-200/80">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="font-display text-[10px] font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1">
-            <Wind className="w-3 h-3 text-stone-400" />
-            {t.weatherTelemetryTitle}
+          <span className="text-[11px] font-semibold text-stone-700 flex items-center gap-1.5">
+            <Wind className="w-3.5 h-3.5 text-stone-500" />
+            <span>{t.weatherTelemetryTitle}</span>
           </span>
           <span className="text-[10px] text-stone-400 font-mono">
             {new Date(weather.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -193,20 +234,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
         <div className="grid grid-cols-4 gap-1 p-2 bg-stone-50 border border-stone-200/80 rounded-lg text-center divide-x divide-stone-200/70">
           <div className="px-1">
-            <span className="text-[9px] text-stone-400 font-medium uppercase tracking-wider block leading-tight">{t.weatherTemp}</span>
-            <span className="font-mono font-semibold text-xs text-stone-800">{weather.temperature}°C</span>
+            <span className="text-[10px] text-stone-500 font-medium block leading-tight">{t.weatherTemp}</span>
+            <span className="font-mono font-semibold text-xs text-stone-900">{weather.temperature}°C</span>
           </div>
           <div className="px-1">
-            <span className="text-[9px] text-stone-400 font-medium uppercase tracking-wider block leading-tight">{t.weatherWind}</span>
-            <span className="font-mono font-semibold text-xs text-stone-800 truncate block">{weather.windSpeed} km/h</span>
+            <span className="text-[10px] text-stone-500 font-medium block leading-tight">{t.weatherWind}</span>
+            <span className="font-mono font-semibold text-xs text-stone-900 truncate block">{weather.windSpeed} km/h</span>
           </div>
           <div className="px-1">
-            <span className="text-[9px] text-stone-400 font-medium uppercase tracking-wider block leading-tight">{t.weatherHumidity}</span>
-            <span className="font-mono font-semibold text-xs text-stone-800">{weather.humidity}%</span>
+            <span className="text-[10px] text-stone-500 font-medium block leading-tight">{t.weatherHumidity}</span>
+            <span className="font-mono font-semibold text-xs text-stone-900">{weather.humidity}%</span>
           </div>
           <div className="px-1">
-            <span className="text-[9px] text-stone-400 font-medium uppercase tracking-wider block leading-tight">{t.weatherPrecipitation}</span>
-            <span className="font-mono font-semibold text-xs text-stone-800">{weather.precipitation} mm</span>
+            <span className="text-[10px] text-stone-500 font-medium block leading-tight">{t.weatherPrecipitation}</span>
+            <span className="font-mono font-semibold text-xs text-stone-900">{weather.precipitation} mm</span>
           </div>
         </div>
       </div>
@@ -217,19 +258,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const renderProtectedZoneBadge = (zone?: ProtectedZoneHit | null, compact?: boolean) => {
     if (!zone) return null;
     return (
-      <div className="p-2.5 bg-emerald-50/40 border border-emerald-200/80 rounded-lg space-y-1 my-1.5">
+      <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl space-y-1.5 my-1.5">
         <div className="flex items-center justify-between gap-1.5">
           <div className="flex items-center gap-1.5 min-w-0">
-            <ShieldAlert className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-            <span className="font-display text-[10px] font-bold uppercase tracking-wider text-stone-600">
+            <ShieldAlert className="w-3.5 h-3.5 text-stone-700 shrink-0" />
+            <span className="text-[11px] font-semibold text-stone-900 truncate">
               {t.protectedZoneAlertTitle}
             </span>
           </div>
-          <span className="text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/80 uppercase shrink-0">
+          <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-200/80 text-stone-700 border border-stone-300/70 uppercase shrink-0">
             {zone.type.replace(/_/g, ' ')}
           </span>
         </div>
-        <div className="text-xs font-semibold text-stone-900 leading-tight">
+        <div className="text-xs font-semibold text-stone-900 leading-snug">
           {zone.name}
         </div>
         {zone.legalNote && (
@@ -238,19 +279,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <button
                 type="button"
                 onClick={() => setIsLegalNoteExpanded(!isLegalNoteExpanded)}
-                className="text-[10px] text-emerald-800 hover:text-emerald-950 font-medium flex items-center gap-0.5 cursor-pointer mt-0.5"
+                className="text-[10px] text-stone-500 hover:text-stone-900 font-medium flex items-center gap-1 cursor-pointer mt-1"
               >
-                <span>{isLegalNoteExpanded ? 'Hide legal basis' : 'View statutory basis'}</span>
+                <span>{isLegalNoteExpanded ? 'Hide statutory basis' : 'View statutory basis'}</span>
                 <ChevronDown className={`w-3 h-3 transition-transform ${isLegalNoteExpanded ? 'rotate-180' : ''}`} />
               </button>
               {isLegalNoteExpanded && (
-                <div className="text-[10px] text-stone-600 leading-normal pt-1 font-sans">
+                <div className="text-[10px] text-stone-600 leading-relaxed pt-1.5 mt-1 border-t border-stone-200/60 font-sans">
                   {zone.legalNote}
                 </div>
               )}
             </div>
           ) : (
-            <div className="text-[11px] text-stone-600 leading-relaxed font-sans pt-0.5">
+            <div className="text-[11px] text-stone-600 leading-relaxed font-sans pt-1 border-t border-stone-200/60">
               {zone.legalNote}
             </div>
           )
@@ -260,6 +301,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleQuickJump = (munKey: string) => {
+    setActiveClusterFilter(null);
     if (munKey === 'all') {
       setMunicipalityFilter('all');
       setSelectedReport(null);
@@ -426,23 +468,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return list;
   }, [reports]);
 
-  // Filtered reports
-  const filteredReports = useMemo(() => {
+  // Reports visible on the map (preserves municipal/category/severity context)
+  const mapVisibleReports = useMemo(() => {
     return clusteredReports.filter((report) => {
-      // Municipality filter
       if (municipalityFilter !== 'all' && report.location?.municipality !== municipalityFilter) return false;
-
-      // Status filter
       if (statusFilter !== 'all' && report.status !== statusFilter) return false;
-
-      // Category filter
       const activeCat = report.final?.category || report.aiTriage?.category || 'other';
       if (categoryFilter !== 'all' && activeCat !== categoryFilter) return false;
-
-      // Severity filter
       const activeSev = report.final?.severity || report.aiTriage?.severity || 0;
       if (severityFilter === 'urgent' && activeSev < 4) return false;
       if (severityFilter !== 'all' && severityFilter !== 'urgent' && activeSev !== Number(severityFilter)) return false;
+      return true;
+    });
+  }, [clusteredReports, municipalityFilter, statusFilter, categoryFilter, severityFilter]);
+
+  // Filtered reports for queue stream (narrows by activeClusterFilter and searchTerm)
+  const filteredReports = useMemo(() => {
+    return mapVisibleReports.filter((report) => {
+      // Cluster filter from map marker click
+      if (activeClusterFilter && !activeClusterFilter.reportIds.includes(report.id)) {
+        return false;
+      }
 
       // Search term
       if (searchTerm.trim()) {
@@ -456,7 +502,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       return true;
     });
-  }, [clusteredReports, municipalityFilter, statusFilter, categoryFilter, severityFilter, searchTerm]);
+  }, [mapVisibleReports, activeClusterFilter, searchTerm]);
 
   // Statistics calculation
   const stats = useMemo(() => {
@@ -625,7 +671,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       type="button"
       onClick={handleRetryTriage}
       disabled={isRetryingTriage}
-      className="px-3 py-1.5 bg-tagapo-900 hover:bg-tagapo-800 disabled:bg-stone-200 text-white rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer"
+      className="px-3 py-1.5 bg-stone-900 hover:bg-black disabled:bg-stone-200 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
     >
       <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
       <span>{isRetryingTriage ? 'Running AI triage...' : 'Run AI triage again'}</span>
@@ -639,7 +685,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="w-16 h-16 bg-amber-100 text-amber-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200">
           <ShieldAlert className="w-8 h-8" />
         </div>
-        <h2 className="font-display font-extrabold text-2xl text-stone-900 tracking-tight uppercase">
+        <h2 className="font-bold text-2xl text-stone-900 tracking-tight">
           {t.officialPortalTitle}
         </h2>
         <p className="text-sm text-stone-600 mt-2 max-w-md mx-auto">
@@ -649,7 +695,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
           <button
             onClick={onOpenLogin}
-            className="py-3 px-6 bg-tagapo-900 hover:bg-tagapo-800 text-white font-display font-bold uppercase tracking-wider text-xs rounded-xl shadow-xs transition cursor-pointer"
+            className="py-3 px-6 bg-stone-900 hover:bg-black text-white font-semibold text-xs rounded-xl shadow-xs transition cursor-pointer"
           >
             {t.loginOfficialBtn}
           </button>
@@ -693,7 +739,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {viewMode === 'workbench' && (
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-stone-200">
           <div>
-            <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-stone-950 tracking-tight uppercase leading-none">
+            <h1 className="font-bold text-2xl sm:text-3xl text-stone-950 tracking-tight leading-tight">
               PG-ENRO Rizal Command Dashboard
             </h1>
             <p className="text-xs text-stone-500 mt-1.5 font-medium">
@@ -707,7 +753,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <button
                 type="button"
                 onClick={() => handleViewModeChange('workbench')}
-                className="px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer bg-tagapo-900 text-white shadow-xs"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer bg-stone-900 text-white shadow-xs"
               >
                 <Layout className="w-3.5 h-3.5" />
                 <span>Workbench</span>
@@ -715,14 +761,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <button
                 type="button"
                 onClick={() => handleViewModeChange('full_map')}
-                className="px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer text-stone-600 hover:text-stone-900 hover:bg-stone-200/60"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
                 <span>Full Map</span>
               </button>
             </div>
 
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-tagapo-900 text-tagapo-50 font-display text-xs font-bold uppercase tracking-wider rounded-lg">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 text-white text-xs font-semibold rounded-lg">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               Live Telemetry
             </span>
@@ -738,7 +784,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* Unified Operations Telemetry Strip */}
           <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-stone-200 border border-stone-200 bg-stone-50/70 rounded-xl overflow-hidden shadow-2xs">
             <div className="p-3.5 sm:p-4 bg-white/60">
-              <div className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500">
+              <div className="text-xs font-semibold text-stone-500">
                 {t.statsOpen}
               </div>
               <div className="mt-1 flex items-baseline gap-2">
@@ -750,7 +796,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div className="p-3.5 sm:p-4 bg-rose-50/40">
-              <div className="font-display text-[11px] font-bold uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
+              <div className="text-xs font-semibold text-rose-700 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
                 {t.statsUrgent}
               </div>
@@ -763,11 +809,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div className="p-3.5 sm:p-4 bg-white/60">
-              <div className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500">
+              <div className="text-xs font-semibold text-stone-500">
                 {t.statsResolved}
               </div>
               <div className="mt-1 flex items-baseline gap-2">
-                <span className="font-mono text-2xl sm:text-3xl font-bold text-tagapo-800">
+                <span className="font-mono text-2xl sm:text-3xl font-bold text-stone-900">
                   {stats.resolvedCount}
                 </span>
                 <span className="text-[11px] text-stone-400 font-medium">closed cases</span>
@@ -775,11 +821,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div className="p-3.5 sm:p-4 bg-white/60">
-              <div className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500">
+              <div className="text-xs font-semibold text-stone-500">
                 {t.statsAvgTime}
               </div>
               <div className="mt-1 flex items-baseline gap-2">
-                <span className="font-mono text-2xl sm:text-3xl font-bold text-navy-900">
+                <span className="font-mono text-2xl sm:text-3xl font-bold text-stone-900">
                   18.4 hrs
                 </span>
                 <span className="text-[11px] text-stone-400 font-medium">provincial SLA</span>
@@ -796,7 +842,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search reference code, description, or barangay..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900"
               />
             </div>
 
@@ -903,9 +949,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => handleQuickJump('all')}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-display font-bold uppercase tracking-wide transition cursor-pointer whitespace-nowrap ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
                       municipalityFilter === 'all'
-                        ? 'bg-tagapo-800 text-white shadow-xs'
+                        ? 'bg-stone-900 text-white shadow-xs'
                         : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                     }`}
                   >
@@ -916,9 +962,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       key={mun}
                       type="button"
                       onClick={() => handleQuickJump(mun)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-display font-bold uppercase tracking-wide transition cursor-pointer whitespace-nowrap ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
                         municipalityFilter === mun
-                          ? 'bg-tagapo-800 text-white shadow-xs'
+                          ? 'bg-stone-900 text-white shadow-xs'
                           : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                       }`}
                     >
@@ -932,19 +978,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   type="button"
                   onClick={() => handleViewModeChange('full_map')}
                   title="Expand to Full Map Canvas"
-                  className="absolute top-2.5 right-2.5 z-20 px-2.5 py-1.5 rounded-xl text-[11px] font-display font-bold uppercase tracking-wider backdrop-blur-md bg-white/95 hover:bg-stone-50 active:bg-stone-100 text-stone-800 border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 transition cursor-pointer flex items-center gap-1.5"
+                  className="absolute top-2.5 right-2.5 z-20 px-2.5 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md bg-white/95 hover:bg-stone-50 active:bg-stone-100 text-stone-800 border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 transition cursor-pointer flex items-center gap-1.5"
                 >
-                  <Maximize2 className="w-3.5 h-3.5 text-tagapo-800" />
+                  <Maximize2 className="w-3.5 h-3.5 text-stone-700" />
                   <span className="hidden sm:inline">Full Map</span>
                 </button>
 
                 {/* Bottom-left In-Map HUD: Tactical Mutually Exclusive Layer Controller */}
-                <div className="absolute bottom-6 left-2.5 z-20 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 flex items-center gap-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-stone-700">
+                <div className="absolute bottom-6 left-2.5 z-20 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-stone-200/90 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 flex items-center gap-0.5 text-xs font-semibold text-stone-700">
                   <button
                     type="button"
                     onClick={() => setMapLayerMode(mapLayerMode === 'boundaries' ? 'standard' : 'boundaries')}
                     className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
-                      mapLayerMode === 'boundaries' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                      mapLayerMode === 'boundaries' ? 'bg-stone-900 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                     }`}
                     title="Municipal vector boundaries across all 14 LGUs"
                   >
@@ -956,7 +1002,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     type="button"
                     onClick={() => setMapLayerMode(mapLayerMode === 'choropleth' ? 'standard' : 'choropleth')}
                     className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
-                      mapLayerMode === 'choropleth' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
+                      mapLayerMode === 'choropleth' ? 'bg-stone-900 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                     }`}
                     title="Thematic incident density volume"
                   >
@@ -969,7 +1015,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     onClick={() => setMapLayerMode(mapLayerMode === 'protected_zones' ? 'standard' : 'protected_zones')}
                     className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
                       mapLayerMode === 'protected_zones'
-                        ? 'bg-emerald-800 text-white shadow-xs'
+                        ? 'bg-stone-900 text-white shadow-xs'
                         : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                     }`}
                     title="Curated ecological reserves, lake easement, & watersheds"
@@ -985,7 +1031,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     onClick={() => setIsMaskActive(!isMaskActive)}
                     className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
                       isMaskActive
-                        ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-800 text-white shadow-xs' : 'bg-tagapo-800 text-white shadow-xs')
+                        ? 'bg-stone-900 text-white shadow-xs'
                         : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/80'
                     }`}
                     title={
@@ -1046,12 +1092,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   center={mapCenter}
                   zoom={mapZoom}
                   fitProvinceKey={fitProvinceKey}
-                  reports={filteredReports}
+                  reports={mapVisibleReports}
                   selectedReportId={selectedReport?.id}
                   layerMode={mapLayerMode}
                   basemap={basemapMode}
                   activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
                   onMunicipalityClick={(mun) => handleQuickJump(mun)}
+                  onClusterClick={(group) => handleClusterClick(group)}
                   choroplethCounts={choroplethCounts}
                   maskNonRizal={isMaskActive}
                   onSelectReport={(r) => {
@@ -1186,15 +1233,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
                     </div>
 
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider inline-flex items-center gap-1 ${
-                        selectedReport.status === 'resolved'
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
-                          : selectedReport.status === 'in_progress'
-                          ? 'bg-amber-50 text-amber-800 border border-amber-200/80'
-                          : 'bg-rose-50 text-rose-800 border border-rose-200/80'
-                      }`}
-                    >
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-stone-100 text-stone-700 border border-stone-200 inline-flex items-center gap-1.5 capitalize">
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
                           selectedReport.status === 'resolved'
@@ -1208,18 +1247,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </span>
                   </div>
 
-                  {/* Duplicate Cluster Notice */}
-                  {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId && (
-                    <div className="p-3 bg-amber-50/60 rounded-lg border border-amber-200/80 text-xs text-amber-900 space-y-1">
-                      <div className="font-display font-bold uppercase tracking-wide flex items-center gap-1.5 text-amber-900">
-                        <Layers className="w-4 h-4 text-amber-700" />
-                        <span>{t.duplicateClusterDetected}</span>
+                  {/* Linked duplicate cluster notice */}
+                  {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId ? (
+                    <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1 text-xs text-stone-700">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 font-semibold text-stone-900">
+                          <Layers className="w-4 h-4 text-stone-700" />
+                          <span>{t.duplicateClusterDetected}</span>
+                        </div>
+                        <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-200 text-stone-700 border border-stone-300/60">
+                          Linked Cluster
+                        </span>
                       </div>
-                      <p className="text-[11px] leading-tight text-amber-800">
+                      <p className="text-xs leading-relaxed text-stone-600">
                         {t.duplicateClusterDesc}
                       </p>
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Photo Display (Secured Image Preview) */}
                   <div className="space-y-1">
@@ -1323,8 +1367,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   {/* Human-in-the-Loop Override Form */}
                   <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-display text-xs font-bold uppercase tracking-wide text-stone-900 flex items-center gap-1.5">
-                        <Edit3 className="w-3.5 h-3.5 text-tagapo-800" />
+                      <h3 className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
+                        <Edit3 className="w-3.5 h-3.5 text-stone-700" />
                         <span>{t.humanOverrideTitle}</span>
                       </h3>
                       {selectedReport.final && (
@@ -1336,13 +1380,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <label className="block font-display text-[11px] font-bold uppercase tracking-wide text-stone-600 mb-1">
+                        <label className="block text-xs font-semibold text-stone-600 mb-1">
                           {t.overrideCategory}
                         </label>
                         <select
                           value={overrideCategory}
                           onChange={(e) => setOverrideCategory(e.target.value as any)}
-                          className="w-full text-xs px-2.5 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
+                          className="w-full text-xs px-2.5 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900"
                         >
                           {Object.entries(CATEGORIES).map(([key, cat]) => (
                             <option key={key} value={key}>
@@ -1353,13 +1397,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
 
                       <div>
-                        <label className="block font-display text-[11px] font-bold uppercase tracking-wide text-stone-600 mb-1">
+                        <label className="block text-xs font-semibold text-stone-600 mb-1">
                           {t.overrideSeverity}
                         </label>
                         <select
                           value={overrideSeverity}
                           onChange={(e) => setOverrideSeverity(Number(e.target.value) as any)}
-                          className="w-full text-xs px-2.5 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 font-bold"
+                          className="w-full text-xs px-2.5 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 font-bold"
                         >
                           <option value="1">1 - Minor / Cosmetic</option>
                           <option value="2">2 - Low Concern</option>
@@ -1371,7 +1415,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
 
                     <div>
-                      <label className="block font-display text-[11px] font-bold uppercase tracking-wide text-stone-600 mb-1">
+                      <label className="block text-xs font-semibold text-stone-600 mb-1">
                         {t.officerNotes}
                       </label>
                       <textarea
@@ -1379,7 +1423,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         onChange={(e) => setOfficerNotes(e.target.value)}
                         rows={2}
                         placeholder="Enter assessment findings or regulatory directives..."
-                        className="w-full text-xs px-3 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
+                        className="w-full text-xs px-3 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900"
                       />
                     </div>
 
@@ -1387,14 +1431,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       type="button"
                       onClick={handleSaveOverride}
                       disabled={isSavingOverride}
-                      className="w-full py-2.5 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 text-white font-display font-bold uppercase tracking-wider text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full py-2.5 bg-stone-900 hover:bg-black active:bg-stone-950 text-white font-semibold text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Check className="w-3.5 h-3.5" />
                       <span>{isSavingOverride ? 'Saving...' : t.saveOverrideBtn}</span>
                     </button>
 
                     {overrideSuccess && (
-                      <p className="text-xs text-tagapo-800 font-bold text-center">
+                      <p className="text-xs text-stone-900 font-semibold text-center">
                         Final assessment saved and applied to live dashboard!
                       </p>
                     )}
@@ -1402,7 +1446,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                   {/* Status Transition Workflow */}
                   <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
-                    <label className="font-display text-xs font-bold uppercase tracking-wide text-stone-800 block">
+                    <label className="text-xs font-semibold text-stone-800 block">
                       Update Incident Status
                     </label>
                     <div className="grid grid-cols-3 gap-2">
@@ -1411,9 +1455,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           key={st}
                           type="button"
                           onClick={() => setNewStatus(st)}
-                          className={`py-2 text-xs font-display font-bold uppercase tracking-wider rounded-lg border transition cursor-pointer ${
+                          className={`py-2 text-xs font-semibold rounded-lg border transition cursor-pointer ${
                             newStatus === st
-                              ? 'bg-tagapo-900 text-white border-tagapo-950 shadow-xs'
+                              ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
                               : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-100'
                           }`}
                         >
@@ -1427,14 +1471,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       value={statusChangeNotes}
                       onChange={(e) => setStatusChangeNotes(e.target.value)}
                       placeholder="Notes (e.g. 'Field team dispatched', 'Cleanup finished')..."
-                      className="w-full text-xs px-3 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800"
+                      className="w-full text-xs px-3 py-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900"
                     />
 
                     <button
                       type="button"
                       onClick={handleUpdateStatus}
                       disabled={isUpdatingStatus || newStatus === selectedReport.status}
-                      className="w-full py-2.5 bg-tagapo-900 hover:bg-tagapo-800 disabled:bg-stone-200 text-white font-display font-bold uppercase tracking-wider text-xs rounded-lg transition shadow-xs cursor-pointer"
+                      className="w-full py-2.5 bg-stone-900 hover:bg-black disabled:bg-stone-200 text-white font-semibold text-xs rounded-lg transition shadow-xs cursor-pointer"
                     >
                       {isUpdatingStatus ? 'Updating...' : 'Log Status Transition'}
                     </button>
@@ -1470,12 +1514,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               center={mapCenter}
               zoom={mapZoom}
               fitProvinceKey={fitProvinceKey}
-              reports={filteredReports}
+              reports={mapVisibleReports}
               selectedReportId={selectedReport?.id}
               layerMode={mapLayerMode}
               basemap={basemapMode}
               activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
               onMunicipalityClick={(mun) => handleQuickJump(mun)}
+              onClusterClick={(group) => handleClusterClick(group)}
               choroplethCounts={choroplethCounts}
               maskNonRizal={isMaskActive}
               onSelectReport={(r) => {
@@ -1499,7 +1544,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 NW
               </div>
               <span className="font-bold text-xs tracking-tight text-stone-900 hidden sm:inline">
-                LikasMap <span className="text-tagapo-800 font-mono text-[10px] font-bold">GIS</span>
+                LikasMap <span className="text-stone-700 font-mono text-[10px] font-bold">GIS</span>
               </span>
             </div>
 
@@ -1509,7 +1554,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                className="px-2.5 py-1 rounded-md text-xs font-semibold bg-tagapo-800 text-white shadow-2xs cursor-default flex items-center gap-1.5 transition-all duration-150"
+                className="px-2.5 py-1 rounded-md text-xs font-semibold bg-stone-900 text-white shadow-2xs cursor-default flex items-center gap-1.5 transition-all duration-150"
               >
                 <MapIcon className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Map</span>
@@ -1579,10 +1624,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <button
               type="button"
               onClick={() => setIsSheetOpen(true)}
-              className="absolute top-16 left-3 sm:left-4 z-30 pointer-events-auto px-3.5 py-2 bg-white border border-stone-200 shadow-md rounded-xl text-xs font-display font-bold uppercase tracking-wider text-stone-800 hover:bg-stone-50 active:scale-95 transition-all duration-200 animate-nav-pill flex items-center gap-2 cursor-pointer"
+              className="absolute top-16 left-3 sm:left-4 z-30 pointer-events-auto px-3.5 py-2 bg-white border border-stone-200 shadow-md rounded-xl text-xs font-semibold text-stone-800 hover:bg-stone-50 active:scale-95 transition-all duration-200 animate-nav-pill flex items-center gap-2 cursor-pointer"
               title="Show Queue & Inspector"
             >
-              <Layers className="w-4 h-4 text-tagapo-800" />
+              <Layers className="w-4 h-4 text-stone-700" />
               <span>{selectedReport ? selectedReport.referenceCode : `Queue (${filteredReports.length})`}</span>
               <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
             </button>
@@ -1602,7 +1647,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search ref, barangay..."
-                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white border border-stone-200 focus:border-tagapo-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 font-sans transition placeholder:text-stone-400"
+                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white border border-stone-200 focus:border-stone-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 font-sans transition placeholder:text-stone-400"
                       />
                       {searchTerm && (
                         <button
@@ -1629,7 +1674,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="px-3 py-2 bg-stone-50 border-b border-stone-200/80 space-y-2 shrink-0">
                     {/* Active count badge summary */}
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-display font-bold uppercase tracking-wider text-stone-600">
+                      <span className="font-semibold text-stone-700">
                         Incident Queue ({filteredReports.length})
                       </span>
                       <div className="flex items-center gap-2 text-[11px] font-mono font-medium">
@@ -1643,9 +1688,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <button
                         type="button"
                         onClick={() => handleQuickJump('all')}
-                        className={`px-2.5 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
+                        className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
                           municipalityFilter === 'all'
-                            ? 'bg-tagapo-800 text-white shadow-xs'
+                            ? 'bg-stone-900 text-white shadow-xs'
                             : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70 bg-white border border-stone-200/80'
                         }`}
                       >
@@ -1659,9 +1704,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             key={mun}
                             type="button"
                             onClick={() => handleQuickJump(mun)}
-                            className={`px-2.5 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
+                            className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
                               isSelected
-                                ? 'bg-tagapo-800 text-white shadow-xs'
+                                ? 'bg-stone-900 text-white shadow-xs'
                                 : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70 bg-white border border-stone-200/80'
                             }`}
                           >
@@ -1676,7 +1721,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <select
                         value={categoryFilter}
                         onChange={(e) => setCategoryFilter(e.target.value)}
-                        className="text-[11px] font-semibold px-2 py-1 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 truncate"
+                        className="text-[11px] font-semibold px-2 py-1 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 truncate"
                       >
                         <option value="all">All Categories</option>
                         {Object.entries(CATEGORIES).map(([key, cat]) => (
@@ -1689,7 +1734,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <select
                         value={severityFilter}
                         onChange={(e) => setSeverityFilter(e.target.value)}
-                        className="text-[11px] font-semibold px-2 py-1 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 truncate"
+                        className="text-[11px] font-semibold px-2 py-1 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 truncate"
                       >
                         <option value="all">All Severities</option>
                         <option value="urgent">Urgent (4-5)</option>
@@ -1701,12 +1746,36 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </select>
                     </div>
 
-                    {(municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
+                    {/* Active Cluster Pill Banner */}
+                    {activeClusterFilter && (
+                      <div className="flex items-center justify-between px-2.5 py-1.5 bg-stone-100 border border-stone-200 rounded-lg text-xs">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Layers className="w-3.5 h-3.5 text-stone-700 shrink-0" />
+                          <span className="font-semibold text-stone-900 truncate">
+                            Cluster: {activeClusterFilter.label}
+                          </span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-stone-200 text-stone-700 font-medium shrink-0">
+                            {filteredReports.length}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActiveClusterFilter(null)}
+                          className="text-stone-400 hover:text-stone-700 p-0.5 rounded transition cursor-pointer shrink-0 ml-1"
+                          title="Clear cluster filter"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+
+                    {(activeClusterFilter || municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
                       <div className="flex items-center justify-between pt-0.5">
                         <span className="text-[10px] text-stone-500 font-medium">Filters active</span>
                         <button
                           type="button"
                           onClick={() => {
+                            setActiveClusterFilter(null);
                             setMunicipalityFilter('all');
                             setStatusFilter('all');
                             setCategoryFilter('all');
@@ -1715,7 +1784,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             setMapCenter({ lat: 14.5800, lng: 121.2800 });
                             setMapZoom(11);
                           }}
-                          className="font-display text-[10px] font-bold uppercase tracking-wider text-rose-700 hover:text-rose-900 cursor-pointer"
+                          className="text-[11px] font-semibold text-rose-700 hover:text-rose-900 cursor-pointer"
                         >
                           Reset Filters
                         </button>
@@ -1749,7 +1818,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           >
                             <div className="space-y-1 flex-1 min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-mono font-bold text-xs text-stone-900 group-hover:text-tagapo-800 transition-colors">
+                                <span className="font-mono font-bold text-xs text-stone-900 group-hover:text-stone-700 transition-colors">
                                   {report.referenceCode}
                                 </span>
                                 <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded border ${catMeta.badgeColor}`}>
@@ -1821,26 +1890,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedReport(null)}
-                      className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-stone-700 hover:text-stone-950 hover:bg-stone-100 px-2 py-1 rounded-md transition cursor-pointer"
-                      title="Return to Incident Queue"
+                      className="flex items-center gap-1.5 text-xs font-semibold text-stone-700 hover:text-stone-950 hover:bg-stone-100 px-2 py-1 rounded-md transition cursor-pointer"
+                      title={activeClusterFilter ? 'Return to Cluster Queue' : 'Return to Incident Queue'}
                     >
-                      <ArrowLeft className="w-3.5 h-3.5 text-tagapo-800" />
-                      <span>{t.backToQueueBtn || 'Queue'}</span>
+                      <ArrowLeft className="w-3.5 h-3.5 text-stone-700" />
+                      <span>{activeClusterFilter ? 'Cluster Queue' : t.backToQueueBtn || 'Queue'}</span>
                     </button>
 
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-xs text-stone-900">
                         {selectedReport.referenceCode}
                       </span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1 ${
-                          selectedReport.status === 'resolved'
-                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
-                            : selectedReport.status === 'in_progress'
-                            ? 'bg-amber-50 text-amber-800 border border-amber-200/80'
-                            : 'bg-rose-50 text-rose-800 border border-rose-200/80'
-                        }`}
-                      >
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-stone-100 text-stone-700 border border-stone-200 inline-flex items-center gap-1.5 capitalize">
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
                             selectedReport.status === 'resolved'
@@ -1908,7 +1969,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             Untrusted Input
                           </span>
                         </div>
-                        <p className="text-xs text-stone-800 italic leading-relaxed border-l-2 border-stone-300 pl-2.5 py-0.5">
+                        <p className="text-xs text-stone-800 italic leading-relaxed py-0.5">
                           "{selectedReport.rawInput.description}"
                         </p>
                         <div className="text-[10px] text-stone-500 font-mono pt-1 border-t border-stone-200/60 flex items-center justify-between">
@@ -1925,8 +1986,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     {/* Gemini AI Triage Card */}
                     <div className="p-3 bg-white rounded-lg border border-stone-200 space-y-2 shadow-2xs">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-stone-800">
-                          <Sparkles className="w-3.5 h-3.5 text-tagapo-700" />
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-900">
+                          <Sparkles className="w-3.5 h-3.5 text-stone-700" />
                           <span>Gemini AI Triage</span>
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -1981,55 +2042,68 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                     {/* Duplicate Cluster Alert */}
                     {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId && (
-                      <div className="p-2.5 bg-amber-50/60 rounded-lg border border-amber-200/80 text-[11px] text-amber-900 flex items-center gap-2">
-                        <Layers className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                        <span className="font-medium">{t.duplicateClusterDetected}</span>
+                      <div className="p-2.5 bg-stone-50 rounded-lg border border-stone-200 text-xs text-stone-700 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Layers className="w-3.5 h-3.5 text-stone-600 shrink-0" />
+                          <span className="font-medium truncate">{t.duplicateClusterDetected}</span>
+                        </div>
+                        <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-200 text-stone-700 border border-stone-300/60 shrink-0">
+                          Cluster Detected
+                        </span>
                       </div>
                     )}
 
                     {/* Officer Decision Console */}
                     <div className="bg-stone-50/70 p-3.5 rounded-lg border border-stone-200 space-y-3">
-                      <span className="font-display font-bold text-[10px] uppercase tracking-wider text-stone-600 block">
+                      <span className="font-semibold text-xs text-stone-700 block">
                         Officer Decision Console
                       </span>
 
                       {/* Operational Status Selector */}
                       <div>
-                        <label className="text-[9px] font-display font-bold uppercase tracking-wider text-stone-500 block mb-1">
+                        <label className="text-[10px] font-semibold text-stone-500 block mb-1">
                           Operational Status
                         </label>
-                        <div className="grid grid-cols-3 gap-1 bg-stone-200/70 p-0.5 rounded-lg text-[10px]">
-                          {(['pending', 'in_progress', 'resolved'] as ReportStatus[]).map((status) => (
-                            <button
-                              key={status}
-                              type="button"
-                              onClick={() => setNewStatus(status)}
-                              className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer font-semibold ${
-                                newStatus === status
-                                  ? status === 'resolved'
-                                    ? 'bg-white text-emerald-800 shadow-2xs font-bold'
-                                    : status === 'in_progress'
-                                    ? 'bg-white text-amber-800 shadow-2xs font-bold'
-                                    : 'bg-white text-rose-800 shadow-2xs font-bold'
-                                  : 'text-stone-600 hover:text-stone-900'
-                              }`}
-                            >
-                              {status.replace(/_/g, ' ')}
-                            </button>
-                          ))}
+                        <div className="grid grid-cols-3 gap-1 bg-stone-100 p-1 rounded-lg text-xs font-medium">
+                          {(['pending', 'in_progress', 'resolved'] as ReportStatus[]).map((status) => {
+                            const isActive = newStatus === status;
+                            return (
+                              <button
+                                key={status}
+                                type="button"
+                                onClick={() => setNewStatus(status)}
+                                className={`py-1.5 px-2 rounded-md text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5 ${
+                                  isActive
+                                    ? 'bg-stone-900 text-white shadow-xs font-semibold'
+                                    : 'text-stone-600 hover:text-stone-900'
+                                }`}
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    status === 'resolved'
+                                      ? 'bg-emerald-500'
+                                      : status === 'in_progress'
+                                      ? 'bg-amber-500'
+                                      : 'bg-rose-500'
+                                  }`}
+                                />
+                                <span className="capitalize">{status.replace(/_/g, ' ')}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 
                       {/* Category & Severity Override Dropdowns */}
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-[9px] font-display font-bold uppercase tracking-wider text-stone-500 block mb-0.5">
+                          <label className="text-[10px] font-semibold text-stone-500 block mb-0.5">
                             Category
                           </label>
                           <select
                             value={overrideCategory}
                             onChange={(e) => setOverrideCategory(e.target.value as any)}
-                            className="w-full text-xs font-semibold px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 truncate"
+                            className="w-full text-xs font-semibold px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 truncate"
                           >
                             {Object.entries(CATEGORIES).map(([key, cat]) => (
                               <option key={key} value={key}>
@@ -2039,13 +2113,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           </select>
                         </div>
                         <div>
-                          <label className="text-[9px] font-display font-bold uppercase tracking-wider text-stone-500 block mb-0.5">
+                          <label className="text-[10px] font-semibold text-stone-500 block mb-0.5">
                             Severity
                           </label>
                           <select
                             value={overrideSeverity}
                             onChange={(e) => setOverrideSeverity(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)}
-                            className="w-full text-xs font-semibold px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 truncate"
+                            className="w-full text-xs font-semibold px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 truncate"
                           >
                             {Object.entries(SEVERITY_LEVELS).map(([lvl, meta]) => (
                               <option key={lvl} value={lvl}>
@@ -2058,7 +2132,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                       {/* Action Directives / Notes */}
                       <div>
-                        <label className="text-[9px] font-display font-bold uppercase tracking-wider text-stone-500 block mb-0.5">
+                        <label className="text-[10px] font-semibold text-stone-500 block mb-0.5">
                           Action Directives / Notes
                         </label>
                         <textarea
@@ -2066,7 +2140,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           value={officerNotes}
                           onChange={(e) => setOfficerNotes(e.target.value)}
                           placeholder="Action directives, dispatch instructions, or closure remarks..."
-                          className="w-full text-xs px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 placeholder:text-stone-400 resize-none font-sans"
+                          className="w-full text-xs px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 placeholder:text-stone-400 resize-none font-sans"
                         />
                       </div>
 
@@ -2076,10 +2150,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           type="button"
                           onClick={handleSaveUnifiedAction}
                           disabled={isSavingUnified}
-                          className={`w-full py-2 px-3 rounded-lg text-xs font-display font-bold uppercase tracking-wider text-white transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
+                          className={`w-full py-2 px-3 rounded-lg text-xs font-semibold text-white transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
                             unifiedSuccess
                               ? 'bg-emerald-600 hover:bg-emerald-700'
-                              : 'bg-tagapo-800 hover:bg-tagapo-900 disabled:bg-stone-300 active:scale-[0.99]'
+                              : 'bg-stone-900 hover:bg-black disabled:bg-stone-300 active:scale-[0.99]'
                           }`}
                         >
                           {isSavingUnified ? (
@@ -2104,7 +2178,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         {selectedReport.final?.reviewedAt && (
                           <div className="text-[10px] text-stone-500 font-mono flex items-center justify-between pt-1">
                             <span>Reviewed: {new Date(selectedReport.final.reviewedAt).toLocaleDateString()}</span>
-                            <span className="text-emerald-700 font-semibold">Assessment Logged</span>
+                            <span className="text-stone-700 font-medium flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3 text-emerald-600" />
+                              Assessment Logged
+                            </span>
                           </div>
                         )}
                       </div>
@@ -2116,215 +2193,264 @@ export const Dashboard: React.FC<DashboardProps> = ({
           )}
 
           {/* ========================================================= */}
-          {/* 4. FLOATING BOTTOM-RIGHT MAP CONTROLS & LEGEND            */}
+          {/* 4. GOOGLE / APPLE MAPS FLOATING LAYERS TRIGGER & POPOVER   */}
           {/* ========================================================= */}
-          <div className="absolute bottom-4 right-4 z-20 pointer-events-auto bg-white border border-stone-200 shadow-lg rounded-xl p-2.5 space-y-2 max-w-[280px] transition-all duration-300">
-            <div className="flex items-center justify-between gap-2 pb-1 border-b border-stone-100">
-              <span className="font-display font-bold text-[10px] uppercase tracking-wider text-stone-500">
-                Map Layers
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsLegendExpanded(!isLegendExpanded)}
-                className="text-stone-400 hover:text-stone-700 p-0.5 rounded cursor-pointer"
-                title={isLegendExpanded ? 'Collapse legend' : 'Expand legend'}
-              >
-                <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${isLegendExpanded ? '-rotate-90' : 'rotate-90'}`} />
-              </button>
-            </div>
-
-            {/* Basemap Style Switcher (Street / Satellite / Terrain) */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[9px] font-display font-bold uppercase tracking-wider text-stone-500">
-                <span>Basemap Style</span>
-                <span className="text-[8px] font-mono text-tagapo-700 bg-tagapo-100/70 px-1 py-0.2 rounded font-bold">Free / Open</span>
-              </div>
-              <div className="grid grid-cols-3 gap-1 bg-stone-100/90 p-0.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider">
-                <button
-                  type="button"
-                  onClick={() => setBasemapMode('street')}
-                  className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
-                    basemapMode === 'street' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                  title="Standard street map with road networks (Esri World Street Map)"
-                >
-                  Street
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBasemapMode('satellite')}
-                  className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
-                    basemapMode === 'satellite' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                  title="High-resolution aerial satellite imagery (ESRI World Imagery)"
-                >
-                  Satellite
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBasemapMode('terrain')}
-                  className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
-                    basemapMode === 'terrain' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                  title="Topographic terrain & mountain contours"
-                >
-                  Terrain
-                </button>
-              </div>
-            </div>
-
-            {/* Layer Mode Switcher Tabs (Mutually Exclusive) */}
-            <div className="space-y-1">
-              <span className="font-display font-bold text-[9px] uppercase tracking-wider text-stone-500 block">
-                Analysis Layers
-              </span>
-              <div className="grid grid-cols-3 gap-1 bg-stone-100/90 p-0.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider">
-                <button
-                  type="button"
-                  onClick={() => setMapLayerMode('boundaries')}
-                  className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
-                    mapLayerMode === 'boundaries' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                  title="Municipal vector boundaries across all 14 LGUs"
-                >
-                  Boundaries
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMapLayerMode('choropleth')}
-                  className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
-                    mapLayerMode === 'choropleth' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                  title="Incident density volume"
-                >
-                  Choropleth
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMapLayerMode('protected_zones')}
-                  className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer ${
-                    mapLayerMode === 'protected_zones' ? 'bg-emerald-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                  title="Curated protected ecological reserves & buffers"
-                >
-                  Protected
-                </button>
-              </div>
-            </div>
-
-            {/* Jurisdiction Focus (Mask Non-Rizal) / Dimming Toggle */}
-            <button
-              type="button"
-              onClick={() => setIsMaskActive(!isMaskActive)}
-              className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider flex items-center justify-between transition cursor-pointer border ${
-                isMaskActive
-                  ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-950/20 text-emerald-950 border-emerald-300' : 'bg-tagapo-50 text-tagapo-950 border-tagapo-300')
-                  : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
-              }`}
-              title={
-                mapLayerMode === 'protected_zones'
-                  ? (isMaskActive ? "Click to disable dimming of surrounding terrain" : "Click to dim surroundings and spotlight protected reserves")
-                  : (isMaskActive ? "Click to disable non-Rizal dimming mask" : "Click to gray out non-Rizal regions")
-              }
-            >
-              <span className="flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${isMaskActive ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-600 animate-pulse' : 'bg-tagapo-700 animate-pulse') : 'bg-stone-400'}`} />
-                <span>{mapLayerMode === 'protected_zones' ? 'Dim Outside Reserves' : 'Focus: Rizal Only'}</span>
-              </span>
-              <span className={`text-[9px] font-mono px-1 py-0.2 rounded font-bold ${
-                isMaskActive
-                  ? (mapLayerMode === 'protected_zones' ? 'bg-emerald-200/90 text-emerald-950' : 'bg-tagapo-200/80 text-tagapo-900')
-                  : 'bg-stone-100 text-stone-500'
-              }`}>
-                {isMaskActive ? 'ON' : 'OFF'}
-              </span>
-            </button>
-
-            {/* Contextual Sub-Legend depending on active layer */}
-            {isLegendExpanded && (
-              <div className="pt-1 text-[10px]">
-                {mapLayerMode === 'choropleth' && (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-stone-500 font-mono mb-1 text-[9px]">
-                      <span>0</span>
-                      <span>1 (20%)</span>
-                      <span>2 (40%)</span>
-                      <span>3 (60%)</span>
-                      <span>4 (80%)</span>
-                      <span>5+ (100%)</span>
-                    </div>
-                    <div className="grid grid-cols-5 gap-0.5 h-2 w-full rounded-full overflow-hidden border border-stone-200 bg-stone-100">
-                      <div className="h-full bg-emerald-600 opacity-20" title="1 report: 20% opacity" />
-                      <div className="h-full bg-emerald-600 opacity-40" title="2 reports: 40% opacity" />
-                      <div className="h-full bg-emerald-600 opacity-60" title="3 reports: 60% opacity" />
-                      <div className="h-full bg-emerald-600 opacity-80" title="4 reports: 80% opacity" />
-                      <div className="h-full bg-emerald-800 opacity-100" title="5+ reports: 100% opacity" />
-                    </div>
-                    <div className="text-stone-400 text-[9px] mt-1 text-center font-display font-medium">
-                      Incident Density Scale (20% – 100% Opacity)
-                    </div>
+          <div className="absolute bottom-8 sm:bottom-9 right-4 z-20 pointer-events-auto flex flex-col items-end gap-2 transition-all duration-200">
+            {/* Popover Card */}
+            {isLayersPanelOpen && (
+              <div className="bg-white border border-stone-200 shadow-2xl rounded-2xl p-4 w-[310px] space-y-3.5 animate-in fade-in slide-in-from-bottom-2 duration-200 select-none">
+                {/* Popover Header */}
+                <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-stone-800" />
+                    <span className="font-semibold text-xs text-stone-900">Map Details</span>
                   </div>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => setIsLayersPanelOpen(false)}
+                    className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+                    title="Close map details"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
 
-                {mapLayerMode === 'protected_zones' && (
-                  <div className="p-2 rounded-lg bg-emerald-50/70 border border-emerald-200/60 space-y-1.5">
-                    <div className="font-display text-[9px] font-bold uppercase tracking-wider text-emerald-950 flex items-center gap-1">
-                      <ShieldAlert className="w-3 h-3 text-emerald-700" />
-                      <span>Protected Reserves</span>
-                    </div>
-                    <div className="space-y-1 text-[10px]">
-                      <div className="flex items-center gap-1.5 text-stone-700">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                        <span className="font-semibold text-emerald-950">Mt. Tagapo Sanctuary</span>
-                        <span className="text-[9px] text-stone-400 ml-auto">Talim Is.</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-stone-700">
-                        <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
-                        <span className="font-semibold text-sky-950">Laguna Lake 50m Buffer</span>
-                        <span className="text-[9px] text-stone-400 ml-auto">Coast</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-stone-700">
-                        <span className="w-2 h-2 rounded-full bg-green-700 shrink-0" />
-                        <span className="font-semibold text-green-950">Upper Marikina Watershed</span>
-                        <span className="text-[9px] text-stone-400 ml-auto">Sierra Madre</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-stone-700">
-                        <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                        <span className="font-semibold text-amber-950">Hinulugang Taktak</span>
-                        <span className="text-[9px] text-stone-400 ml-auto">Antipolo</span>
-                      </div>
-                    </div>
-                    <div className="text-[9px] text-emerald-800/80 font-medium pt-1 border-t border-emerald-200/60 flex items-center gap-1">
-                      <span>✨ Surroundings dimmed to highlight ecological zones</span>
-                    </div>
+                {/* 1. Basemap Style: 3 Visual Cards with Icons */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-medium text-stone-500 block">
+                    Basemap Style
+                  </span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Street Card */}
+                    <button
+                      type="button"
+                      onClick={() => setBasemapMode('street')}
+                      className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition cursor-pointer text-center ${
+                        basemapMode === 'street'
+                          ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
+                          : 'bg-stone-50 hover:bg-stone-100/80 text-stone-700 border-stone-200/80'
+                      }`}
+                      title="Standard road network & LGU cartography"
+                    >
+                      <MapIcon className={`w-5 h-5 mb-1.5 ${basemapMode === 'street' ? 'text-white' : 'text-stone-600'}`} />
+                      <span className="text-xs font-semibold leading-tight">Street</span>
+                      <span className={`text-[9px] mt-0.5 leading-none ${basemapMode === 'street' ? 'text-stone-300' : 'text-stone-400'}`}>
+                        Roads & LGUs
+                      </span>
+                    </button>
+
+                    {/* Satellite Card */}
+                    <button
+                      type="button"
+                      onClick={() => setBasemapMode('satellite')}
+                      className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition cursor-pointer text-center ${
+                        basemapMode === 'satellite'
+                          ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
+                          : 'bg-stone-50 hover:bg-stone-100/80 text-stone-700 border-stone-200/80'
+                      }`}
+                      title="High-resolution aerial satellite photography"
+                    >
+                      <Globe className={`w-5 h-5 mb-1.5 ${basemapMode === 'satellite' ? 'text-white' : 'text-stone-600'}`} />
+                      <span className="text-xs font-semibold leading-tight">Satellite</span>
+                      <span className={`text-[9px] mt-0.5 leading-none ${basemapMode === 'satellite' ? 'text-stone-300' : 'text-stone-400'}`}>
+                        Aerial Photo
+                      </span>
+                    </button>
+
+                    {/* Terrain Card */}
+                    <button
+                      type="button"
+                      onClick={() => setBasemapMode('terrain')}
+                      className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition cursor-pointer text-center ${
+                        basemapMode === 'terrain'
+                          ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
+                          : 'bg-stone-50 hover:bg-stone-100/80 text-stone-700 border-stone-200/80'
+                      }`}
+                      title="Topographic elevation & mountain contours"
+                    >
+                      <Mountain className={`w-5 h-5 mb-1.5 ${basemapMode === 'terrain' ? 'text-white' : 'text-stone-600'}`} />
+                      <span className="text-xs font-semibold leading-tight">Terrain</span>
+                      <span className={`text-[9px] mt-0.5 leading-none ${basemapMode === 'terrain' ? 'text-stone-300' : 'text-stone-400'}`}>
+                        Contours
+                      </span>
+                    </button>
                   </div>
-                )}
+                </div>
 
-                {(mapLayerMode === 'boundaries' || mapLayerMode === 'standard') && (
-                  <div className="pt-0.5 space-y-1">
-                    <div className="flex items-center justify-between gap-1 text-stone-700 font-display font-bold uppercase tracking-wider">
-                      <span className="flex items-center gap-1 text-emerald-800">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        1-2 Minor
+                {/* 2. Analysis Overlays */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-medium text-stone-500 block">
+                    Analysis Overlays
+                  </span>
+                  <div className="grid grid-cols-3 gap-1 bg-stone-100 p-1 rounded-xl text-xs font-medium">
+                    <button
+                      type="button"
+                      onClick={() => setMapLayerMode('boundaries')}
+                      className={`py-1.5 px-1 rounded-lg text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1 ${
+                        mapLayerMode === 'boundaries'
+                          ? 'bg-stone-900 text-white shadow-xs'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                      title="14 Municipal administrative borders"
+                    >
+                      <span>Boundaries</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMapLayerMode('choropleth')}
+                      className={`py-1.5 px-1 rounded-lg text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1 ${
+                        mapLayerMode === 'choropleth'
+                          ? 'bg-stone-900 text-white shadow-xs'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                      title="Incident volume density heatmap"
+                    >
+                      <span>Density</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMapLayerMode('protected_zones')}
+                      className={`py-1.5 px-1 rounded-lg text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1 ${
+                        mapLayerMode === 'protected_zones'
+                          ? 'bg-stone-900 text-white shadow-xs'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                      title="Sierra Madre & lakeside ecological reserves"
+                    >
+                      <span>Protected</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Apple-Style Toggle Switch: Jurisdiction Spotlight */}
+                <div
+                  onClick={() => setIsMaskActive(!isMaskActive)}
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-stone-200/90 bg-stone-50/70 hover:bg-stone-50 transition cursor-pointer"
+                  title="Dim surrounding regions to spotlight Rizal jurisdiction"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${
+                      isMaskActive ? 'bg-stone-900 text-white' : 'bg-stone-200 text-stone-600'
+                    }`}>
+                      <Crosshair className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-stone-900 block leading-tight">
+                        {mapLayerMode === 'protected_zones' ? 'Dim Outside Reserves' : 'Focus: Rizal Only'}
                       </span>
-                      <span className="flex items-center gap-1 text-amber-800">
-                        <span className="w-2 h-2 rounded-full bg-amber-500" />
-                        3 Mod
-                      </span>
-                      <span className="flex items-center gap-1 text-rose-800">
-                        <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
-                        4-5 Urgent
+                      <span className="text-[10px] text-stone-400 block leading-tight">
+                        Spotlight jurisdiction boundary
                       </span>
                     </div>
-                    {mapLayerMode === 'boundaries' && (
-                      <div className="text-[9px] text-stone-400 font-display text-center pt-0.5">
-                        14 LGUs of Rizal • Click to filter
-                      </div>
-                    )}
                   </div>
-                )}
+
+                  {/* Smooth Apple / iOS Sliding Toggle Switch */}
+                  <div
+                    className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${
+                      isMaskActive ? 'bg-stone-900' : 'bg-stone-300'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${
+                        isMaskActive ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* 4. Refined Contextual Legend */}
+                <div className="pt-2 border-t border-stone-100 text-[11px] space-y-1.5">
+                  {mapLayerMode === 'choropleth' && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-stone-500 font-mono text-[9px]">
+                        <span>0</span>
+                        <span>1</span>
+                        <span>2</span>
+                        <span>3</span>
+                        <span>4</span>
+                        <span>5+ reports</span>
+                      </div>
+                      <div className="grid grid-cols-5 gap-0.5 h-2 w-full rounded-full overflow-hidden border border-stone-200 bg-stone-100">
+                        <div className="h-full bg-emerald-600 opacity-20" title="1 report" />
+                        <div className="h-full bg-emerald-600 opacity-40" title="2 reports" />
+                        <div className="h-full bg-emerald-600 opacity-60" title="3 reports" />
+                        <div className="h-full bg-emerald-600 opacity-80" title="4 reports" />
+                        <div className="h-full bg-emerald-800 opacity-100" title="5+ reports" />
+                      </div>
+                      <div className="text-stone-400 text-[9px] text-center font-medium">
+                        Incident Volume Density Scale
+                      </div>
+                    </div>
+                  )}
+
+                  {mapLayerMode === 'protected_zones' && (
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-semibold text-stone-700 flex items-center gap-1.5">
+                        <ShieldAlert className="w-3.5 h-3.5 text-stone-700" />
+                        <span>Protected Reserves & Buffers</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                        <div className="flex items-center gap-1.5 text-stone-700">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="truncate">Mt. Tagapo</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-stone-700">
+                          <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
+                          <span className="truncate">Laguna Buffer</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-stone-700">
+                          <span className="w-2 h-2 rounded-full bg-emerald-700 shrink-0" />
+                          <span className="truncate">Sierra Madre</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-stone-700">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                          <span className="truncate">Hinulugang Taktak</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {(mapLayerMode === 'boundaries' || mapLayerMode === 'standard') && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-stone-600 text-[11px] font-medium">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <span>Minor (1–2)</span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />
+                          <span>Moderate (3)</span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-rose-600" />
+                          <span>Urgent (4–5)</span>
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-stone-400 text-center font-normal">
+                        14 LGUs of Rizal • Interactive map pins
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
+
+            {/* Google / Apple Maps Floating Trigger Pill Button */}
+            <button
+              type="button"
+              onClick={() => setIsLayersPanelOpen(!isLayersPanelOpen)}
+              className={`flex items-center gap-2 px-3.5 py-2.5 bg-white hover:bg-stone-50 text-stone-800 border border-stone-200 shadow-md hover:shadow-lg rounded-xl transition cursor-pointer select-none ${
+                isLayersPanelOpen ? 'ring-2 ring-stone-900 bg-stone-50' : ''
+              }`}
+              title="Toggle Map Layers & Overlays"
+            >
+              <Layers className="w-4 h-4 text-stone-700" />
+              <span className="text-xs font-semibold text-stone-900">Layers</span>
+              <span className="text-[10px] text-stone-500 font-medium capitalize pl-1.5 border-l border-stone-200">
+                {basemapMode}
+              </span>
+              <ChevronUp className={`w-3.5 h-3.5 text-stone-400 transition-transform ${isLayersPanelOpen ? 'rotate-180' : ''}`} />
+            </button>
           </div>
         </div>
       )}

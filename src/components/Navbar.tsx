@@ -31,7 +31,7 @@ interface NavbarProps {
 }
 
 const FOCUS_RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tagapo-800 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
 
 /** Desktop tab with refined pill background and smooth underline indicator. */
 const NavTab: React.FC<{ active: boolean; onClick: () => void; label: string; icon?: React.ReactNode }> = ({
@@ -51,14 +51,14 @@ const NavTab: React.FC<{ active: boolean; onClick: () => void; label: string; ic
     }`}
   >
     {icon && (
-      <span className={`w-3.5 h-3.5 transition-colors duration-200 ${active ? 'text-tagapo-800' : 'text-stone-400'}`}>
+      <span className={`w-3.5 h-3.5 transition-colors duration-200 ${active ? 'text-stone-900' : 'text-stone-400'}`}>
         {icon}
       </span>
     )}
     <span>{label}</span>
     <span
       aria-hidden="true"
-      className={`absolute inset-x-2 -bottom-1 h-0.5 rounded-full bg-tagapo-800 origin-center transition-all duration-250 ease-out ${
+      className={`absolute inset-x-2 -bottom-1 h-0.5 rounded-full bg-stone-900 origin-center transition-all duration-250 ease-out ${
         active ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
       }`}
     />
@@ -85,7 +85,7 @@ const MobileRow: React.FC<{
           : 'text-stone-700 font-medium hover:bg-stone-100'
     }`}
   >
-    <span className={active ? 'text-tagapo-800' : 'text-stone-400'}>{icon}</span>
+    <span className={active ? 'text-stone-900' : 'text-stone-400'}>{icon}</span>
     <span>{label}</span>
   </button>
 );
@@ -207,7 +207,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className={`flex items-center gap-2.5 select-none cursor-pointer rounded-md ${FOCUS_RING}`}
             title="NatureWatch"
           >
-            <span className="w-7 h-7 rounded-lg bg-tagapo-900 text-tagapo-50 flex items-center justify-center">
+            <span className="w-7 h-7 rounded-lg bg-tagapo-800 text-white flex items-center justify-center shadow-2xs">
               <ShieldCheck className="w-4 h-4" strokeWidth={2.2} />
             </span>
             <span className="font-bold text-[17px] tracking-tight text-stone-950">
@@ -216,7 +216,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {officialUser && (
               <span className="hidden md:flex items-center gap-2.5 text-xs text-stone-500">
                 <span className="h-4 w-px bg-stone-300" aria-hidden="true" />
-                <span className="font-semibold text-xs text-tagapo-800">{t.operationsLabel}</span>
+                <span className="font-semibold text-xs text-stone-600">{t.operationsLabel}</span>
               </span>
             )}
           </button>
@@ -264,7 +264,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     aria-haspopup="menu"
                     className={`flex items-center gap-2 pl-1 pr-1.5 py-1 rounded-full hover:bg-stone-100 active:scale-95 transition-all duration-150 cursor-pointer select-none ${FOCUS_RING}`}
                   >
-                    <span className="w-7 h-7 rounded-full bg-tagapo-900 text-white flex items-center justify-center text-xs font-semibold">
+                    <span className="w-7 h-7 rounded-full bg-stone-900 text-white flex items-center justify-center text-xs font-semibold">
                       {username[0].toUpperCase()}
                     </span>
                     <span className="text-sm font-medium max-w-[140px] truncate text-stone-800">
@@ -367,7 +367,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   aria-pressed={lang === code}
                   className={`min-h-11 rounded-lg text-sm font-medium transition-colors cursor-pointer ${FOCUS_RING} ${
                     lang === code
-                      ? 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200'
+                      ? 'bg-stone-900 text-white font-semibold'
                       : 'text-stone-600 ring-1 ring-stone-200 hover:bg-stone-50'
                   }`}
                 >

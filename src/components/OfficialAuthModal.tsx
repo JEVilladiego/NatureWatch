@@ -85,7 +85,7 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="officer@rizal.gov.ph"
                 required
-                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-stone-300 rounded-lg focus:ring-1 focus:ring-tagapo-800 focus:border-tagapo-800 focus:outline-none"
+                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-stone-300 rounded-lg focus:ring-1 focus:ring-stone-900 focus:border-stone-900 focus:outline-none"
               />
               <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
             </div>
@@ -102,7 +102,7 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-stone-300 rounded-lg focus:ring-1 focus:ring-tagapo-800 focus:border-tagapo-800 focus:outline-none"
+                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-stone-300 rounded-lg focus:ring-1 focus:ring-stone-900 focus:border-stone-900 focus:outline-none"
               />
               <Lock className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
             </div>
@@ -111,7 +111,7 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-tagapo-900 hover:bg-tagapo-800 text-white font-semibold text-xs rounded-lg transition shadow-2xs cursor-pointer"
+            className="w-full py-2.5 bg-stone-900 hover:bg-black text-white font-semibold text-xs rounded-lg transition shadow-2xs cursor-pointer"
           >
             {loading ? 'Authenticating...' : 'Sign In with Firebase Auth'}
           </button>

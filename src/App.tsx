@@ -137,15 +137,15 @@ export default function App() {
 
       {/* Footer (hidden in Full Map mode to ensure edge-to-edge canvas) */}
       {!isFullMap && (
-        <footer className="bg-tagapo-950 text-tagapo-200 py-8 border-t border-tagapo-900 text-xs">
-          <div className="max-w-7xl mx-auto px-4 text-center space-y-2">
-            <p className="font-display font-bold tracking-wide uppercase text-white text-sm">
+        <footer className="bg-stone-50 text-stone-600 py-8 border-t border-stone-200 text-xs">
+          <div className="max-w-7xl mx-auto px-4 text-center space-y-1.5">
+            <p className="font-semibold text-stone-900 text-xs">
               NatureWatch • Provincial Government of Rizal Environment and Natural Resources Office (PG-ENRO)
             </p>
-            <p className="text-tagapo-300 text-[11px] tracking-wide">
+            <p className="text-stone-500 text-[11px]">
               Pamahalaang Lalawigan ng Rizal • Republic of the Philippines
             </p>
-            <div className="pt-3 text-[11px] text-tagapo-400 border-t border-tagapo-900/70 max-w-xl mx-auto">
+            <div className="pt-2.5 text-[11px] text-stone-400 border-t border-stone-200 max-w-xl mx-auto">
               Protektado sa ilalim ng Republic Act No. 10173 (Data Privacy Act of 2012). Walang personal na datos ng mamamayan ang kinokolekta.
             </div>
           </div>
