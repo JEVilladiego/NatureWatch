@@ -30,6 +30,28 @@ export const PHILIPPINES_BOUNDS: [[number, number], [number, number]] = [
 ];
 
 export type MapLayerMode = 'standard' | 'boundaries' | 'choropleth' | 'protected_zones';
+export type BasemapMode = 'street' | 'satellite' | 'terrain';
+
+export const BASEMAP_CONFIGS: Record<BasemapMode, { url: string; attribution: string; maxZoom: number; subdomains?: string }> = {
+  street: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution:
+      'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom | PG-ENRO Rizal',
+    maxZoom: 19,
+  },
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution:
+      'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community | PG-ENRO Rizal',
+    maxZoom: 19,
+  },
+  terrain: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution:
+      'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community | PG-ENRO Rizal',
+    maxZoom: 18,
+  },
+};
 
 interface LeafletMapProps {
   mode: 'picker' | 'dashboard';
@@ -43,6 +65,7 @@ interface LeafletMapProps {
   className?: string;
   // GeoJSON enhancement props
   layerMode?: MapLayerMode;
+  basemap?: BasemapMode;
   activeMunicipality?: string | null;
   onMunicipalityClick?: (municipalityName: string) => void;
   choroplethCounts?: Record<string, number>;
@@ -62,6 +85,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   onSelectReport,
   className = 'h-72 w-full rounded-xl overflow-hidden shadow-inner',
   layerMode = 'standard',
+  basemap = 'street',
   activeMunicipality = null,
   onMunicipalityClick,
   choroplethCounts = {},
@@ -71,6 +95,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const pickerMarkerRef = useRef<L.Marker | null>(null);
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const dashboardMarkersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -156,12 +181,6 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank" rel="noopener noreferrer">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank" rel="noopener noreferrer">OpenStreetMap France</a> | PG-ENRO Rizal',
-      maxZoom: 19,
-    }).addTo(map);
-
     // Dedicated non-Rizal mask pane: above base tiles (zIndex: 200), below vectors (zIndex: 400)
     const maskPane = map.createPane('maskPane');
     maskPane.style.zIndex = '350';
@@ -196,8 +215,28 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       resizeObserver.disconnect();
       map.remove();
       mapInstanceRef.current = null;
+      tileLayerRef.current = null;
     };
   }, []);
+
+  // Dynamic Basemap Switcher (Street / Satellite / Terrain)
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const config = BASEMAP_CONFIGS[basemap] || BASEMAP_CONFIGS.street;
+
+    if (tileLayerRef.current) {
+      mapInstanceRef.current.removeLayer(tileLayerRef.current);
+    }
+
+    const layer = L.tileLayer(config.url, {
+      attribution: config.attribution,
+      maxZoom: config.maxZoom,
+      subdomains: config.subdomains || 'abc',
+    }).addTo(mapInstanceRef.current);
+
+    layer.bringToBack();
+    tileLayerRef.current = layer;
+  }, [basemap]);
 
   // Frame full Rizal Province when fitProvinceKey changes
   useEffect(() => {

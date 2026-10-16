@@ -30,7 +30,7 @@ import { trackSubmission } from '../lib/offlineQueue';
 import { encodeGeohash, generateReferenceCode } from '../lib/geohash';
 import { db } from '../lib/firebase';
 import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { LeafletMap } from './LeafletMap';
+import { LeafletMap, BasemapMode } from './LeafletMap';
 import { getBarangayCoordinates, findNearestBarangay } from '../lib/barangayCoordinates';
 import { isPointInRizal, findMunicipalityByPoint, findProtectedZoneByCoordinates, type ProtectedZoneFeatureProperties } from '../lib/geojsonService';
 import { Language, translations } from '../lib/i18n';
@@ -83,6 +83,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   const [copied, setCopied] = useState<boolean>(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [basemapMode, setBasemapMode] = useState<BasemapMode>('street');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -588,6 +589,26 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 </div>
               )}
 
+              <div className="flex items-center justify-between pb-1">
+                <span className="text-[11px] font-display font-bold uppercase tracking-wider text-stone-500">Map View</span>
+                <div className="flex items-center gap-1 bg-stone-100 p-0.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider">
+                  <button
+                    type="button"
+                    onClick={() => setBasemapMode('street')}
+                    className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'street' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'}`}
+                  >
+                    Street
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBasemapMode('satellite')}
+                    className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'satellite' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'}`}
+                  >
+                    Satellite
+                  </button>
+                </div>
+              </div>
+
               <div className="relative isolate z-0 rounded-lg overflow-hidden border border-stone-200">
                 <LeafletMap
                   mode="picker"
@@ -595,6 +616,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   zoom={15}
                   accuracyMeters={accuracyMeters}
                   layerMode="boundaries"
+                  basemap={basemapMode}
                   activeMunicipality={selectedMunicipality}
                   onLocationChange={(lat, lng) => {
                     setCoordinates({ lat, lng });
@@ -708,9 +730,27 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   <MapPin className="w-3.5 h-3.5 text-tagapo-800 shrink-0" />
                   {t.tapToPinHint}
                 </span>
-                <span className="text-[11px] text-stone-400 font-mono">
-                  {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-0.5 bg-stone-100 p-0.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider">
+                    <button
+                      type="button"
+                      onClick={() => setBasemapMode('street')}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'street' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'}`}
+                    >
+                      Street
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBasemapMode('satellite')}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'satellite' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'}`}
+                    >
+                      Satellite
+                    </button>
+                  </div>
+                  <span className="text-[11px] text-stone-400 font-mono">
+                    {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
+                  </span>
+                </div>
               </div>
 
               <div className="relative isolate z-0 rounded-lg overflow-hidden border border-stone-200">
@@ -720,6 +760,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   zoom={14}
                   accuracyMeters={null}
                   layerMode="boundaries"
+                  basemap={basemapMode}
                   activeMunicipality={selectedMunicipality}
                   onLocationChange={(lat, lng) => {
                     setCoordinates({ lat, lng });
