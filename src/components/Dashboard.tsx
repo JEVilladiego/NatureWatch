@@ -35,6 +35,9 @@ import {
   Map as MapIcon,
   Globe,
   Mountain,
+  Trash2,
+  Camera,
+  Upload,
 } from 'lucide-react';
 import {
   IncidentReport,
@@ -46,6 +49,7 @@ import {
   MUNICIPALITY_COORDINATES,
   WeatherContext,
   ProtectedZoneHit,
+  ReportImageItem,
 } from '../types/report';
 import { LeafletMap, MapLayerMode, BasemapMode } from './LeafletMap';
 import { resolveReportCoordinates } from '../lib/barangayCoordinates';
@@ -60,6 +64,7 @@ import {
   onSnapshot,
   doc,
   updateDoc,
+  deleteDoc,
   getDoc,
 } from 'firebase/firestore';
 import { Language, translations } from '../lib/i18n';
@@ -127,6 +132,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedReport, setSelectedReport] = useState<IncidentReport | null>(null);
 
   // Filters
+  const [queueTab, setQueueTab] = useState<'active' | 'spam'>('active');
   const [municipalityFilter, setMunicipalityFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | ReportStatus>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -139,6 +145,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
     municipality?: string;
     barangay?: string;
   } | null>(null);
+
+  // Evidence Deck & Multi-Photo states
+  const [evidenceImages, setEvidenceImages] = useState<ReportImageItem[]>([]);
+  const [activePhotoIndex, setActivePhotoIndex] = useState<number>(0);
+
+  // Spam Quarantine & Permanent Delete states
+  const [isDeletingReport, setIsDeletingReport] = useState<boolean>(false);
+  const [isRestoringReport, setIsRestoringReport] = useState<boolean>(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
 
   // Human-in-the-loop Override Form state
   const [overrideCategory, setOverrideCategory] = useState<IncidentCategory>('solid_waste');
@@ -417,14 +432,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return () => unsubscribe();
   }, []);
 
-  // Load the (compressed) photo for the selected report from Firestore
+  // Load the evidence photos for the selected report from Firestore
   useEffect(() => {
     setPhotoDataUrl(null);
+    setEvidenceImages([]);
+    setActivePhotoIndex(0);
+    setShowDeleteConfirm(false);
     if (!selectedReport?.rawInput.hasImage) return;
     let cancelled = false;
     getDoc(doc(db, 'report_images', selectedReport.id))
       .then((snap) => {
-        if (!cancelled && snap.exists()) setPhotoDataUrl(snap.data().data as string);
+        if (!cancelled && snap.exists()) {
+          const d = snap.data();
+          const legacyData = d.data as string;
+          const multiImages = (d.images as ReportImageItem[]) || [];
+          if (multiImages.length > 0) {
+            setEvidenceImages(multiImages);
+            setPhotoDataUrl(multiImages[0].data);
+          } else if (legacyData) {
+            setPhotoDataUrl(legacyData);
+            setEvidenceImages([
+              {
+                data: legacyData,
+                mimeType: d.mimeType || 'image/jpeg',
+                role: 'primary',
+                isLiveCamera: selectedReport.rawInput.captureMethod === 'live_camera',
+              },
+            ]);
+          }
+        }
       })
       .catch((err) => console.error('Photo load failed:', err));
     return () => {
@@ -471,6 +507,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Reports visible on the map (preserves municipal/category/severity context)
   const mapVisibleReports = useMemo(() => {
     return clusteredReports.filter((report) => {
+      // Spam queue separation
+      if (queueTab === 'active' && report.status === 'spam') return false;
+      if (queueTab === 'spam' && report.status !== 'spam') return false;
+
       if (municipalityFilter !== 'all' && report.location?.municipality !== municipalityFilter) return false;
       if (statusFilter !== 'all' && report.status !== statusFilter) return false;
       const activeCat = report.final?.category || report.aiTriage?.category || 'other';
@@ -480,7 +520,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (severityFilter !== 'all' && severityFilter !== 'urgent' && activeSev !== Number(severityFilter)) return false;
       return true;
     });
-  }, [clusteredReports, municipalityFilter, statusFilter, categoryFilter, severityFilter]);
+  }, [clusteredReports, queueTab, municipalityFilter, statusFilter, categoryFilter, severityFilter]);
 
   // Filtered reports for queue stream (narrows by activeClusterFilter and searchTerm)
   const filteredReports = useMemo(() => {
@@ -504,23 +544,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
     });
   }, [mapVisibleReports, activeClusterFilter, searchTerm]);
 
-  // Statistics calculation
+  // Statistics calculation (strictly excludes quarantined spam reports from operational metrics)
   const stats = useMemo(() => {
-    const openCount = reports.filter((r) => r.status !== 'resolved').length;
-    const urgentCount = reports.filter((r) => {
+    const legitimateReports = reports.filter((r) => r.status !== 'spam');
+    const openCount = legitimateReports.filter((r) => r.status !== 'resolved').length;
+    const urgentCount = legitimateReports.filter((r) => {
       const sev = r.final?.severity || r.aiTriage?.severity || 0;
       return sev >= 4 && r.status !== 'resolved';
     }).length;
-    const resolvedCount = reports.filter((r) => r.status === 'resolved').length;
+    const resolvedCount = legitimateReports.filter((r) => r.status === 'resolved').length;
 
     // Category breakdown
     const categoryCounts: Record<string, number> = {};
-    reports.forEach((r) => {
+    legitimateReports.forEach((r) => {
       const cat = r.final?.category || r.aiTriage?.category || 'other';
       categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
     });
 
     return { openCount, urgentCount, resolvedCount, categoryCounts };
+  }, [reports]);
+
+  const activeReportsCount = useMemo(() => {
+    return reports.filter((r) => r.status !== 'spam').length;
+  }, [reports]);
+
+  const spamReportsCount = useMemo(() => {
+    return reports.filter((r) => r.status === 'spam').length;
   }, [reports]);
 
   // Human-in-the-loop override submission
@@ -591,6 +640,117 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setActionError('Could not update the status. You may not have permission, or you are offline.');
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  // Restore spam report back to active pending queue
+  const handleRestoreReport = async () => {
+    if (!selectedReport || !officialUser) return;
+    setIsRestoringReport(true);
+    setActionError(null);
+
+    const updatedHistory = [
+      ...(selectedReport.statusHistory || []),
+      {
+        status: 'pending' as ReportStatus,
+        changedBy: officialUser.displayName || officialUser.email || 'PG-ENRO Officer',
+        changedAt: new Date().toISOString(),
+        notes: 'Restored from Spam Quarantine by officer',
+      },
+    ];
+
+    try {
+      await updateDoc(doc(db, 'reports', selectedReport.id), {
+        status: 'pending',
+        isSpam: false,
+        statusHistory: updatedHistory,
+      });
+
+      const updated: IncidentReport = {
+        ...selectedReport,
+        status: 'pending',
+        statusHistory: updatedHistory,
+        aiTriage: selectedReport.aiTriage ? { ...selectedReport.aiTriage, isSpam: false } : null,
+      };
+
+      setReports((prev) => prev.map((r) => (r.id === selectedReport.id ? updated : r)));
+      setSelectedReport(updated);
+      setShowDeleteConfirm(false);
+    } catch (err) {
+      console.error('Failed to restore report:', err);
+      setActionError('Could not restore report from spam. Check permissions.');
+    } finally {
+      setIsRestoringReport(false);
+    }
+  };
+
+  // Permanently delete spam report and associated photo
+  const handleDeletePermanently = async () => {
+    if (!selectedReport || !officialUser) return;
+    setIsDeletingReport(true);
+    setActionError(null);
+
+    const reportIdToDelete = selectedReport.id;
+
+    try {
+      try {
+        await deleteDoc(doc(db, 'report_images', reportIdToDelete));
+      } catch (imgErr) {
+        console.warn('Image doc delete skipped or already gone:', imgErr);
+      }
+
+      await deleteDoc(doc(db, 'reports', reportIdToDelete));
+
+      const remaining = reports.filter((r) => r.id !== reportIdToDelete);
+      setReports(remaining);
+      const nextInQueue =
+        remaining.find((r) => (queueTab === 'spam' ? r.status === 'spam' : r.status !== 'spam')) ||
+        remaining[0] ||
+        null;
+      setSelectedReport(nextInQueue);
+      setShowDeleteConfirm(false);
+    } catch (err) {
+      console.error('Permanent delete failed:', err);
+      setActionError('Failed to delete report. Only registered officials can permanently delete reports.');
+    } finally {
+      setIsDeletingReport(false);
+    }
+  };
+
+  // Mark active report as spam
+  const handleMarkAsSpam = async () => {
+    if (!selectedReport || !officialUser) return;
+    setActionError(null);
+
+    const updatedHistory = [
+      ...(selectedReport.statusHistory || []),
+      {
+        status: 'spam' as ReportStatus,
+        changedBy: officialUser.displayName || officialUser.email || 'PG-ENRO Officer',
+        changedAt: new Date().toISOString(),
+        notes: 'Quarantined to spam queue by officer',
+      },
+    ];
+
+    try {
+      await updateDoc(doc(db, 'reports', selectedReport.id), {
+        status: 'spam',
+        isSpam: true,
+        statusHistory: updatedHistory,
+      });
+
+      const updated: IncidentReport = {
+        ...selectedReport,
+        status: 'spam',
+        statusHistory: updatedHistory,
+        aiTriage: selectedReport.aiTriage ? { ...selectedReport.aiTriage, isSpam: true } : null,
+      };
+
+      setReports((prev) => prev.map((r) => (r.id === selectedReport.id ? updated : r)));
+      setSelectedReport(updated);
+    } catch (err) {
+      console.error('Failed to mark report as spam:', err);
+      setActionError('Could not mark report as spam.');
     }
   };
 
@@ -877,6 +1037,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <option value="pending">Pending</option>
               <option value="in_progress">In Progress</option>
               <option value="resolved">Resolved</option>
+              <option value="spam">Spam / Quarantined</option>
             </select>
 
             {/* Category Filter */}
@@ -1113,10 +1274,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* Incident Queue Stream */}
               <div className="bg-white rounded-xl border border-stone-200 shadow-2xs overflow-hidden">
-                <div className="px-4 py-3 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
-                  <span className="font-display font-bold text-xs uppercase tracking-wider text-stone-800">
-                    Incident Queue Stream
-                  </span>
+                <div className="px-4 py-2.5 bg-stone-50 border-b border-stone-200 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setQueueTab('active')}
+                      className={`text-xs font-semibold px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                        queueTab === 'active'
+                          ? 'bg-stone-900 text-white shadow-2xs'
+                          : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
+                      }`}
+                    >
+                      <span>{t.activeTabLabel || 'Active Queue'}</span>
+                      <span className="font-mono text-[10px] opacity-80">({activeReportsCount})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setQueueTab('spam')}
+                      className={`text-xs font-semibold px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                        queueTab === 'spam'
+                          ? 'bg-rose-900 text-white shadow-2xs'
+                          : 'text-rose-700 hover:bg-rose-50'
+                      }`}
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      <span>{t.spamTabLabel || 'Spam Queue'}</span>
+                      {spamReportsCount > 0 && (
+                        <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                          queueTab === 'spam' ? 'bg-rose-800 text-rose-100' : 'bg-rose-100 text-rose-800'
+                        }`}>
+                          {spamReportsCount}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+
                   <span className="text-xs font-mono font-semibold text-stone-500">
                     {filteredReports.length} {filteredReports.length === 1 ? 'incident' : 'incidents'}
                   </span>
@@ -1233,19 +1426,95 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
                     </div>
 
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-stone-100 text-stone-700 border border-stone-200 inline-flex items-center gap-1.5 capitalize">
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          selectedReport.status === 'resolved'
-                            ? 'bg-emerald-500'
-                            : selectedReport.status === 'in_progress'
-                            ? 'bg-amber-500'
-                            : 'bg-rose-500'
-                        }`}
-                      />
-                      {selectedReport.status.replace(/_/g, ' ')}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {selectedReport.status !== 'spam' && (
+                        <button
+                          type="button"
+                          onClick={handleMarkAsSpam}
+                          className="px-2 py-0.5 rounded text-[10px] font-semibold text-stone-500 hover:text-rose-700 hover:bg-rose-50 border border-stone-200 transition cursor-pointer flex items-center gap-1"
+                          title="Quarantine report to Spam Queue"
+                        >
+                          <AlertTriangle className="w-3 h-3 text-stone-400" />
+                          <span>Flag as Spam</span>
+                        </button>
+                      )}
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-stone-100 text-stone-700 border border-stone-200 inline-flex items-center gap-1.5 capitalize">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            selectedReport.status === 'resolved'
+                              ? 'bg-emerald-500'
+                              : selectedReport.status === 'in_progress'
+                              ? 'bg-amber-500'
+                              : selectedReport.status === 'spam'
+                              ? 'bg-rose-700'
+                              : 'bg-rose-500'
+                          }`}
+                        />
+                        {selectedReport.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
                   </div>
+
+                  {/* SPAM / QUARANTINE WARNING BANNER */}
+                  {(selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam) && (
+                    <div className="p-3.5 bg-rose-50 border border-rose-300 rounded-xl space-y-2.5 text-xs text-rose-950 shadow-2xs">
+                      <div className="flex items-start gap-2.5">
+                        <AlertTriangle className="w-4 h-4 text-rose-700 shrink-0 mt-0.5" />
+                        <div className="space-y-0.5 min-w-0">
+                          <span className="font-bold uppercase tracking-wide text-rose-900 block text-[11px]">
+                            Quarantined in Spam Queue
+                          </span>
+                          <p className="text-[11px] text-rose-800 leading-snug">
+                            {selectedReport.aiTriage?.authenticity?.forensicNotes ||
+                              'Flagged as suspected troll submission, AI-generated synthetic media, or unverified incident.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1 border-t border-rose-200">
+                        <button
+                          type="button"
+                          onClick={handleRestoreReport}
+                          disabled={isRestoringReport || isDeletingReport}
+                          className="flex-1 py-1.5 px-2.5 bg-white hover:bg-stone-50 border border-stone-300 text-stone-800 font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                        >
+                          <Check className="w-3.5 h-3.5 text-emerald-700" />
+                          <span>{isRestoringReport ? 'Restoring...' : t.retrieveBtn}</span>
+                        </button>
+
+                        {!showDeleteConfirm ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowDeleteConfirm(true)}
+                            disabled={isRestoringReport || isDeletingReport}
+                            className="flex-1 py-1.5 px-2.5 bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>{t.deletePermanentlyBtn}</span>
+                          </button>
+                        ) : (
+                          <div className="flex-1 flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={handleDeletePermanently}
+                              disabled={isDeletingReport}
+                              className="flex-1 py-1.5 px-2 bg-rose-900 hover:bg-black text-white font-bold text-[11px] rounded-lg transition cursor-pointer flex items-center justify-center gap-1 animate-pulse"
+                            >
+                              {isDeletingReport ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                              <span>Confirm Delete</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowDeleteConfirm(false)}
+                              className="py-1.5 px-2 border border-rose-300 bg-white hover:bg-rose-100 text-rose-800 text-[11px] font-semibold rounded-lg transition cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Linked duplicate cluster notice */}
                   {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId ? (
@@ -1266,10 +1535,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   ) : null}
 
                   {/* Photo Display (Secured Image Preview) */}
-                  <div className="space-y-1">
-                    <label className="font-display text-xs font-bold uppercase tracking-wide text-stone-600 block">
-                      Incident Photo (Secured Access)
-                    </label>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="font-display text-xs font-bold uppercase tracking-wide text-stone-600 block">
+                        Incident Evidence Photos
+                      </label>
+                      {evidenceImages.length > 0 && (
+                        <span className="text-[10px] font-mono text-stone-500 font-medium">
+                          Photo {activePhotoIndex + 1} of {evidenceImages.length}
+                        </span>
+                      )}
+                    </div>
                     <div className="relative rounded-xl overflow-hidden bg-stone-950 aspect-video flex items-center justify-center border border-stone-200">
                       {photoDataUrl ? (
                         <img
@@ -1288,6 +1564,102 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <span>RA 10173 SECURED</span>
                       </div>
                     </div>
+
+                    {/* Multi-Photo Evidence Deck Thumbnails */}
+                    {evidenceImages.length > 1 && (
+                      <div className="flex items-center gap-2 pt-1 overflow-x-auto">
+                        {evidenceImages.map((img, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setActivePhotoIndex(idx);
+                              setPhotoDataUrl(img.data);
+                            }}
+                            className={`relative w-16 h-14 rounded-lg overflow-hidden border-2 shrink-0 transition cursor-pointer ${
+                              activePhotoIndex === idx
+                                ? 'border-stone-900 ring-2 ring-stone-900/20 shadow-2xs'
+                                : 'border-stone-200 opacity-70 hover:opacity-100'
+                            }`}
+                          >
+                            <img src={img.data} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                            <span className="absolute bottom-0 inset-x-0 bg-stone-950/80 text-white text-[8px] font-mono text-center py-0.2 capitalize truncate px-0.5">
+                              {img.role.replace('_', ' ')}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Forensic & Authenticity Metadata Card */}
+                  <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-display font-bold uppercase tracking-wide text-stone-700">
+                      <div className="flex items-center gap-1.5">
+                        <ShieldAlert className="w-3.5 h-3.5 text-stone-600" />
+                        <span>Forensic & Authenticity Inspector</span>
+                      </div>
+                      {selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam ? (
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300">
+                          SPAM / TROLL
+                        </span>
+                      ) : selectedReport.rawInput.captureMethod === 'live_camera' ? (
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          LIVE CAMERA
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-200 text-stone-700">
+                          DEVICE UPLOAD
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-2 bg-white rounded-lg border border-stone-200/70">
+                        <span className="text-[10px] font-medium text-stone-500 block">Capture Source</span>
+                        <span className="font-semibold text-stone-900 capitalize">
+                          {selectedReport.rawInput.captureMethod ? selectedReport.rawInput.captureMethod.replace('_', ' ') : 'Single Photo'}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-white rounded-lg border border-stone-200/70">
+                        <span className="text-[10px] font-medium text-stone-500 block">Evidence Photos</span>
+                        <span className="font-semibold text-stone-900">
+                          {selectedReport.rawInput.imageCount || (selectedReport.rawInput.hasImage ? 1 : 0)} photo(s)
+                        </span>
+                      </div>
+                    </div>
+
+                    {selectedReport.rawInput.exif && (
+                      <div className="p-2.5 bg-white rounded-lg border border-stone-200/70 space-y-1 text-xs">
+                        {selectedReport.rawInput.exif.cameraModel && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-stone-500 text-[11px]">Hardware Camera:</span>
+                            <span className="font-mono text-stone-800 font-semibold text-[11px]">{selectedReport.rawInput.exif.cameraModel}</span>
+                          </div>
+                        )}
+                        {selectedReport.rawInput.exif.distanceFromReportKm !== null && selectedReport.rawInput.exif.distanceFromReportKm !== undefined && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-stone-500 text-[11px]">EXIF vs Pin Distance:</span>
+                            <span className={`font-mono font-semibold text-[11px] ${selectedReport.rawInput.exif.distanceFromReportKm > 5 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                              {selectedReport.rawInput.exif.distanceFromReportKm} km
+                            </span>
+                          </div>
+                        )}
+                        {selectedReport.rawInput.exif.capturedAt && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-stone-500 text-[11px]">EXIF Timestamp:</span>
+                            <span className="font-mono text-stone-700 text-[11px]">{selectedReport.rawInput.exif.capturedAt}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {selectedReport.aiTriage?.authenticity?.forensicNotes && (
+                      <div className="text-[11px] text-stone-600 bg-stone-100 p-2 rounded-lg leading-relaxed">
+                        <span className="font-semibold text-stone-800">Forensic Analysis: </span>
+                        {selectedReport.aiTriage.authenticity.forensicNotes}
+                      </div>
+                    )}
                   </div>
 
                   {/* Resident Description */}
@@ -1672,14 +2044,46 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                   {/* Quick telemetry chips & LGU horizontal scroll */}
                   <div className="px-3 py-2 bg-stone-50 border-b border-stone-200/80 space-y-2 shrink-0">
-                    {/* Active count badge summary */}
+                    {/* Active count badge summary & Queue Tab Switcher */}
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-stone-700">
-                        Incident Queue ({filteredReports.length})
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setQueueTab('active')}
+                          className={`px-2 py-0.5 rounded text-xs font-semibold transition cursor-pointer flex items-center gap-1 ${
+                            queueTab === 'active'
+                              ? 'bg-stone-900 text-white shadow-2xs'
+                              : 'text-stone-600 hover:text-stone-900'
+                          }`}
+                        >
+                          <span>Active</span>
+                          <span className="font-mono text-[10px] opacity-80">({activeReportsCount})</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setQueueTab('spam')}
+                          className={`px-2 py-0.5 rounded text-xs font-semibold transition cursor-pointer flex items-center gap-1 ${
+                            queueTab === 'spam'
+                              ? 'bg-rose-900 text-white shadow-2xs'
+                              : 'text-rose-700 hover:bg-rose-50'
+                          }`}
+                        >
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>Spam</span>
+                          {spamReportsCount > 0 && (
+                            <span className={`font-mono text-[9px] px-1 py-0.2 rounded font-bold ${
+                              queueTab === 'spam' ? 'bg-rose-800 text-rose-100' : 'bg-rose-100 text-rose-800'
+                            }`}>
+                              {spamReportsCount}
+                            </span>
+                          )}
+                        </button>
+                      </div>
+
                       <div className="flex items-center gap-2 text-[11px] font-mono font-medium">
-                        <span className="text-stone-700"><span className="text-emerald-600 font-bold">●</span> {stats.openCount} Open</span>
-                        <span className="text-rose-700"><span className="text-rose-600 font-bold">●</span> {stats.urgentCount} Urgent</span>
+                        <span className="text-stone-700"><span className="text-emerald-600 font-bold">●</span> {stats.openCount}</span>
+                        <span className="text-rose-700"><span className="text-rose-600 font-bold">●</span> {stats.urgentCount}</span>
                       </div>
                     </div>
 
@@ -1901,6 +2305,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <span className="font-mono font-bold text-xs text-stone-900">
                         {selectedReport.referenceCode}
                       </span>
+                      {selectedReport.status !== 'spam' && (
+                        <button
+                          type="button"
+                          onClick={handleMarkAsSpam}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-stone-500 hover:text-rose-700 hover:bg-rose-50 border border-stone-200 transition cursor-pointer flex items-center gap-1"
+                          title="Quarantine report to Spam Queue"
+                        >
+                          <AlertTriangle className="w-3 h-3 text-stone-400" />
+                          <span>Flag as Spam</span>
+                        </button>
+                      )}
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-stone-100 text-stone-700 border border-stone-200 inline-flex items-center gap-1.5 capitalize">
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
@@ -1908,6 +2323,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               ? 'bg-emerald-500'
                               : selectedReport.status === 'in_progress'
                               ? 'bg-amber-500'
+                              : selectedReport.status === 'spam'
+                              ? 'bg-rose-700'
                               : 'bg-rose-500'
                           }`}
                         />
@@ -1926,6 +2343,67 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                   {/* Scrollable Dossier Body */}
                   <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+                    {/* SPAM / QUARANTINE WARNING BANNER */}
+                    {(selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam) && (
+                      <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl space-y-2 text-xs text-rose-950 shadow-2xs">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="w-4 h-4 text-rose-700 shrink-0 mt-0.5" />
+                          <div className="space-y-0.5 min-w-0">
+                            <span className="font-bold uppercase tracking-wide text-rose-900 block text-[11px]">
+                              Quarantined in Spam Queue
+                            </span>
+                            <p className="text-[11px] text-rose-800 leading-snug">
+                              {selectedReport.aiTriage?.authenticity?.forensicNotes ||
+                                'Flagged as suspected troll submission or unverified incident.'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1 border-t border-rose-200">
+                          <button
+                            type="button"
+                            onClick={handleRestoreReport}
+                            disabled={isRestoringReport || isDeletingReport}
+                            className="flex-1 py-1.5 px-2 bg-white hover:bg-stone-50 border border-stone-300 text-stone-800 font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1 shadow-2xs"
+                          >
+                            <Check className="w-3 h-3 text-emerald-700" />
+                            <span>{isRestoringReport ? 'Restoring...' : t.retrieveBtn}</span>
+                          </button>
+
+                          {!showDeleteConfirm ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowDeleteConfirm(true)}
+                              disabled={isRestoringReport || isDeletingReport}
+                              className="flex-1 py-1.5 px-2 bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1 shadow-2xs"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>{t.deletePermanentlyBtn}</span>
+                            </button>
+                          ) : (
+                            <div className="flex-1 flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={handleDeletePermanently}
+                                disabled={isDeletingReport}
+                                className="flex-1 py-1 px-1.5 bg-rose-900 hover:bg-black text-white font-bold text-[10px] rounded-lg transition cursor-pointer flex items-center justify-center gap-1 animate-pulse"
+                              >
+                                {isDeletingReport ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                                <span>Confirm Delete</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="py-1 px-2 border border-rose-300 bg-white hover:bg-rose-100 text-rose-800 text-[10px] font-semibold rounded-lg transition cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Citizen Evidence & Photo */}
                     <div className="space-y-2">
                       <div
@@ -1959,6 +2437,84 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <ShieldCheck className="w-2.5 h-2.5 text-stone-400" />
                           <span>RA 10173 SECURED</span>
                         </div>
+                      </div>
+
+                      {/* Multi-Photo Evidence Deck Thumbnails */}
+                      {evidenceImages.length > 1 && (
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                          {evidenceImages.map((img, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setActivePhotoIndex(idx);
+                                setPhotoDataUrl(img.data);
+                              }}
+                              className={`relative w-14 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition cursor-pointer ${
+                                activePhotoIndex === idx
+                                  ? 'border-stone-900 ring-2 ring-stone-900/20 shadow-2xs'
+                                  : 'border-stone-200 opacity-70 hover:opacity-100'
+                              }`}
+                            >
+                              <img src={img.data} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                              <span className="absolute bottom-0 inset-x-0 bg-stone-950/80 text-white text-[7px] font-mono text-center py-0.2 capitalize truncate px-0.5">
+                                {img.role.replace('_', ' ')}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Forensic & Authenticity Metadata Card */}
+                      <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] font-display font-bold uppercase tracking-wide text-stone-700">
+                          <div className="flex items-center gap-1">
+                            <ShieldAlert className="w-3 h-3 text-stone-600" />
+                            <span>Forensics</span>
+                          </div>
+                          {selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam ? (
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 border border-rose-300">
+                              SPAM / TROLL
+                            </span>
+                          ) : selectedReport.rawInput.captureMethod === 'live_camera' ? (
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              LIVE CAMERA
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-stone-200 text-stone-700">
+                              DEVICE UPLOAD
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                          <div className="p-1.5 bg-white rounded border border-stone-200/70">
+                            <span className="text-[9px] text-stone-500 block">Photos</span>
+                            <span className="font-semibold text-stone-900 font-mono">
+                              {selectedReport.rawInput.imageCount || (selectedReport.rawInput.hasImage ? 1 : 0)}
+                            </span>
+                          </div>
+                          <div className="p-1.5 bg-white rounded border border-stone-200/70">
+                            <span className="text-[9px] text-stone-500 block">Source</span>
+                            <span className="font-semibold text-stone-900 capitalize truncate block">
+                              {selectedReport.rawInput.captureMethod ? selectedReport.rawInput.captureMethod.replace('_', ' ') : 'Single'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {selectedReport.rawInput.exif?.cameraModel && (
+                          <div className="text-[10px] text-stone-600 font-mono bg-white p-1.5 rounded border border-stone-200/70 flex items-center justify-between">
+                            <span className="text-stone-400">Device:</span>
+                            <span className="font-semibold truncate max-w-[150px]">{selectedReport.rawInput.exif.cameraModel}</span>
+                          </div>
+                        )}
+
+                        {selectedReport.aiTriage?.authenticity?.forensicNotes && (
+                          <div className="text-[10px] text-stone-600 bg-stone-100 p-1.5 rounded leading-relaxed">
+                            <span className="font-semibold text-stone-800">AI Note: </span>
+                            {selectedReport.aiTriage.authenticity.forensicNotes}
+                          </div>
+                        )}
                       </div>
 
                       {/* Citizen Description Card */}

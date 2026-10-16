@@ -15,6 +15,8 @@ import {
   ShieldCheck,
   Check,
   AlertCircle,
+  Trash2,
+  Lock,
 } from 'lucide-react';
 import {
   IncidentCategory,
@@ -24,8 +26,18 @@ import {
   RIZAL_MUNICIPALITIES,
   MUNICIPALITY_COORDINATES,
   IncidentReport,
+  EvidenceSlotRole,
+  ReportImageItem,
+  ExifSummary,
 } from '../types/report';
-import { compressIncidentImage, fileToDataUrl, CompressionResult } from '../lib/imageCompression';
+import { compressIncidentImage, fileToDataUrl } from '../lib/imageCompression';
+import { extractExifFromBlob } from '../lib/exifVerifier';
+import {
+  checkSubmissionRateLimit,
+  recordSubmission,
+  formatCooldownTime,
+  RateLimitCheckResult,
+} from '../lib/rateLimiter';
 import { trackSubmission } from '../lib/offlineQueue';
 import { encodeGeohash, generateReferenceCode } from '../lib/geohash';
 import { db } from '../lib/firebase';
@@ -37,6 +49,15 @@ import { Language, translations } from '../lib/i18n';
 
 // Default Rizal Province center
 const RIZAL_COORDS = { lat: 14.5800, lng: 121.2800 };
+
+interface EvidenceSlotItem {
+  file: File;
+  previewUrl: string;
+  compressedBlob: Blob;
+  compressedSize: number;
+  captureMethod: 'live_camera' | 'gallery';
+  exif: ExifSummary | null;
+}
 
 interface ResidentReporterProps {
   lang: Language;
@@ -53,10 +74,20 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
 }) => {
   const t = translations[lang];
 
-  // Form states
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [compressionInfo, setCompressionInfo] = useState<CompressionResult | null>(null);
-  const [isCompressing, setIsCompressing] = useState<boolean>(false);
+  // 3-Slot Structured Evidence State
+  const [slots, setSlots] = useState<Record<EvidenceSlotRole, EvidenceSlotItem | null>>({
+    primary: null,
+    wide_scene: null,
+    landmark: null,
+  });
+  const [compressingSlot, setCompressingSlot] = useState<EvidenceSlotRole | null>(null);
+  const [activeSlotTarget, setActiveSlotTarget] = useState<EvidenceSlotRole | null>(null);
+  const [slotErrors, setSlotErrors] = useState<Partial<Record<EvidenceSlotRole, string>>>({});
+
+  // Rate Limiting & Anti-Bot States
+  const [rateLimitInfo, setRateLimitInfo] = useState<RateLimitCheckResult>(() => checkSubmissionRateLimit());
+  const [honeypot, setHoneypot] = useState<string>('');
+  const mountTimeRef = useRef<number>(Date.now());
 
   // Location states
   const [locationTab, setLocationTab] = useState<'gps' | 'manual'>('gps');
@@ -81,7 +112,6 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
     offlineSaved: boolean;
   } | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
-  const [imageError, setImageError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [basemapMode, setBasemapMode] = useState<BasemapMode>('street');
 
@@ -91,6 +121,14 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   // Auto-acquire GPS on mount
   useEffect(() => {
     acquireGpsLocation();
+  }, []);
+
+  // Live rate-limit tick
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRateLimitInfo(checkSubmissionRateLimit());
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   // Checks spatial jurisdiction against Rizal boundary and auto-detects municipality via Ray-Casting PIP
@@ -172,34 +210,117 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTriggerCapture = (role: EvidenceSlotRole, method: 'live_camera' | 'gallery') => {
+    setActiveSlotTarget(role);
+    if (method === 'live_camera') {
+      cameraInputRef.current?.click();
+    } else {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, method: 'live_camera' | 'gallery') => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file) return;
+    if (!file || !activeSlotTarget) return;
 
-    setSelectedFile(file);
-    setIsCompressing(true);
-    setImageError(null);
+    const targetRole = activeSlotTarget;
+    setCompressingSlot(targetRole);
+    setSlotErrors((prev) => ({ ...prev, [targetRole]: undefined }));
 
     try {
-      const result = await compressIncidentImage(file);
-      setCompressionInfo(result);
+      const [exifData, compressionResult] = await Promise.all([
+        extractExifFromBlob(file, coordinates),
+        compressIncidentImage(file),
+      ]);
+
+      const exifSummary: ExifSummary = {
+        hasExif: exifData.hasExif,
+        capturedAt: exifData.capturedAt || null,
+        isRecent: exifData.isRecent ?? null,
+        ageHours: exifData.ageHours ?? null,
+        distanceFromReportKm: exifData.distanceFromReportKm ?? null,
+        locationMismatch: exifData.locationMismatch ?? false,
+        cameraModel: [exifData.cameraMake, exifData.cameraModel].filter(Boolean).join(' ') || null,
+        isPossibleSyntheticOrEdited: exifData.isPossibleSyntheticOrEdited ?? false,
+        notes: exifData.notes,
+      };
+
+      setSlots((prev) => ({
+        ...prev,
+        [targetRole]: {
+          file,
+          previewUrl: compressionResult.previewUrl,
+          compressedBlob: compressionResult.compressedFile,
+          compressedSize: compressionResult.compressedSize,
+          captureMethod: method,
+          exif: exifSummary,
+        },
+      }));
     } catch (err) {
-      console.error('Image compression failed:', err);
-      setSelectedFile(null);
-      setImageError(
-        lang === 'fil'
-          ? 'Hindi maproseso ang larawan. Pumili ng ibang larawan.'
-          : 'This photo could not be processed. Please choose a different photo.'
-      );
+      console.error('[ResidentReporter] Image processing failed:', err);
+      setSlotErrors((prev) => ({
+        ...prev,
+        [targetRole]:
+          lang === 'fil'
+            ? 'Hindi maproseso ang larawan. Pakisubukang muli.'
+            : 'Could not process photo. Please try again.',
+      }));
     } finally {
-      setIsCompressing(false);
+      setCompressingSlot(null);
     }
+  };
+
+  const handleRemoveSlot = (role: EvidenceSlotRole) => {
+    setSlots((prev) => ({ ...prev, [role]: null }));
+    setSlotErrors((prev) => ({ ...prev, [role]: undefined }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description.trim() && !compressionInfo) return;
+
+    // 1. Rate Limit Enforcement
+    const rateCheck = checkSubmissionRateLimit();
+    if (!rateCheck.allowed) {
+      const waitStr = formatCooldownTime(rateCheck.remainingSeconds);
+      setSubmitError(
+        rateCheck.reason === 'burst'
+          ? (lang === 'fil'
+              ? `Naka-cooldown upang maiwasan ang spam. Maghintay nang ${waitStr} bago magsumite muli.`
+              : `Submission cooldown active to prevent spam. Please wait ${waitStr} before submitting another report.`)
+          : (lang === 'fil'
+              ? `Naabot na ang limitasyon ng ${rateCheck.maxPerDay} ulat bawat araw para sa device na ito.`
+              : `Daily limit of ${rateCheck.maxPerDay} reports reached for this device.`)
+      );
+      return;
+    }
+
+    // 2. Anti-Bot Honeypot: silently drop automated bots
+    if (honeypot.trim() !== '') {
+      console.warn('[Security] Bot honeypot triggered. Silently dropping payload.');
+      setIsSubmitting(true);
+      setTimeout(() => {
+        setIsSubmitting(false);
+        resetForm();
+      }, 1000);
+      return;
+    }
+
+    // 3. Human Velocity Check (< 2500ms since mount)
+    if (Date.now() - mountTimeRef.current < 2500) {
+      setSubmitError(
+        lang === 'fil'
+          ? 'Masyadong mabilis ang pagsusumite. Pakisuri muli ang iyong ulat bago ipadala.'
+          : 'Submission too rapid. Please review your report before sending.'
+      );
+      return;
+    }
+
+    const filledSlots = (['primary', 'wide_scene', 'landmark'] as EvidenceSlotRole[])
+      .map((role) => ({ role, item: slots[role] }))
+      .filter((s): s is { role: EvidenceSlotRole; item: EvidenceSlotItem } => s.item !== null);
+
+    if (!description.trim() && filledSlots.length === 0) return;
 
     if (isOutOfJurisdiction) {
       setSubmitError(
@@ -217,9 +338,30 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
     const geohash = encodeGeohash(coordinates.lat, coordinates.lng, 8);
 
     try {
-      const imageDataUrl = compressionInfo
-        ? await fileToDataUrl(compressionInfo.compressedFile)
-        : null;
+      const imageItems: ReportImageItem[] = [];
+      for (const { role, item } of filledSlots) {
+        const dataUrl = await fileToDataUrl(item.compressedBlob);
+        imageItems.push({
+          data: dataUrl,
+          mimeType: 'image/jpeg',
+          role,
+          isLiveCamera: item.captureMethod === 'live_camera',
+        });
+      }
+
+      const primaryImage = imageItems.find((img) => img.role === 'primary') || imageItems[0] || null;
+      const hasLive = imageItems.some((img) => img.isLiveCamera);
+      const hasGallery = imageItems.some((img) => !img.isLiveCamera);
+      const overallCaptureMethod: 'live_camera' | 'gallery' | 'mixed' | undefined =
+        imageItems.length === 0
+          ? undefined
+          : hasLive && hasGallery
+          ? 'mixed'
+          : hasLive
+          ? 'live_camera'
+          : 'gallery';
+
+      const primaryExif = slots.primary?.exif || slots.wide_scene?.exif || slots.landmark?.exif || null;
 
       // Report + photo are written in ONE atomic batch. Firestore's persistent local cache
       // queues the batch while offline and sends it when the device reconnects.
@@ -246,13 +388,18 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         },
         rawInput: {
           description: description.trim().slice(0, 500),
-          hasImage: !!imageDataUrl,
+          hasImage: imageItems.length > 0,
+          imageCount: imageItems.length,
+          ...(overallCaptureMethod ? { captureMethod: overallCaptureMethod } : {}),
+          ...(primaryExif ? { exif: primaryExif } : {}),
         },
         triageStatus: 'pending',
       });
-      if (imageDataUrl) {
+
+      if (primaryImage) {
         batch.set(doc(db, 'report_images', reportId), {
-          data: imageDataUrl,
+          data: primaryImage.data, // Backward compatibility with single-image readers
+          images: imageItems,      // Multi-slot evidence deck
           mimeType: 'image/jpeg',
           createdAt: serverTimestamp(),
         });
@@ -267,6 +414,10 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         // Surface rule/validation rejections instead of showing a false success
         await Promise.race([commit, new Promise<void>((resolve) => setTimeout(resolve, 8000))]);
       }
+
+      // Record successful submission for client-side rate limiting
+      recordSubmission();
+      setRateLimitInfo(checkSubmissionRateLimit());
 
       setSubmittedReport({
         referenceCode,
@@ -292,13 +443,14 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   };
 
   const resetForm = () => {
-    setSelectedFile(null);
-    setCompressionInfo(null);
+    setSlots({ primary: null, wide_scene: null, landmark: null });
+    setSlotErrors({});
     setDescription('');
     setCategoryHint('');
     setSelectedMunicipality('');
     setSelectedBarangay('');
     setSubmittedReport(null);
+    mountTimeRef.current = Date.now();
     acquireGpsLocation();
   };
 
@@ -396,94 +548,198 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
       </div>
 
       <form onSubmit={handleSubmit} className="divide-y divide-stone-100">
-        {/* Step 1: Photo Capture */}
+        {/* Step 1: Structured Evidence Capture */}
         <div className="py-6 space-y-3">
-          <div className="flex items-baseline justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs font-semibold text-stone-400">01</span>
               <span className="text-stone-300 font-mono">/</span>
               <h2 className="font-semibold text-sm sm:text-base text-stone-900">
-                {t.photoCaptureTitle}
+                {t.evidenceTitle}
               </h2>
             </div>
             <span className="text-xs text-stone-400">{t.photoCaptureHint}</span>
           </div>
 
-          {/* Hidden inputs */}
+          <p className="text-xs text-stone-500 leading-relaxed">
+            {t.evidenceSubtitle}
+          </p>
+
+          {/* Cooldown Alert Banner if currently rate-limited */}
+          {!rateLimitInfo.allowed && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                <span className="font-medium">
+                  {rateLimitInfo.reason === 'burst'
+                    ? `${t.cooldownNotice} (${formatCooldownTime(rateLimitInfo.remainingSeconds)})`
+                    : `${t.cooldownNotice} (Daily quota: 5/5 reached)`}
+                </span>
+              </div>
+              <span className="font-mono font-bold text-amber-800 shrink-0">
+                {formatCooldownTime(rateLimitInfo.remainingSeconds)}
+              </span>
+            </div>
+          )}
+
+          {/* Hidden camera & file picker inputs */}
           <input
             ref={cameraInputRef}
             type="file"
             accept="image/*"
             capture="environment"
-            onChange={handleFileChange}
+            onChange={(e) => handleFileChange(e, 'live_camera')}
             className="hidden"
           />
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            onChange={handleFileChange}
+            onChange={(e) => handleFileChange(e, 'gallery')}
             className="hidden"
           />
 
-          {!compressionInfo ? (
-            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-              <button
-                type="button"
-                onClick={() => cameraInputRef.current?.click()}
-                className="flex-1 py-3 px-4 bg-stone-900 hover:bg-black text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-2xs"
-              >
-                <Camera className="w-4 h-4" />
-                <span>{t.cameraBtn}</span>
-              </button>
+          {/* 3 Structured Evidence Slots */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            {(
+              [
+                {
+                  role: 'primary' as EvidenceSlotRole,
+                  title: t.slotPrimaryTitle,
+                  desc: t.slotPrimaryDesc,
+                  badge: 'Required',
+                  badgeClass: 'bg-stone-900 text-white',
+                },
+                {
+                  role: 'wide_scene' as EvidenceSlotRole,
+                  title: t.slotWideTitle,
+                  desc: t.slotWideDesc,
+                  badge: 'Recommended',
+                  badgeClass: 'bg-stone-100 text-stone-700',
+                },
+                {
+                  role: 'landmark' as EvidenceSlotRole,
+                  title: t.slotLandmarkTitle,
+                  desc: t.slotLandmarkDesc,
+                  badge: 'Optional',
+                  badgeClass: 'bg-stone-100 text-stone-500',
+                },
+              ] as const
+            ).map((slotDef) => {
+              const slotData = slots[slotDef.role];
+              const isCompressingThis = compressingSlot === slotDef.role;
+              const errorThis = slotErrors[slotDef.role];
 
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-1 py-3 px-4 bg-white hover:bg-stone-50 text-stone-800 border border-stone-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-2xs"
-              >
-                <Upload className="w-4 h-4 text-stone-600" />
-                <span>{t.galleryBtn}</span>
-              </button>
-            </div>
-          ) : (
-            <div className="relative rounded-lg overflow-hidden border border-stone-200 bg-stone-900">
-              <img
-                src={compressionInfo.previewUrl}
-                alt="Incident capture"
-                className="w-full h-56 sm:h-64 object-cover"
-              />
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-stone-950/90 via-stone-950/60 to-transparent p-3 flex items-center justify-between text-xs text-white">
-                <span className="font-mono text-stone-300">
-                  {t.compressedTo}: {(compressionInfo.compressedSize / 1024).toFixed(0)} KB
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedFile(null);
-                    setCompressionInfo(null);
-                  }}
-                  className="px-2.5 py-1 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded text-white font-semibold text-xs transition cursor-pointer"
+              return (
+                <div
+                  key={slotDef.role}
+                  className={`rounded-lg border transition p-3 flex flex-col justify-between ${
+                    slotData
+                      ? 'border-stone-300 bg-white shadow-2xs'
+                      : 'border-dashed border-stone-200 bg-stone-50/60 hover:bg-stone-50'
+                  }`}
                 >
-                  Change
-                </button>
-              </div>
-            </div>
-          )}
+                  {/* Slot Header */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="font-semibold text-xs text-stone-900 leading-tight">
+                        {slotDef.title}
+                      </span>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-medium shrink-0 ${slotDef.badgeClass}`}>
+                        {slotDef.badge}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 leading-snug">
+                      {slotDef.desc}
+                    </p>
+                  </div>
 
-          {isCompressing && (
-            <p className="text-xs text-stone-600 flex items-center gap-1.5 animate-pulse font-medium">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              <span>{t.compressing}</span>
-            </p>
-          )}
+                  {/* Slot Content: Empty State vs Loaded Preview */}
+                  <div className="mt-3">
+                    {isCompressingThis ? (
+                      <div className="h-32 flex flex-col items-center justify-center gap-2 text-stone-500 text-xs rounded-md bg-stone-100 animate-pulse">
+                        <RefreshCw className="w-4 h-4 animate-spin text-stone-700" />
+                        <span>{t.compressing}</span>
+                      </div>
+                    ) : slotData ? (
+                      <div className="space-y-2">
+                        <div className="relative rounded-md overflow-hidden bg-stone-900 aspect-4/3 group">
+                          <img
+                            src={slotData.previewUrl}
+                            alt={slotDef.title}
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSlot(slotDef.role)}
+                            title="Remove photo"
+                            className="absolute top-1.5 right-1.5 p-1 bg-black/60 hover:bg-black/90 text-white rounded-md transition cursor-pointer backdrop-blur-xs"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
 
-          {imageError && (
-            <div className="flex items-center gap-1.5 text-xs text-rose-700 py-1">
-              <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-              <span>{imageError}</span>
-            </div>
-          )}
+                          <div className="absolute bottom-1.5 left-1.5">
+                            {slotData.captureMethod === 'live_camera' ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-100/95 backdrop-blur-xs px-1.5 py-0.5 rounded shadow-2xs">
+                                <Camera className="w-3 h-3 text-emerald-700" />
+                                {t.liveCameraBadge}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-stone-700 bg-white/95 backdrop-blur-xs px-1.5 py-0.5 rounded shadow-2xs">
+                                <Upload className="w-3 h-3 text-stone-500" />
+                                {t.galleryBadge}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* EXIF / File telemetry pill */}
+                        <div className="flex items-center justify-between text-[10px] text-stone-500 font-mono">
+                          <span>{(slotData.compressedSize / 1024).toFixed(0)} KB</span>
+                          {slotData.exif?.cameraModel && (
+                            <span className="truncate max-w-[110px]" title={slotData.exif.cameraModel}>
+                              {slotData.exif.cameraModel}
+                            </span>
+                          )}
+                          {slotData.exif?.distanceFromReportKm !== null && slotData.exif?.distanceFromReportKm !== undefined && (
+                            <span className="text-emerald-700 font-semibold">
+                              GPS: {slotData.exif.distanceFromReportKm}km
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleTriggerCapture(slotDef.role, 'live_camera')}
+                          className="w-full py-2 px-2.5 bg-stone-900 hover:bg-black text-white rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                          <span>{t.cameraBtn}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTriggerCapture(slotDef.role, 'gallery')}
+                          className="w-full py-1.5 px-2 bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 rounded-md text-[11px] font-medium flex items-center justify-center gap-1.5 transition cursor-pointer"
+                        >
+                          <Upload className="w-3 h-3 text-stone-500" />
+                          <span>{t.galleryBtn}</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {errorThis && (
+                      <div className="mt-1.5 flex items-center gap-1 text-[11px] text-rose-700">
+                        <AlertCircle className="w-3 h-3 text-rose-600 shrink-0" />
+                        <span>{errorThis}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Step 2: Location */}
@@ -843,6 +1099,20 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           </div>
         </div>
 
+        {/* Anti-Bot Honeypot (invisible to humans, triggers automated bots) */}
+        <div className="hidden" aria-hidden="true" style={{ display: 'none' }}>
+          <label htmlFor="hp_resident_notes">Leave this field blank</label>
+          <input
+            id="hp_resident_notes"
+            type="text"
+            name="hp_resident_notes"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
+        </div>
+
         {/* Submit & Compliance */}
         <div className="pt-6 space-y-3">
           {submitError && (
@@ -854,10 +1124,23 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
 
           <button
             type="submit"
-            disabled={isSubmitting || isCompressing || !description.trim() || isOutOfJurisdiction}
+            disabled={
+              isSubmitting ||
+              !!compressingSlot ||
+              !description.trim() ||
+              isOutOfJurisdiction ||
+              !rateLimitInfo.allowed
+            }
             className="w-full py-3.5 px-6 bg-stone-900 hover:bg-black active:bg-stone-950 disabled:bg-stone-200 disabled:text-stone-400 text-white font-semibold text-sm rounded-lg shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            {isSubmitting ? (
+            {!rateLimitInfo.allowed ? (
+              <>
+                <Lock className="w-4 h-4 text-stone-400" />
+                <span>
+                  {t.cooldownNotice} ({formatCooldownTime(rateLimitInfo.remainingSeconds)})
+                </span>
+              </>
+            ) : isSubmitting ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
                 <span>{t.submitting}</span>

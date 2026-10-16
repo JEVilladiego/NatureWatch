@@ -9,9 +9,30 @@ export type IncidentCategory =
   | 'other'
   | 'not_environmental';
 
-export type ReportStatus = 'pending' | 'in_progress' | 'resolved';
+export type ReportStatus = 'pending' | 'in_progress' | 'resolved' | 'spam';
 
 export type TriageStatus = 'pending' | 'processing' | 'done' | 'failed';
+
+export type EvidenceSlotRole = 'primary' | 'wide_scene' | 'landmark';
+
+export interface ExifSummary {
+  hasExif: boolean;
+  capturedAt?: string | null;
+  isRecent?: boolean | null;
+  ageHours?: number | null;
+  distanceFromReportKm?: number | null;
+  locationMismatch?: boolean;
+  cameraModel?: string | null;
+  isPossibleSyntheticOrEdited?: boolean;
+  notes?: string[];
+}
+
+export interface ReportImageItem {
+  data: string;
+  mimeType: string;
+  role: EvidenceSlotRole;
+  isLiveCamera?: boolean;
+}
 
 export interface LocationInfo {
   lat: number;
@@ -26,8 +47,11 @@ export interface LocationInfo {
 
 export interface RawInput {
   description: string;
-  /** True when a compressed photo exists in the `report_images/{reportId}` document. */
+  /** True when at least one compressed photo exists in the `report_images/{reportId}` document. */
   hasImage: boolean;
+  imageCount?: number;
+  captureMethod?: 'live_camera' | 'gallery' | 'mixed';
+  exif?: ExifSummary | null;
 }
 
 export interface WeatherContext {
@@ -49,6 +73,13 @@ export interface ProtectedZoneHit {
   legalNote: string;
 }
 
+export interface AuthenticityScore {
+  isPlausible: boolean;
+  isSyntheticOrStock: boolean;
+  consistencyScore: number; // 0 to 1
+  forensicNotes?: string;
+}
+
 export interface AITriage {
   category: IncidentCategory;
   severity: 1 | 2 | 3 | 4 | 5;
@@ -59,6 +90,8 @@ export interface AITriage {
   triagedAt: string;
   weather?: WeatherContext | null;
   protectedZone?: ProtectedZoneHit | null;
+  isSpam?: boolean;
+  authenticity?: AuthenticityScore | null;
 }
 
 export interface FinalReview {
@@ -88,6 +121,7 @@ export interface IncidentReport {
   aiTriage: AITriage | null;
   final: FinalReview | null;
   duplicateClusterId: string | null;
+  isSpam?: boolean;
 }
 
 export interface CategoryMetadata {

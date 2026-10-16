@@ -49,7 +49,7 @@ service cloud.firestore {
     }
 
     function isValidStatus(status) {
-      return status in ['pending', 'in_progress', 'resolved'];
+      return status in ['pending', 'in_progress', 'resolved', 'spam'];
     }
 
     function isValidLocation(loc) {
@@ -84,17 +84,21 @@ service cloud.firestore {
         'statusHistory',
         'location',
         'rawInput',
-        'triageStatus'
+        'triageStatus',
+        'isSpam'
       ]) &&
       data.referenceCode is string && data.referenceCode.matches('^BK-[A-Z0-9]{5}$') &&
       data.createdAt == request.time &&
       data.status == 'pending' &&
       data.triageStatus == 'pending' &&
       data.rawInput is map &&
-      data.rawInput.keys().hasOnly(['description', 'hasImage']) &&
+      data.rawInput.keys().hasOnly(['description', 'hasImage', 'imageCount', 'captureMethod', 'exif']) &&
       data.rawInput.description is string &&
       data.rawInput.description.size() <= 500 &&
       data.rawInput.hasImage is bool &&
+      (!('imageCount' in data.rawInput) || data.rawInput.imageCount is int) &&
+      (!('captureMethod' in data.rawInput) || data.rawInput.captureMethod in ['live_camera', 'gallery', 'mixed']) &&
+      (!('exif' in data.rawInput) || data.rawInput.exif == null || data.rawInput.exif is map) &&
       isValidLocation(data.location) &&
       data.statusHistory is list &&
       data.statusHistory.size() == 1 &&
@@ -104,7 +108,7 @@ service cloud.firestore {
     function isValidReportUpdate() {
       let diffKeys = incoming().diff(existing()).affectedKeys();
       return isOfficial() &&
-        diffKeys.hasOnly(['status', 'statusHistory', 'final']) &&
+        diffKeys.hasOnly(['status', 'statusHistory', 'final', 'isSpam']) &&
         isValidStatus(incoming().status) &&
         incoming().statusHistory is list &&
         incoming().statusHistory.size() >= existing().statusHistory.size() &&
@@ -136,7 +140,8 @@ service cloud.firestore {
       // Only officials can update status, statusHistory, and final
       allow update: if isValidId(reportId) && isValidReportUpdate();
 
-      allow delete: if false;
+      // Officials can permanently delete confirmed spam / troll reports
+      allow delete: if isOfficial();
     }
 
     // ---------- Report photos (compressed base64, separate from the report) ----------
@@ -145,17 +150,19 @@ service cloud.firestore {
       allow create: if isValidId(reportId) &&
         existsAfter(/databases/$(database)/documents/reports/$(reportId)) &&
         !exists(/databases/$(database)/documents/report_images/$(reportId)) &&
-        incoming().keys().hasOnly(['data', 'mimeType', 'createdAt']) &&
+        incoming().keys().hasOnly(['data', 'mimeType', 'createdAt', 'images']) &&
         incoming().keys().hasAll(['data', 'mimeType', 'createdAt']) &&
         incoming().data is string &&
         incoming().data.size() <= 800000 &&
         incoming().data.matches('^data:image/jpeg;base64,.*') &&
         incoming().mimeType == 'image/jpeg' &&
-        incoming().createdAt == request.time;
+        incoming().createdAt == request.time &&
+        (!('images' in incoming()) || incoming().images is list);
 
       allow get: if isOfficial();
       allow list: if false;
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isOfficial();
     }
 
     // ---------- Officials ----------
