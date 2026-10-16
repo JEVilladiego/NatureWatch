@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   ShieldAlert,
   Filter,
@@ -63,7 +64,12 @@ import {
 } from '../types/report';
 import { LeafletMap, MapLayerMode, BasemapMode } from './LeafletMap';
 import { resolveReportCoordinates } from '../lib/barangayCoordinates';
-import { checkMgbQuarryTenement, MgbQuarryFeatureProperties } from '../lib/geojsonService';
+import {
+  checkMgbQuarryTenement,
+  MgbQuarryFeatureProperties,
+  fetchRizalMgbQuarriesGeoJSON,
+  GeoJSONFeature,
+} from '../lib/geojsonService';
 import { calculateDistanceMeters } from '../lib/geohash';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import {
@@ -125,6 +131,25 @@ function isPointInPolygonRing(point: [number, number], ring: [number, number][])
     if (intersect) inside = !inside;
   }
   return inside;
+}
+
+function getQuarryCenter(feature: GeoJSONFeature<MgbQuarryFeatureProperties>): { lat: number; lng: number } {
+  try {
+    const coords = feature.geometry.coordinates;
+    const ring = feature.geometry.type === 'Polygon' ? coords[0] : coords[0]?.[0];
+    if (ring && ring.length > 0) {
+      let sumLng = 0;
+      let sumLat = 0;
+      for (const pt of ring) {
+        sumLng += pt[0];
+        sumLat += pt[1];
+      }
+      return { lat: sumLat / ring.length, lng: sumLng / ring.length };
+    }
+  } catch (e) {
+    // fallback
+  }
+  return { lat: 14.5800, lng: 121.2800 };
 }
 
 const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
@@ -689,10 +714,71 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedProtectedZoneId, setSelectedProtectedZoneId] = useState<string | null>(null);
   const [activeProtectedZoneFilter, setActiveProtectedZoneFilter] = useState<string | null>(null);
   const [isProhibitionsExpanded, setIsProhibitionsExpanded] = useState<boolean>(true);
-  const [showMgbQuarries, setShowMgbQuarries] = useState<boolean>(true);
+  const [showMgbQuarries, setShowMgbQuarries] = useState<boolean>(false);
   const [isSyncingSatellites, setIsSyncingSatellites] = useState<boolean>(false);
   const [syncSatelliteToast, setSyncSatelliteToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [activeMgbQuarryHit, setActiveMgbQuarryHit] = useState<MgbQuarryFeatureProperties | null | undefined>(undefined);
+
+  // Left Drawer multi-tab intelligence state
+  const [activeLeftDrawerTab, setActiveLeftDrawerTab] = useState<'queue' | 'firms' | 'protected_zones' | 'quarries'>('queue');
+  const [mgbQuarriesFeatures, setMgbQuarriesFeatures] = useState<GeoJSONFeature<MgbQuarryFeatureProperties>[]>([]);
+  const [quarrySearchTerm, setQuarrySearchTerm] = useState<string>('');
+  const [protectedZoneSearchTerm, setProtectedZoneSearchTerm] = useState<string>('');
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchRizalMgbQuarriesGeoJSON()
+      .then((coll) => {
+        if (isMounted && coll?.features) {
+          setMgbQuarriesFeatures(coll.features);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to load MGB quarries geojson:', err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSwitchLeftDrawerTab = (tab: 'queue' | 'firms' | 'protected_zones' | 'quarries') => {
+    setActiveLeftDrawerTab(tab);
+    if (tab === 'protected_zones') {
+      setShowMgbQuarries(false);
+      setMapLayerMode('protected_zones');
+    } else if (tab === 'quarries') {
+      setShowMgbQuarries(true);
+      setMapLayerMode('quarries');
+    } else if (tab === 'firms' || tab === 'queue') {
+      setShowMgbQuarries(false);
+      setMapLayerMode('boundaries');
+    }
+  };
+
+  const handleCloseDrawer = () => {
+    setIsSheetOpen(false);
+    if (activeLeftDrawerTab === 'quarries') {
+      setShowMgbQuarries(false);
+      setMapLayerMode('boundaries');
+    } else if (activeLeftDrawerTab === 'protected_zones') {
+      setMapLayerMode('boundaries');
+    }
+  };
+
+  const handleToggleDrawerTab = (tab: 'queue' | 'firms' | 'protected_zones' | 'quarries') => {
+    if (selectedReport) {
+      setSelectedReport(null);
+      if (activeLeftDrawerTab === tab && isSheetOpen) {
+        handleCloseDrawer();
+        return;
+      }
+    } else if (isSheetOpen && activeLeftDrawerTab === tab) {
+      handleCloseDrawer();
+      return;
+    }
+    handleSwitchLeftDrawerTab(tab);
+    setIsSheetOpen(true);
+  };
 
   useEffect(() => {
     if (!selectedReport) {
@@ -752,6 +838,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (!selectedProtectedZoneId) return null;
     return RIZAL_PROTECTED_ZONES_CATALOG.find((z) => z.id === selectedProtectedZoneId) || null;
   }, [selectedProtectedZoneId]);
+
+  // NASA FIRMS satellite thermal anomaly hotspots
+  const satelliteReports = useMemo(() => {
+    return reports.filter(
+      (r) => r.source === 'satellite_firms' || r.id.startsWith('SAT-') || !!r.satelliteHotspot
+    );
+  }, [reports]);
 
   // Spatial index: maps each protected zone ID to legitimate active/historical reports situated within its boundaries
   const reportsByProtectedZone = useMemo(() => {
@@ -818,6 +911,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
     setSelectedReport(null);
     setIsSheetOpen(true);
+    handleSwitchLeftDrawerTab('queue');
     setMapCenter({ lat: group.lat, lng: group.lng });
     setMapZoom(14);
   };
@@ -885,7 +979,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
         <div className="text-[10px] text-stone-500 dark:text-stone-400 flex items-center gap-1">
           <span>{catLabel}</span>
-          {zone.legalBasis && <span>• ⚖️ {zone.legalBasis}</span>}
+          {zone.legalBasis && <span>• {zone.legalBasis}</span>}
         </div>
         {zone.legalNote && (
           compact ? (
@@ -1054,7 +1148,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <strong>Permit:</strong> <span className="font-mono">{hit.permitNumber}</span> • <strong>Operator:</strong> {hit.operator}
           </div>
           <div className="text-[10px] text-stone-500 dark:text-stone-400 leading-relaxed pt-1 border-t border-amber-500/20">
-            ℹ️ Coordinates intersect an authorized MGB Region IV-A concession. Officers should verify whether on-ground activities exceed permitted boundaries, bench depths, or Environmental Compliance Certificate (ECC) conditions.
+            Coordinates intersect an authorized MGB Region IV-A concession. Officers should verify whether on-ground activities exceed permitted boundaries, bench depths, or Environmental Compliance Certificate (ECC) conditions.
           </div>
         </div>
       );
@@ -1077,7 +1171,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           Zero Authorized Concessions Found at Coordinates
         </div>
         <div className="text-[10px] text-stone-600 dark:text-stone-300 leading-relaxed pt-1 border-t border-rose-200 dark:border-rose-900/40">
-          ⚠️ Report coordinates do NOT intersect any authorized MGB Region IV-A mining or quarrying concessions in Rizal Province. High probability of illegal or unpermitted extraction. Immediate ENRO / LGU field verification advised.
+          Report coordinates do NOT intersect any authorized MGB Region IV-A mining or quarrying concessions in Rizal Province. High probability of illegal or unpermitted extraction. Immediate ENRO / LGU field verification advised.
         </div>
       </div>
     );
@@ -2645,74 +2739,210 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </button>
               )}
 
-              <div className="h-4 w-px bg-stone-200 dark:bg-stone-800 hidden sm:block" />
-
-              {/* Sync Satellites Button */}
-              <button
-                type="button"
-                onClick={handleSyncSatellites}
-                disabled={isSyncingSatellites}
-                className="px-2.5 py-1 rounded-md text-xs font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/60 active:scale-95 transition-all duration-150 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                title="Sync NASA FIRMS VIIRS satellite thermal anomaly hotspots for Rizal Province"
-              >
-                <Satellite className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{isSyncingSatellites ? 'Syncing...' : 'Sync Satellites'}</span>
-              </button>
             </div>
           </div>
 
           {/* ========================================================= */}
           {/* 3. FLOATING LEFT SHEET (Google Maps / Apple Maps Paradigm) */}
           {/* ========================================================= */}
-          {!isSheetOpen ? (
-            <button
-              type="button"
-              onClick={() => setIsSheetOpen(true)}
-              className="absolute top-16 left-3 sm:left-4 z-30 pointer-events-auto px-3.5 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-md rounded-xl text-xs font-semibold text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-850 active:scale-95 transition-all duration-200 animate-nav-pill flex items-center gap-2 cursor-pointer"
-              title="Show Queue & Inspector"
-            >
-              <Layers className="w-4 h-4 text-stone-700 dark:text-stone-300" />
-              <span>{selectedReport ? selectedReport.referenceCode : `Queue (${filteredReports.length})`}</span>
-              <ChevronRight className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500" />
-            </button>
-          ) : (
-            <div className="absolute top-16 left-3 sm:left-4 z-30 pointer-events-auto w-[calc(100vw-24px)] sm:w-[410px] max-h-[calc(100vh-80px)] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xl rounded-xl overflow-hidden flex flex-col transition-all duration-300 animate-nav-pill">
-              {/* ------------------------------------------------------- */}
-              {/* SHEET MODE 1: SEARCH, FILTERS & QUEUE STREAM            */}
-              {/* ------------------------------------------------------- */}
-              {!selectedReport ? (
-                <div key="queue-mode" className="flex flex-col h-full overflow-hidden animate-sheet-morph">
-                  {/* Search and Header */}
-                  <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-2 shrink-0">
-                    <div className="relative flex-1">
-                      <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search ref, barangay..."
-                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white dark:bg-stone-950 dark:hover:bg-stone-950 dark:focus:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 focus:border-stone-900 dark:focus:border-emerald-500 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 font-sans transition placeholder:text-stone-400 dark:placeholder:text-stone-600"
-                      />
-                      {searchTerm && (
-                        <button
-                          type="button"
-                          onClick={() => setSearchTerm('')}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 cursor-pointer"
-                          title="Clear search"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
+          {/* ========================================================= */}
+          {/* ========================================================= */}
+          {/* 3. FLOATING INTELLIGENCE INTERFACE                        */}
+          {/* ========================================================= */}
+          {/* 3. FLOATING INTELLIGENCE INTERFACE                        */}
+          {/* ========================================================= */}
+          <AnimatePresence mode="wait">
+            {!isSheetOpen ? (
+              /* STATE A: CLOSED -> 4 FULL VERTICAL SEPARATE PILL BUTTONS */
+              <motion.div
+                key="separate-pills"
+                initial={{ opacity: 0, x: -14, scale: 0.98 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -12, scale: 0.98 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute top-16 left-3 sm:top-[68px] sm:left-4 z-30 pointer-events-auto flex flex-col items-start gap-1.5 sm:gap-2"
+              >
+                {/* Pill 1: Incident Queue */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleDrawerTab('queue')}
+                  className="w-38 sm:w-44 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center justify-between cursor-pointer shadow-md border bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-850 hover:shadow-lg"
+                  title="Incident Queue & Citizen Reports"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Layers className="w-4 h-4 shrink-0 text-stone-700 dark:text-stone-300" />
+                    <span className="truncate">Queue ({filteredReports.length})</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 shrink-0 text-stone-400 dark:text-stone-500" />
+                </button>
+
+                {/* Pill 2: NASA FIRMS Satellites */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleDrawerTab('firms')}
+                  className="w-38 sm:w-44 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center justify-between cursor-pointer shadow-md border bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-850 hover:shadow-lg"
+                  title="NASA FIRMS Satellite Thermal Watchdog"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Satellite className="w-4 h-4 shrink-0 text-stone-700 dark:text-stone-300" />
+                    <span className="truncate">FIRMS ({satelliteReports.length})</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 shrink-0 text-stone-400 dark:text-stone-500" />
+                </button>
+
+                {/* Pill 3: Protected Reserves */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleDrawerTab('protected_zones')}
+                  className="w-38 sm:w-44 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center justify-between cursor-pointer shadow-md border bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-850 hover:shadow-lg"
+                  title="Protected Ecological Reserves & Watersheds"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ShieldAlert className="w-4 h-4 shrink-0 text-stone-700 dark:text-stone-300" />
+                    <span className="truncate">Reserves (15)</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 shrink-0 text-stone-400 dark:text-stone-500" />
+                </button>
+
+                {/* Pill 4: MGB Quarries Cadastre */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleDrawerTab('quarries')}
+                  className="w-38 sm:w-44 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center justify-between cursor-pointer shadow-md border bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-850 hover:shadow-lg"
+                  title="MGB Permitted Concessions & Mining Cadastre"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Pickaxe className="w-4 h-4 shrink-0 text-stone-700 dark:text-stone-300" />
+                    <span className="truncate">Quarries ({mgbQuarriesFeatures.length || 10})</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 shrink-0 text-stone-400 dark:text-stone-500" />
+                </button>
+              </motion.div>
+            ) : (
+              /* STATE B: OPEN -> UNIFIED SHELL (SLIM ICON RAIL + CONNECTED PANEL BODY) */
+              <motion.div
+                key="unified-shell"
+                initial={{ opacity: 0, x: -16, scale: 0.98 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -14, scale: 0.98 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute top-16 left-3 sm:top-[68px] sm:left-4 z-30 pointer-events-auto flex bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xl rounded-2xl overflow-hidden max-h-[calc(100vh-80px)] w-[calc(100vw-24px)] sm:w-auto"
+              >
+                {/* 1. Integrated Left Icon Rail */}
+                <div className="w-12 sm:w-14 bg-stone-50/90 dark:bg-stone-950/70 border-r border-stone-200 dark:border-stone-800 flex flex-col items-center py-2.5 gap-2 shrink-0 select-none">
+                  {/* Icon 1: Queue */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleDrawerTab('queue')}
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer relative group ${
+                      activeLeftDrawerTab === 'queue' || selectedReport
+                        ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs'
+                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white hover:bg-stone-200/60 dark:hover:bg-stone-800'
+                    }`}
+                    title={`Incident Queue (${filteredReports.length})`}
+                    aria-label="Incident Queue"
+                  >
+                    <Layers className="w-4 h-4 shrink-0" />
+                  </button>
+
+                  {/* Icon 2: FIRMS */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleDrawerTab('firms')}
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer relative group ${
+                      !selectedReport && activeLeftDrawerTab === 'firms'
+                        ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs'
+                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white hover:bg-stone-200/60 dark:hover:bg-stone-800'
+                    }`}
+                    title={`NASA FIRMS Watchdog (${satelliteReports.length})`}
+                    aria-label="NASA FIRMS Watchdog"
+                  >
+                    <Satellite className="w-4 h-4 shrink-0" />
+                  </button>
+
+                  {/* Icon 3: Reserves */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleDrawerTab('protected_zones')}
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer relative group ${
+                      !selectedReport && activeLeftDrawerTab === 'protected_zones'
+                        ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:border-emerald-500 shadow-xs'
+                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white hover:bg-stone-200/60 dark:hover:bg-stone-800'
+                    }`}
+                    title="Protected Ecological Reserves (15)"
+                    aria-label="Protected Ecological Reserves"
+                  >
+                    <ShieldAlert className="w-4 h-4 shrink-0" />
+                  </button>
+
+                  {/* Icon 4: Quarries */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleDrawerTab('quarries')}
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer relative group ${
+                      !selectedReport && activeLeftDrawerTab === 'quarries'
+                        ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:border-emerald-500 shadow-xs'
+                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white hover:bg-stone-200/60 dark:hover:bg-stone-800'
+                    }`}
+                    title={`MGB Permitted Quarries (${mgbQuarriesFeatures.length || 10})`}
+                    aria-label="MGB Permitted Quarries"
+                  >
+                    <Pickaxe className="w-4 h-4 shrink-0" />
+                  </button>
+
+                  {/* Bottom Collapse Button */}
+                  <div className="mt-auto pt-2 border-t border-stone-200/60 dark:border-stone-800 w-full flex items-center justify-center">
                     <button
                       type="button"
-                      onClick={() => setIsSheetOpen(false)}
-                      className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
-                      title="Collapse panel"
+                      onClick={handleCloseDrawer}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition cursor-pointer"
+                      title="Collapse to full buttons"
+                      aria-label="Collapse panel"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                   </div>
+                </div>
+
+                {/* 2. Integrated Panel Body */}
+                <div className="w-[calc(100vw-72px)] sm:w-[410px] flex flex-col h-full overflow-hidden">
+                {!selectedReport ? (
+                  <div key="intelligence-drawer" className="flex flex-col h-full overflow-hidden animate-sheet-morph">
+                  {/* TAB 1: INCIDENT QUEUE */}
+                  {activeLeftDrawerTab === 'queue' && (
+                    <div key="tab-queue" className="flex flex-col h-full overflow-hidden">
+                      {/* Search and Header */}
+                      <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-2 shrink-0">
+                        <div className="relative flex-1">
+                          <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search ref, barangay..."
+                            className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white dark:bg-stone-950 dark:hover:bg-stone-950 dark:focus:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 focus:border-stone-900 dark:focus:border-emerald-500 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 font-sans transition placeholder:text-stone-400 dark:placeholder:text-stone-600"
+                          />
+                          {searchTerm && (
+                            <button
+                              type="button"
+                              onClick={() => setSearchTerm('')}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 cursor-pointer"
+                              title="Clear search"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleCloseDrawer}
+                          className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer shrink-0"
+                          title="Close Queue"
+                          aria-label="Close Queue"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
 
                   {/* Quick telemetry chips & LGU horizontal scroll */}
                   <div className="px-3 py-2 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 space-y-2 shrink-0">
@@ -2980,7 +3210,443 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     )}
                   </div>
                 </div>
-              ) : (
+              )}
+
+              {/* TAB 2: NASA FIRMS SATELLITE WATCHDOG */}
+              {activeLeftDrawerTab === 'firms' && (
+                <div key="tab-firms" className="flex flex-col h-full overflow-hidden">
+                  {/* FIRMS Header with Sync Satellites button */}
+                  <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-2 shrink-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center shrink-0">
+                        <Satellite className="w-4 h-4 text-stone-700 dark:text-stone-300" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight">
+                          NASA FIRMS Watchdog
+                        </h4>
+                        <span className="text-[10px] text-stone-500 dark:text-stone-400 block">
+                          VIIRS 375m Thermal Anomaly Detection
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleSyncSatellites}
+                        disabled={isSyncingSatellites}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 active:scale-95 transition-all shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shrink-0"
+                        title="Sync NASA FIRMS VIIRS satellite thermal hotspots for Rizal Province"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
+                        <span>{isSyncingSatellites ? 'Syncing...' : 'Sync Satellites'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCloseDrawer}
+                        className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                        title="Close FIRMS"
+                        aria-label="Close FIRMS"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* FIRMS Telemetry Overview */}
+                  <div className="px-3 py-2 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 shrink-0">
+                    <div className="grid grid-cols-3 gap-2 text-center p-2 rounded-lg bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
+                      <div>
+                        <span className="text-[9px] font-bold uppercase text-stone-400 dark:text-stone-500 block">
+                          Active Hotspots
+                        </span>
+                        <span className="text-xs font-bold text-stone-900 dark:text-stone-100 font-mono mt-0.5 block">
+                          {satelliteReports.length}
+                        </span>
+                      </div>
+                      <div className="border-x border-stone-200 dark:border-stone-800">
+                        <span className="text-[9px] font-bold uppercase text-stone-400 dark:text-stone-500 block">
+                          Peak Radiance
+                        </span>
+                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400 font-mono mt-0.5 block">
+                          {satelliteReports.length > 0
+                            ? `${Math.max(...satelliteReports.map((r) => r.satelliteHotspot?.frp || 0)).toFixed(1)} MW`
+                            : '0.0 MW'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-bold uppercase text-stone-400 dark:text-stone-500 block">
+                          Sensor
+                        </span>
+                        <span className="text-xs font-bold text-stone-900 dark:text-stone-100 font-mono mt-0.5 block truncate">
+                          VIIRS 375m
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-stone-500 dark:text-stone-400 text-center pt-1.5">
+                      Near real-time orbital feeds via NASA LANCE / EOSDIS
+                    </div>
+                  </div>
+
+                  {/* List of Satellite Hotspots */}
+                  <div className="flex-1 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar">
+                    {satelliteReports.length === 0 ? (
+                      <div className="p-8 text-center space-y-3">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center mx-auto text-amber-600 dark:text-amber-400">
+                          <Satellite className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-stone-800 dark:text-stone-200">
+                            No Active Satellite Hotspots
+                          </p>
+                          <p className="text-[11px] text-stone-500 dark:text-stone-400 max-w-xs mx-auto leading-relaxed">
+                            No thermal anomalies or forest fire hotspots currently detected by VIIRS over Rizal Province.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleSyncSatellites}
+                          disabled={isSyncingSatellites}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-stone-900 dark:bg-stone-800 text-white hover:bg-black transition cursor-pointer"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
+                          <span>Check for Updates</span>
+                        </button>
+                      </div>
+                    ) : (
+                      satelliteReports.map((satReport) => {
+                        const coords = resolveReportCoordinates(satReport);
+                        const sat = satReport.satelliteHotspot;
+                        const frp = sat?.frp !== undefined ? sat.frp.toFixed(1) : 'N/A';
+                        const tempC = sat?.brightnessTemperature !== undefined ? (sat.brightnessTemperature - 273.15).toFixed(1) : 'N/A';
+                        const locationText = [satReport.location?.barangay, satReport.location?.municipality || 'Rizal'].filter(Boolean).join(', ');
+                        const desc = satReport.aiTriage?.summary || satReport.rawInput?.description || 'NASA VIIRS Thermal Anomaly';
+
+                        return (
+                          <div
+                            key={satReport.id}
+                            onClick={() => {
+                              setMapCenter({ lat: coords.lat, lng: coords.lng });
+                              setMapZoom(14);
+                              setSelectedReport(satReport);
+                              if (window.innerWidth < 640) setIsSheetOpen(false);
+                            }}
+                            className="p-3 transition-colors cursor-pointer text-left space-y-1.5 group hover:bg-stone-50 dark:hover:bg-stone-850/80 bg-white dark:bg-stone-900"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-mono text-xs font-bold text-amber-700 dark:text-amber-400">
+                                {satReport.referenceCode}
+                              </span>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold border border-amber-300 dark:border-amber-800 flex items-center gap-1">
+                                <Flame className="w-2.5 h-2.5 text-orange-600" />
+                                {frp} MW FRP
+                              </span>
+                            </div>
+
+                            <div className="text-xs font-semibold text-stone-900 dark:text-stone-100 line-clamp-1">
+                              {desc}
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 pt-0.5">
+                              <span className="flex items-center gap-1 truncate">
+                                <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+                                {locationText}
+                              </span>
+                              <span className="font-mono text-stone-600 dark:text-stone-300 shrink-0">
+                                {tempC}°C • {sat?.confidence || 'Nominal'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: PROTECTED RESERVES & WATERSHEDS */}
+              {activeLeftDrawerTab === 'protected_zones' && (
+                <div key="tab-reserves" className="flex flex-col h-full overflow-hidden">
+                  {/* Reserves Header & Search */}
+                  <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2 shrink-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center shrink-0">
+                          <ShieldAlert className="w-4 h-4 text-stone-700 dark:text-stone-300" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight">
+                            Protected Reserves & Buffers
+                          </h4>
+                          <span className="text-[10px] text-stone-500 dark:text-stone-400 block">
+                            15 Curated Ecological Zones
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 font-semibold">
+                          15 Zones
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleCloseDrawer}
+                          className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                          title="Close Reserves"
+                          aria-label="Close Reserves"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={protectedZoneSearchTerm}
+                        onChange={(e) => setProtectedZoneSearchTerm(e.target.value)}
+                        placeholder="Filter reserves by name or municipality..."
+                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white dark:bg-stone-950 dark:hover:bg-stone-950 dark:focus:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 focus:border-emerald-500 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 transition placeholder:text-stone-400 dark:placeholder:text-stone-600"
+                      />
+                      {protectedZoneSearchTerm && (
+                        <button
+                          type="button"
+                          onClick={() => setProtectedZoneSearchTerm('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 cursor-pointer"
+                          title="Clear search"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Category filter chips */}
+                  <div className="px-3 py-2 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 shrink-0">
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar text-xs">
+                      {[
+                        { id: 'all', label: 'All (15)' },
+                        { id: 'nipas', label: 'NIPAS (6)' },
+                        { id: 'llda_zomap', label: 'LLDA (2)' },
+                        { id: 'kba_georeserve', label: 'KBA (3)' },
+                        { id: 'local_mountain', label: 'Local (4)' },
+                      ].map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setActiveZoneCatFilter(cat.id as any)}
+                          className={`px-2 py-1 rounded-md text-xs font-semibold shrink-0 transition cursor-pointer whitespace-nowrap ${
+                            activeZoneCatFilter === cat.id
+                              ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs'
+                              : 'bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Interactive Zone List */}
+                  <div className="flex-1 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar">
+                    {RIZAL_PROTECTED_ZONES_CATALOG
+                      .filter((zone) => activeZoneCatFilter === 'all' || zone.category === activeZoneCatFilter)
+                      .filter((zone) => {
+                        if (!protectedZoneSearchTerm.trim()) return true;
+                        const q = protectedZoneSearchTerm.toLowerCase();
+                        return (
+                          zone.name.toLowerCase().includes(q) ||
+                          zone.shortName.toLowerCase().includes(q) ||
+                          zone.municipality.toLowerCase().includes(q)
+                        );
+                      })
+                      .map((zone) => {
+                        const isSelected = selectedProtectedZoneId === zone.id;
+                        const threatReports = reportsByProtectedZone[zone.id] || [];
+                        const activeThreats = threatReports.filter((r) => r.status !== 'resolved');
+
+                        return (
+                          <div
+                            key={zone.id}
+                            onClick={() => {
+                              setMapCenter({ lat: zone.lat, lng: zone.lng });
+                              setMapZoom(zone.zoom);
+                              setSelectedProtectedZoneId(zone.id);
+                              if (window.innerWidth < 640) setIsSheetOpen(false);
+                            }}
+                            className={`p-3 transition-colors cursor-pointer text-left space-y-1.5 group ${
+                              isSelected
+                                ? 'bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-emerald-500/40'
+                                : 'hover:bg-stone-50 dark:hover:bg-stone-850/80 bg-white dark:bg-stone-900'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="flex items-center gap-1.5 min-w-0">
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: zone.color }}
+                                />
+                                <span className="font-semibold text-xs text-stone-900 dark:text-stone-100 truncate">
+                                  {zone.name}
+                                </span>
+                              </span>
+                              {activeThreats.length > 0 ? (
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 font-bold border border-rose-300 dark:border-rose-800 shrink-0">
+                                  {activeThreats.length} Active
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-medium border border-emerald-300 dark:border-emerald-800 shrink-0">
+                                  Clear
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between text-[11px] text-stone-600 dark:text-stone-400">
+                              <span className="truncate">{zone.municipality}</span>
+                              <span className="font-mono text-[10px] text-stone-500 dark:text-stone-400 shrink-0">
+                                {zone.areaHectares}
+                              </span>
+                            </div>
+
+                            {zone.legalBasis && (
+                              <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
+                                {zone.legalBasis}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: MGB PERMITTED QUARRIES CADASTRE */}
+              {activeLeftDrawerTab === 'quarries' && (
+                <div key="tab-quarries" className="flex flex-col h-full overflow-hidden">
+                  {/* Quarries Header & Search */}
+                  <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2 shrink-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center shrink-0">
+                          <Pickaxe className="w-4 h-4 text-stone-700 dark:text-stone-300" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight">
+                            MGB Permitted Cadastre
+                          </h4>
+                          <span className="text-[10px] text-stone-500 dark:text-stone-400 block">
+                            Authorized Concessions (Region IV-A)
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-semibold">
+                          {mgbQuarriesFeatures.length || 10} Active
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleCloseDrawer}
+                          className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                          title="Close Quarries"
+                          aria-label="Close Quarries"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={quarrySearchTerm}
+                        onChange={(e) => setQuarrySearchTerm(e.target.value)}
+                        placeholder="Filter by operator, permit number, or municipality..."
+                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white dark:bg-stone-950 dark:hover:bg-stone-950 dark:focus:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 focus:border-amber-500 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 transition placeholder:text-stone-400 dark:placeholder:text-stone-600"
+                      />
+                      {quarrySearchTerm && (
+                        <button
+                          type="button"
+                          onClick={() => setQuarrySearchTerm('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 cursor-pointer"
+                          title="Clear search"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Regulatory Authority Notice */}
+                  <div className="px-3 py-2 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 text-[10px] text-stone-600 dark:text-stone-400 flex items-center justify-between shrink-0">
+                    <span>Official MGB Region IV-A mining tenement boundaries</span>
+                    <span className="font-mono text-amber-700 dark:text-amber-400 font-semibold">MPSA / CSAG</span>
+                  </div>
+
+                  {/* Concession Cards List */}
+                  <div className="flex-1 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar">
+                    {mgbQuarriesFeatures
+                      .filter((feat) => {
+                        if (!quarrySearchTerm.trim()) return true;
+                        const q = quarrySearchTerm.toLowerCase();
+                        const p = feat.properties;
+                        return (
+                          p.name.toLowerCase().includes(q) ||
+                          p.operator.toLowerCase().includes(q) ||
+                          p.permitNumber.toLowerCase().includes(q) ||
+                          p.municipality.toLowerCase().includes(q) ||
+                          p.commodity.toLowerCase().includes(q)
+                        );
+                      })
+                      .map((feat) => {
+                        const p = feat.properties;
+                        const center = getQuarryCenter(feat);
+
+                        return (
+                          <div
+                            key={feat.id || p.id}
+                            onClick={() => {
+                              setMapCenter(center);
+                              setMapZoom(14);
+                              if (window.innerWidth < 640) setIsSheetOpen(false);
+                            }}
+                            className="p-3 hover:bg-stone-50 dark:hover:bg-stone-850/80 transition-colors cursor-pointer text-left space-y-1.5 group bg-white dark:bg-stone-900"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-semibold text-xs text-stone-900 dark:text-stone-100 truncate">
+                                {p.name}
+                              </span>
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold border border-amber-300 dark:border-amber-800 shrink-0">
+                                {p.permitType}
+                              </span>
+                            </div>
+
+                            <div className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
+                              <strong>Operator:</strong> {p.operator}
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 pt-0.5">
+                              <span className="flex items-center gap-1 truncate">
+                                <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+                                {p.municipality}
+                              </span>
+                              <span className="font-mono text-stone-600 dark:text-stone-300 shrink-0">
+                                {p.areaHectares}
+                              </span>
+                            </div>
+
+                            <div className="text-[10px] font-mono text-amber-700 dark:text-amber-400 truncate">
+                              Permit: {p.permitNumber} • {p.commodity}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
                 /* ------------------------------------------------------- */
                 /* SHEET MODE 2: CASE INSPECTOR & DECISION CONSOLE         */
                 /* ------------------------------------------------------- */
@@ -3019,12 +3685,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </span>
                       <button
                         type="button"
-                        onClick={() => setIsSheetOpen(false)}
+                        onClick={() => {
+                          setSelectedReport(null);
+                          handleCloseDrawer();
+                        }}
                         className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
-                        title="Collapse panel"
-                        aria-label="Collapse panel"
+                        title="Close Inspector"
+                        aria-label="Close Inspector"
                       >
-                        <ChevronLeft className="w-3.5 h-3.5" />
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -3466,8 +4135,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 </div>
               )}
-            </div>
-          )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* ========================================================= */}
           {/* 3.5 RIGHT SLIDE-OVER PROTECTED ZONE DOSSIER & THREAT HUD  */}
@@ -3656,7 +4327,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               <Filter className="w-3.5 h-3.5" />
                               <span>
                                 {isFilterActive
-                                  ? '✓ Queue Filtered to this Zone (Clear)'
+                                  ? 'Active Filter: Zone Isolated (Click to Clear)'
                                   : `Filter Queue to this Zone (${activeThreats.length})`}
                               </span>
                             </button>
@@ -3894,42 +4565,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block">
                     Analysis Overlays
                   </span>
-                  <div className="grid grid-cols-3 gap-1 bg-stone-100 dark:bg-stone-800/80 p-1 rounded-xl text-xs font-medium">
+                  <div className="grid grid-cols-2 gap-1 bg-stone-100 dark:bg-stone-800/80 p-1 rounded-xl text-xs font-medium">
                     <button
                       type="button"
-                      onClick={() => setMapLayerMode('boundaries')}
-                      className={`py-1.5 px-1 rounded-lg text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1 ${
+                      onClick={() => {
+                        setMapLayerMode('boundaries');
+                        setShowMgbQuarries(false);
+                      }}
+                      className={`py-1.5 px-2 rounded-lg text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5 ${
                         mapLayerMode === 'boundaries'
                           ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs'
                           : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
                       }`}
                       title="14 Municipal administrative borders"
                     >
-                      <span>Boundaries</span>
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>Borders</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setMapLayerMode('choropleth')}
-                      className={`py-1.5 px-1 rounded-lg text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1 ${
+                      onClick={() => {
+                        setMapLayerMode('choropleth');
+                        setShowMgbQuarries(false);
+                      }}
+                      className={`py-1.5 px-2 rounded-lg text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5 ${
                         mapLayerMode === 'choropleth'
                           ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs'
                           : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
                       }`}
                       title="Incident volume density heatmap"
                     >
+                      <Activity className="w-3.5 h-3.5" />
                       <span>Density</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMapLayerMode('protected_zones')}
-                      className={`py-1.5 px-1 rounded-lg text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1 ${
-                        mapLayerMode === 'protected_zones'
-                          ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs'
-                          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
-                      }`}
-                      title="Sierra Madre & lakeside ecological reserves"
-                    >
-                      <span>Protected</span>
                     </button>
                   </div>
                 </div>
@@ -3948,7 +4615,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                     <div>
                       <span className="text-xs font-medium text-stone-900 dark:text-stone-100 block leading-tight">
-                        {mapLayerMode === 'protected_zones' ? 'Dim Outside Reserves' : 'Focus: Rizal Only'}
+                        Focus: Rizal Only
                       </span>
                       <span className="text-[10px] text-stone-400 dark:text-stone-500 block leading-tight">
                         Spotlight jurisdiction boundary
@@ -3970,45 +4637,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 </div>
 
-                {/* 4. Apple-Style Toggle Switch: MGB Permitted Quarries Cadastre */}
-                <div
-                  onClick={() => setShowMgbQuarries(!showMgbQuarries)}
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-stone-200/90 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-950/60 hover:bg-stone-50 dark:hover:bg-stone-950/80 transition cursor-pointer"
-                  title="Display MGB Region IV-A permitted sand, gravel & mineral concessions"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${
-                      showMgbQuarries ? 'bg-amber-600 text-white' : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
-                    }`}>
-                      <Pickaxe className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-medium text-stone-900 dark:text-stone-100 block leading-tight">
-                        Quarries (MGB)
-                      </span>
-                      <span className="text-[10px] text-stone-400 dark:text-stone-500 block leading-tight">
-                        Permitted mining cadastre
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Smooth Apple / iOS Sliding Toggle Switch */}
-                  <div
-                    className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${
-                      showMgbQuarries ? 'bg-amber-600' : 'bg-stone-300 dark:bg-stone-700'
-                    }`}
-                  >
-                    <div
-                      className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${
-                        showMgbQuarries ? 'translate-x-4' : 'translate-x-0'
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                {/* 5. Refined Contextual Legend */}
+                {/* 4. Refined Contextual Legend */}
                 <div className="pt-2 border-t border-stone-100 dark:border-stone-800 text-[11px] space-y-1.5">
-                  {mapLayerMode === 'choropleth' && (
+                  {mapLayerMode === 'choropleth' ? (
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-stone-500 dark:text-stone-400 font-mono text-[9px]">
                         <span>0</span>
@@ -4029,96 +4660,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         Incident Volume Density Scale
                       </div>
                     </div>
-                  )}
-
-                  {mapLayerMode === 'protected_zones' && (
-                    <div className="space-y-1.5">
-                      <div className="text-[10px] font-semibold text-stone-700 dark:text-stone-300 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <ShieldAlert className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span>Protected Reserves & Buffers</span>
-                        </div>
-                        <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400">
-                          {activeZoneCatFilter === 'all' ? '15 Active' : `${RIZAL_PROTECTED_ZONES_CATALOG.filter(z => z.category === activeZoneCatFilter).length} Active`}
-                        </span>
-                      </div>
-
-                      {/* Category Selector Chips */}
-                      <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar text-[9px]">
-                        {[
-                          { id: 'all', label: 'All (15)' },
-                          { id: 'nipas', label: 'NIPAS (6)' },
-                          { id: 'llda_zomap', label: 'LLDA (2)' },
-                          { id: 'kba_georeserve', label: 'KBA (3)' },
-                          { id: 'local_mountain', label: 'Local (4)' },
-                        ].map((cat) => (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => setActiveZoneCatFilter(cat.id as any)}
-                            className={`px-1.5 py-0.5 rounded-md font-medium shrink-0 transition cursor-pointer ${
-                              activeZoneCatFilter === cat.id
-                                ? 'bg-stone-900 dark:bg-emerald-600 text-white'
-                                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
-                            }`}
-                          >
-                            {cat.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Interactive Zone List with Click-to-Fly & Dossier Inspection */}
-                      <div className="max-h-28 overflow-y-auto space-y-0.5 pr-0.5 custom-scrollbar text-[10px]">
-                        {RIZAL_PROTECTED_ZONES_CATALOG
-                          .filter((zone) => activeZoneCatFilter === 'all' || zone.category === activeZoneCatFilter)
-                          .map((zone) => {
-                            const isSelected = selectedProtectedZoneId === zone.id;
-                            return (
-                              <button
-                                key={zone.id}
-                                type="button"
-                                onClick={() => {
-                                  setMapCenter({ lat: zone.lat, lng: zone.lng });
-                                  setMapZoom(zone.zoom);
-                                  setSelectedProtectedZoneId(zone.id);
-                                  if (window.innerWidth < 640) {
-                                    setIsSheetOpen(false);
-                                  }
-                                }}
-                                className={`w-full text-left p-1 rounded-md transition flex items-center justify-between gap-1.5 cursor-pointer group ${
-                                  isSelected
-                                    ? 'bg-emerald-50 dark:bg-emerald-950/80 ring-1 ring-emerald-500/60'
-                                    : 'hover:bg-stone-100 dark:hover:bg-stone-800/80'
-                                }`}
-                                title={`Inspect ${zone.name} (${zone.municipality})`}
-                              >
-                                <span className="flex items-center gap-1.5 truncate">
-                                  <span
-                                    className="w-2 h-2 rounded-full shrink-0"
-                                    style={{ backgroundColor: zone.color }}
-                                  />
-                                  <span className={`truncate font-medium ${
-                                    isSelected
-                                      ? 'text-emerald-900 dark:text-emerald-200 font-semibold'
-                                      : 'text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-white'
-                                  }`}>
-                                    {zone.shortName}
-                                  </span>
-                                </span>
-                                <span className="text-[9px] text-stone-400 dark:text-stone-500 shrink-0 font-mono">
-                                  {zone.categoryLabel}
-                                </span>
-                              </button>
-                            );
-                          })}
-                      </div>
-                      <div className="text-[9px] text-stone-400 dark:text-stone-500 text-center font-normal pt-0.5">
-                        Click any reserve to focus map
-                      </div>
-                    </div>
-                  )}
-
-                  {(mapLayerMode === 'boundaries' || mapLayerMode === 'standard') && (
+                  ) : (
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-stone-600 dark:text-stone-300 text-[11px] font-medium">
                         <span className="flex items-center gap-1.5">
@@ -4137,16 +4679,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <div className="text-[10px] text-stone-400 dark:text-stone-500 text-center font-normal">
                         14 LGUs of Rizal • Interactive map pins
                       </div>
-                    </div>
-                  )}
-
-                  {showMgbQuarries && (
-                    <div className="pt-1.5 mt-1 border-t border-stone-200/60 dark:border-stone-800 flex items-center justify-between text-[10px] text-amber-700 dark:text-amber-400 font-medium">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-1.5 rounded-xs bg-amber-500/30 border border-amber-600 border-dashed" />
-                        <span>MGB Permitted Tenements</span>
-                      </span>
-                      <span className="font-mono text-[9px] uppercase px-1 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">Active</span>
                     </div>
                   )}
                 </div>

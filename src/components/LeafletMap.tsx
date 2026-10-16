@@ -31,7 +31,7 @@ export const PHILIPPINES_BOUNDS: [[number, number], [number, number]] = [
   [21.5, 127.0], // North-East (Batanes / Babuyan / Philippine Sea)
 ];
 
-export type MapLayerMode = 'standard' | 'boundaries' | 'choropleth' | 'protected_zones';
+export type MapLayerMode = 'standard' | 'boundaries' | 'choropleth' | 'protected_zones' | 'quarries';
 export type BasemapMode = 'street' | 'satellite' | 'terrain';
 
 export const BASEMAP_CONFIGS: Record<BasemapMode, { url: string; attribution: string; maxZoom: number; subdomains?: string }> = {
@@ -105,7 +105,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   fitProvinceKey,
   showProtectedZones = true,
   onSelectProtectedZone,
-  showMgbQuarries = true,
+  showMgbQuarries = false,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -296,6 +296,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       maskLayerRef.current = null;
     }
 
+    // In 'quarries' mode: eliminate all boundaries, strokes, and mask lines
+    if (layerMode === 'quarries') {
+      return;
+    }
+
     // In 'protected_zones' mode: dim all surrounding terrain except the protected zones
     if (layerMode === 'protected_zones') {
       if (!shouldMask || !protectedMaskData) return;
@@ -399,12 +404,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         const title = props.shortName || props.name || 'Protected Zone';
         const type = String(props.type || 'Sanctuary').toUpperCase().replace(/_/g, ' ');
         const mun = props.municipality || 'Rizal';
-        const legal = props.legalBasis ? `<div style="font-size: 9px; color: #a1a1aa; margin-top: 2px;">⚖️ ${props.legalBasis}</div>` : '';
+        const legal = props.legalBasis ? `<div style="font-size: 9px; color: #a1a1aa; margin-top: 2px;">Basis: ${props.legalBasis}</div>` : '';
 
-        let catBadge = '🛡️ DENR-NIPAS';
-        if (props.category === 'llda_zomap') catBadge = '🌊 LLDA ZOMAP';
-        else if (props.category === 'kba_georeserve') catBadge = '🌲 KEY BIODIVERSITY / GEORESERVE';
-        else if (props.category === 'local_mountain') catBadge = '⛰️ LOCAL MOUNTAIN WATERSHED';
+        let catBadge = 'DENR-NIPAS';
+        if (props.category === 'llda_zomap') catBadge = 'LLDA ZOMAP';
+        else if (props.category === 'kba_georeserve') catBadge = 'KEY BIODIVERSITY / GEORESERVE';
+        else if (props.category === 'local_mountain') catBadge = 'LOCAL MOUNTAIN WATERSHED';
 
         const tooltipHtml = `
           <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 190px; max-width: 260px;">
@@ -420,7 +425,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               ${title}
             </div>
             <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
-              📍 ${mun}
+              ${mun}
             </div>
             ${legal}
           </div>
@@ -484,15 +489,15 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       mgbQuarriesLayerRef.current = null;
     }
 
-    if (!showMgbQuarries) return;
+    if (!showMgbQuarries && layerMode !== 'quarries') return;
 
     const layer = L.geoJSON(mgbQuarriesData as any, {
       style: () => ({
         color: '#d97706',      // amber-600 border
-        weight: 2,
+        weight: layerMode === 'quarries' ? 2.5 : 2,
         fillColor: '#f59e0b',  // amber-500 fill
-        fillOpacity: 0.16,
-        dashArray: '5, 4',
+        fillOpacity: layerMode === 'quarries' ? 0.30 : 0.16,
+        dashArray: layerMode === 'quarries' ? undefined : '5, 4',
       }),
       onEachFeature: (feature: any, featureLayer: L.Layer) => {
         const props = feature?.properties || {};
@@ -507,7 +512,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 200px; max-width: 270px;">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 3px;">
               <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #d97706;">
-                ⛏️ MGB PERMITTED CADASTRE
+                MGB PERMITTED CADASTRE
               </span>
               <span style="font-size: 8px; font-family: monospace; background: rgba(217,119,6,0.18); border: 1px solid rgba(217,119,6,0.3); padding: 1px 4px; border-radius: 3px; color: #fde68a;">
                 ACTIVE
@@ -520,7 +525,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               <strong>Operator:</strong> ${operator}
             </div>
             <div style="font-size: 9.5px; color: #94a3b8; margin-top: 2px;">
-              📍 ${props.barangay ? `${props.barangay}, ` : ''}${municipality} ${area ? `• ${area}` : ''}
+              ${props.barangay ? `${props.barangay}, ` : ''}${municipality} ${area ? `• ${area}` : ''}
             </div>
             <div style="font-size: 9px; font-family: monospace; color: #f59e0b; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 3px;">
               Permit: ${permit} • ${commodity}
@@ -568,7 +573,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         mgbQuarriesLayerRef.current = null;
       }
     };
-  }, [showMgbQuarries, mgbQuarriesData]);
+  }, [showMgbQuarries, layerMode, mgbQuarriesData]);
 
   // Update Center & Zoom
   useEffect(() => {
@@ -686,6 +691,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     if (geoJsonLayerRef.current) {
       geoJsonLayerRef.current.remove();
       geoJsonLayerRef.current = null;
+    }
+
+    // In 'quarries' mode: eliminate all municipal boundaries and lines
+    if (layerMode === 'quarries') {
+      return;
     }
 
     // If layerMode is not 'boundaries' or 'choropleth' and no activeMunicipality in picker, do not render full polygons
@@ -970,7 +980,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
         const satBadge = isSatellite
           ? `<div style="background: rgba(234,88,12,0.12); border: 1px solid rgba(234,88,12,0.3); border-radius: 4px; padding: 3px 6px; margin-bottom: 5px; font-size: 10px; color: #ea580c; display: flex; align-items: center; justify-content: space-between;">
-              <strong style="display:flex;align-items:center;gap:3px;">🛰️ NASA VIIRS HOTSPOT</strong>
+              <strong style="display:flex;align-items:center;gap:3px;">NASA VIIRS HOTSPOT</strong>
               <span>${report.satelliteHotspot?.frp ? report.satelliteHotspot.frp.toFixed(1) + ' MW' : 'Active'}</span>
             </div>`
           : '';

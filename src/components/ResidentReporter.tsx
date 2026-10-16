@@ -850,7 +850,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                     </div>
                     {detectedProtectedZone.legalBasis && (
                       <div className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">
-                        ⚖️ {detectedProtectedZone.legalBasis}
+                        {detectedProtectedZone.legalBasis}
                       </div>
                     )}
                     <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
