@@ -614,21 +614,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const t = translations[lang];
 
   // View Mode: 'workbench' (Option 1 default) vs 'full_map' (Option 2 GIS Canvas)
-  const [internalViewMode, setInternalViewMode] = useState<'workbench' | 'full_map'>(() => {
-    try {
-      const saved = localStorage.getItem('naturewatch_dashboard_view_mode');
-      return saved === 'full_map' ? 'full_map' : 'workbench';
-    } catch {
-      return 'workbench';
-    }
-  });
+  const [internalViewMode, setInternalViewMode] = useState<'workbench' | 'full_map'>('workbench');
 
   const viewMode = controlledViewMode !== undefined ? controlledViewMode : internalViewMode;
 
   const handleViewModeChange = (mode: 'workbench' | 'full_map') => {
     if (mode === 'full_map') {
       setSelectedReport(null);
+      setSelectedProtectedZoneId(null);
+      setActiveProtectedZoneFilter(null);
+      setActiveClusterFilter(null);
+      setMapLayerMode('boundaries');
+      setShowMgbQuarries(false);
+      setIsSheetOpen(false);
+      setIsLayersPanelOpen(false);
       setMunicipalityFilter('all');
+      setStatusFilter('all');
+      setCategoryFilter('all');
+      setSeverityFilter('all');
+      setSearchTerm('');
+      setMapCenter({ lat: 14.5800, lng: 121.2800 });
+      setMapZoom(11);
       setFitProvinceKey((prev) => prev + 1);
     }
     if (onViewModeChange) {
@@ -636,15 +642,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
     } else {
       setInternalViewMode(mode);
     }
-    try {
-      localStorage.setItem('naturewatch_dashboard_view_mode', mode);
-    } catch {}
   };
 
   // LikasMap-inspired Full Map layout states
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isLegendExpanded, setIsLegendExpanded] = useState<boolean>(true);
-  const [isLayersPanelOpen, setIsLayersPanelOpen] = useState<boolean>(true);
+  const [isLayersPanelOpen, setIsLayersPanelOpen] = useState<boolean>(false);
 
   // Reports state
   const [reports, setReports] = useState<IncidentReport[]>([]);
@@ -694,7 +697,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isRetryingTriage, setIsRetryingTriage] = useState<boolean>(false);
 
   // Floating Left Sheet, Lightbox and Unified Action states
-  const [isSheetOpen, setIsSheetOpen] = useState<boolean>(true);
+  const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
   const [isLegalNoteExpanded, setIsLegalNoteExpanded] = useState<boolean>(false);
   const [isReasoningExpanded, setIsReasoningExpanded] = useState<boolean>(false);
@@ -724,6 +727,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [mgbQuarriesFeatures, setMgbQuarriesFeatures] = useState<GeoJSONFeature<MgbQuarryFeatureProperties>[]>([]);
   const [quarrySearchTerm, setQuarrySearchTerm] = useState<string>('');
   const [protectedZoneSearchTerm, setProtectedZoneSearchTerm] = useState<string>('');
+
+  // When switching to Full Map mode, enforce default clean state: nothing selected except Rizal's boundaries
+  useEffect(() => {
+    if (viewMode === 'full_map') {
+      setSelectedReport(null);
+      setSelectedProtectedZoneId(null);
+      setActiveProtectedZoneFilter(null);
+      setActiveClusterFilter(null);
+      setMapLayerMode('boundaries');
+      setShowMgbQuarries(false);
+      setIsSheetOpen(false);
+      setIsLayersPanelOpen(false);
+      setMunicipalityFilter('all');
+      setStatusFilter('all');
+      setCategoryFilter('all');
+      setSeverityFilter('all');
+      setSearchTerm('');
+    }
+  }, [viewMode]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1277,9 +1299,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         });
 
         setReports(list);
-        // Keep the current selection (refreshed) or fall back to the newest report
+        // Keep the current selection (refreshed) or keep null (no initial selection)
         setSelectedReport((prev) =>
-          prev ? list.find((r) => r.id === prev.id) ?? prev : list[0] ?? null
+          prev ? list.find((r) => r.id === prev.id) ?? prev : null
         );
         setLoading(false);
       },
@@ -2743,13 +2765,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* ========================================================= */}
-          {/* 3. FLOATING LEFT SHEET (Google Maps / Apple Maps Paradigm) */}
-          {/* ========================================================= */}
-          {/* ========================================================= */}
-          {/* ========================================================= */}
-          {/* 3. FLOATING INTELLIGENCE INTERFACE                        */}
-          {/* ========================================================= */}
-          {/* 3. FLOATING INTELLIGENCE INTERFACE                        */}
+          {/* 3. FLOATING INTELLIGENCE INTERFACE (UNIFIED SHELL / PILLS) */}
           {/* ========================================================= */}
           <AnimatePresence mode="wait">
             {!isSheetOpen ? (
@@ -2826,10 +2842,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: -14, scale: 0.98 }}
                 transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute top-16 left-3 sm:top-[68px] sm:left-4 z-30 pointer-events-auto flex bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xl rounded-2xl overflow-hidden max-h-[calc(100vh-80px)] w-[calc(100vw-24px)] sm:w-auto"
+                className="absolute top-16 left-3 sm:top-[68px] sm:left-4 z-30 pointer-events-auto flex bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xl rounded-2xl overflow-hidden max-h-[calc(100vh-88px)] w-[calc(100vw-24px)] sm:w-auto min-h-0"
               >
                 {/* 1. Integrated Left Icon Rail */}
-                <div className="w-12 sm:w-14 bg-stone-50/90 dark:bg-stone-950/70 border-r border-stone-200 dark:border-stone-800 flex flex-col items-center py-2.5 gap-2 shrink-0 select-none">
+                <div className="w-12 sm:w-14 bg-stone-50/90 dark:bg-stone-950/70 border-r border-stone-200 dark:border-stone-800 flex flex-col items-center py-2.5 gap-2 shrink-0 select-none min-h-0">
                   {/* Icon 1: Queue */}
                   <button
                     type="button"
@@ -2891,7 +2907,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </button>
 
                   {/* Bottom Collapse Button */}
-                  <div className="mt-auto pt-2 border-t border-stone-200/60 dark:border-stone-800 w-full flex items-center justify-center">
+                  <div className="mt-auto pt-2 border-t border-stone-200/60 dark:border-stone-800 w-full flex items-center justify-center shrink-0">
                     <button
                       type="button"
                       onClick={handleCloseDrawer}
@@ -2905,12 +2921,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
 
                 {/* 2. Integrated Panel Body */}
-                <div className="w-[calc(100vw-72px)] sm:w-[410px] flex flex-col h-full overflow-hidden">
+                <div className="w-[calc(100vw-72px)] sm:w-[410px] flex flex-col min-h-0 max-h-[calc(100vh-88px)] overflow-hidden">
                 {!selectedReport ? (
-                  <div key="intelligence-drawer" className="flex flex-col h-full overflow-hidden animate-sheet-morph">
+                  <div key="intelligence-drawer" className="flex flex-col flex-1 min-h-0 overflow-hidden animate-sheet-morph">
                   {/* TAB 1: INCIDENT QUEUE */}
                   {activeLeftDrawerTab === 'queue' && (
-                    <div key="tab-queue" className="flex flex-col h-full overflow-hidden">
+                    <div key="tab-queue" className="flex flex-col flex-1 min-h-0 overflow-hidden">
                       {/* Search and Header */}
                       <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-2 shrink-0">
                         <div className="relative flex-1">
@@ -3123,7 +3139,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* Scrollable Incident Stream */}
-                  <div className="flex-1 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-850">
+                  <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-850 custom-scrollbar overscroll-contain">
                     {filteredReports.length === 0 ? (
                       <div className="p-8 text-center text-xs text-stone-500 dark:text-stone-400 space-y-1">
                         <p className="font-semibold text-stone-700 dark:text-stone-300">No incident reports found</p>
@@ -3214,7 +3230,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* TAB 2: NASA FIRMS SATELLITE WATCHDOG */}
               {activeLeftDrawerTab === 'firms' && (
-                <div key="tab-firms" className="flex flex-col h-full overflow-hidden">
+                <div key="tab-firms" className="flex flex-col flex-1 min-h-0 overflow-hidden">
                   {/* FIRMS Header with Sync Satellites button */}
                   <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-2 shrink-0">
                     <div className="flex items-center gap-2 min-w-0">
@@ -3290,7 +3306,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* List of Satellite Hotspots */}
-                  <div className="flex-1 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar">
+                  <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar overscroll-contain">
                     {satelliteReports.length === 0 ? (
                       <div className="p-8 text-center space-y-3">
                         <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center mx-auto text-amber-600 dark:text-amber-400">
@@ -3367,7 +3383,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* TAB 3: PROTECTED RESERVES & WATERSHEDS */}
               {activeLeftDrawerTab === 'protected_zones' && (
-                <div key="tab-reserves" className="flex flex-col h-full overflow-hidden">
+                <div key="tab-reserves" className="flex flex-col flex-1 min-h-0 overflow-hidden">
                   {/* Reserves Header & Search */}
                   <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2 shrink-0">
                     <div className="flex items-center justify-between">
@@ -3449,7 +3465,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* Interactive Zone List */}
-                  <div className="flex-1 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar">
+                  <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar overscroll-contain">
                     {RIZAL_PROTECTED_ZONES_CATALOG
                       .filter((zone) => activeZoneCatFilter === 'all' || zone.category === activeZoneCatFilter)
                       .filter((zone) => {
@@ -3523,7 +3539,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* TAB 4: MGB PERMITTED QUARRIES CADASTRE */}
               {activeLeftDrawerTab === 'quarries' && (
-                <div key="tab-quarries" className="flex flex-col h-full overflow-hidden">
+                <div key="tab-quarries" className="flex flex-col flex-1 min-h-0 overflow-hidden">
                   {/* Quarries Header & Search */}
                   <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2 shrink-0">
                     <div className="flex items-center justify-between">
@@ -3585,7 +3601,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* Concession Cards List */}
-                  <div className="flex-1 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar">
+                  <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar overscroll-contain">
                     {mgbQuarriesFeatures
                       .filter((feat) => {
                         if (!quarrySearchTerm.trim()) return true;
@@ -3650,7 +3666,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 /* ------------------------------------------------------- */
                 /* SHEET MODE 2: CASE INSPECTOR & DECISION CONSOLE         */
                 /* ------------------------------------------------------- */
-                <div key={`dossier-mode-${selectedReport.id}`} className="flex flex-col h-full overflow-hidden animate-sheet-morph">
+                <div key={`dossier-mode-${selectedReport.id}`} className="flex flex-col flex-1 min-h-0 overflow-hidden animate-sheet-morph">
                   {/* Header with Icon Back button & Reference Code */}
                   <div className="px-3.5 py-2.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2 min-w-0">
@@ -3699,7 +3715,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* Scrollable Dossier Body */}
-                  <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+                  <div className="flex-1 min-h-0 overflow-y-auto p-3.5 space-y-3 custom-scrollbar overscroll-contain">
                     {/* SPAM / QUARANTINE WARNING BANNER */}
                     {(selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam) && (
                       <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-900 rounded-xl space-y-2 text-xs text-rose-950 dark:text-rose-200 shadow-2xs">
@@ -4144,7 +4160,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* 3.5 RIGHT SLIDE-OVER PROTECTED ZONE DOSSIER & THREAT HUD  */}
           {/* ========================================================= */}
           {selectedProtectedZone && (
-            <div className="absolute top-16 right-3 sm:right-4 z-30 pointer-events-auto w-[calc(100vw-24px)] sm:w-[420px] max-h-[calc(100vh-80px)] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xl rounded-xl overflow-hidden flex flex-col transition-all duration-300 animate-nav-pill">
+            <div className="absolute top-16 right-3 sm:right-4 z-30 pointer-events-auto w-[calc(100vw-24px)] sm:w-[420px] max-h-[calc(100vh-88px)] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xl rounded-xl overflow-hidden flex flex-col transition-all duration-300 animate-nav-pill min-h-0">
               {/* Header */}
               <div className="p-3.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 shrink-0 space-y-2">
                 <div className="flex items-center justify-between gap-2">
@@ -4213,7 +4229,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* Scrollable Content Body */}
-              <div className="overflow-y-auto p-3.5 space-y-3 custom-scrollbar flex-1">
+              <div className="overflow-y-auto p-3.5 space-y-3 custom-scrollbar flex-1 min-h-0 overscroll-contain">
                 {/* 1. Vital Statistics Grid */}
                 <div className="grid grid-cols-3 gap-2 bg-stone-50 dark:bg-stone-850 border border-stone-200/80 dark:border-stone-800 rounded-lg p-2.5 text-center">
                   <div>

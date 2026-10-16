@@ -71,10 +71,10 @@ export default function App() {
     };
   }, []);
 
-  // Prevent authenticated officers from accessing citizen reporting form; default to LikasMap GIS
+  // Prevent authenticated officers from accessing citizen reporting form; default to Workbench
   useEffect(() => {
     if (officialUser && currentTab === 'report') {
-      setCurrentTab('map');
+      setCurrentTab('workbench');
     }
   }, [officialUser, currentTab]);
 
@@ -171,7 +171,7 @@ export default function App() {
         onClose={() => setIsAuthModalOpen(false)}
         onLoginSuccess={(user) => {
           setOfficialUser(user);
-          setCurrentTab('map');
+          setCurrentTab('workbench');
         }}
       />
     </div>

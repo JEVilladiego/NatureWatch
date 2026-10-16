@@ -157,8 +157,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = officialUser
     ? [
-        { id: 'map', label: t.officerNavMap, icon: <MapIcon className="w-5 h-5" /> },
         { id: 'workbench', label: t.officerNavWorkbench, icon: <Layout className="w-5 h-5" /> },
+        { id: 'map', label: t.officerNavMap, icon: <MapIcon className="w-5 h-5" /> },
         { id: 'status', label: t.officerNavStatus, icon: <Search className="w-5 h-5" /> },
       ]
     : [
