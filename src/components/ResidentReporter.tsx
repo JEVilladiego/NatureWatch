@@ -311,7 +311,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <h2 className="font-display font-extrabold text-2xl sm:text-3xl text-stone-950 tracking-tight uppercase">
+          <h2 className="font-bold text-2xl sm:text-3xl text-stone-900 tracking-tight">
             {t.successTitle}
           </h2>
           <p className="text-sm text-stone-600 max-w-md mx-auto leading-relaxed">
@@ -351,7 +351,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           <button
             type="button"
             onClick={() => onViewStatus(submittedReport.referenceCode)}
-            className="flex-1 py-3 px-4 bg-tagapo-900 hover:bg-tagapo-800 text-white font-display font-bold uppercase tracking-wider rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition cursor-pointer"
+            className="flex-1 py-3 px-4 bg-tagapo-900 hover:bg-tagapo-800 text-white font-semibold rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition cursor-pointer"
           >
             <FileText className="w-4 h-4" />
             <span>{t.trackStatusBtn}</span>
@@ -360,7 +360,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           <button
             type="button"
             onClick={resetForm}
-            className="py-3 px-4 border border-stone-200 hover:bg-stone-50 text-stone-700 font-display font-bold uppercase tracking-wider rounded-lg text-xs transition cursor-pointer"
+            className="py-3 px-4 border border-stone-200 hover:bg-stone-50 text-stone-700 font-semibold rounded-lg text-xs transition cursor-pointer"
           >
             {t.reportAnotherBtn}
           </button>
@@ -381,7 +381,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
       <div className="pb-6 border-b border-stone-200">
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
           <div>
-            <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-stone-950 tracking-tight uppercase leading-none">
+            <h1 className="font-bold text-2xl sm:text-3xl text-stone-900 tracking-tight leading-tight">
               {t.appTitle}
             </h1>
             <p className="text-sm text-stone-600 mt-1.5 max-w-xl leading-relaxed">
@@ -402,7 +402,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs font-semibold text-stone-400">01</span>
               <span className="text-stone-300 font-mono">/</span>
-              <h2 className="font-display font-bold text-sm sm:text-base text-stone-950 uppercase tracking-wide">
+              <h2 className="font-semibold text-sm sm:text-base text-stone-900">
                 {t.photoCaptureTitle}
               </h2>
             </div>
@@ -431,7 +431,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               <button
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
-                className="flex-1 py-3 px-4 bg-tagapo-900 hover:bg-tagapo-800 text-white rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition cursor-pointer shadow-2xs"
+                className="flex-1 py-3 px-4 bg-tagapo-900 hover:bg-tagapo-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-2xs"
               >
                 <Camera className="w-4 h-4" />
                 <span>{t.cameraBtn}</span>
@@ -440,7 +440,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex-1 py-3 px-4 bg-white hover:bg-stone-50 text-stone-800 border border-stone-200 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition cursor-pointer shadow-2xs"
+                className="flex-1 py-3 px-4 bg-white hover:bg-stone-50 text-stone-800 border border-stone-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-2xs"
               >
                 <Upload className="w-4 h-4 text-stone-600" />
                 <span>{t.galleryBtn}</span>
@@ -463,7 +463,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                     setSelectedFile(null);
                     setCompressionInfo(null);
                   }}
-                  className="px-2.5 py-1 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded text-white font-display font-bold text-xs uppercase tracking-wider transition cursor-pointer"
+                  className="px-2.5 py-1 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded text-white font-semibold text-xs transition cursor-pointer"
                 >
                   Change
                 </button>
@@ -492,7 +492,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs font-semibold text-stone-400">02</span>
               <span className="text-stone-300 font-mono">/</span>
-              <h2 className="font-display font-bold text-sm sm:text-base text-stone-950 uppercase tracking-wide">
+              <h2 className="font-semibold text-sm sm:text-base text-stone-900">
                 {t.locationTitle}
               </h2>
             </div>
@@ -502,7 +502,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               <button
                 type="button"
                 onClick={() => handleTabSwitch('gps')}
-                className={`px-3 py-1 rounded text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
+                className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                   locationTab === 'gps'
                     ? 'bg-white text-stone-950 shadow-2xs'
                     : 'text-stone-600 hover:text-stone-900'
@@ -514,7 +514,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               <button
                 type="button"
                 onClick={() => handleTabSwitch('manual')}
-                className={`px-3 py-1 rounded text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
+                className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                   locationTab === 'manual'
                     ? 'bg-white text-stone-950 shadow-2xs'
                     : 'text-stone-600 hover:text-stone-900'
@@ -527,8 +527,9 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           </div>
 
           {locationError && (
-            <div className="border-l-2 border-amber-500 pl-3 py-1 text-xs text-amber-900">
-              {locationError}
+            <div className="p-2.5 rounded-lg border border-amber-200 bg-amber-50/50 text-xs text-amber-900 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <span>{locationError}</span>
             </div>
           )}
 
@@ -554,7 +555,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   type="button"
                   onClick={acquireGpsLocation}
                   disabled={isLocating}
-                  className="text-stone-500 hover:text-stone-900 font-display font-bold uppercase tracking-wider text-[11px] flex items-center gap-1 cursor-pointer"
+                  className="text-stone-500 hover:text-stone-900 font-semibold text-xs flex items-center gap-1 cursor-pointer"
                 >
                   <RefreshCw className={`w-3 h-3 ${isLocating ? 'animate-spin' : ''}`} />
                   <span>Sync GPS</span>
@@ -563,7 +564,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
 
               {isOutOfJurisdiction && (
                 <div className="text-xs text-amber-900 py-1 space-y-0.5">
-                  <div className="flex items-center gap-1.5 font-display font-bold uppercase tracking-wider text-amber-950">
+                  <div className="flex items-center gap-1.5 font-semibold text-amber-950">
                     <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                     <span>{lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}</span>
                   </div>
@@ -576,7 +577,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               )}
 
               {detectedProtectedZone && !isOutOfJurisdiction && (
-                <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200/80 text-emerald-950 text-xs flex items-start gap-2 shadow-xs">
+                <div className="p-2.5 bg-emerald-50/60 rounded-lg border border-emerald-200 text-emerald-950 text-xs flex items-start gap-2 shadow-2xs">
                   <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
                   <div className="space-y-0.5 min-w-0">
                     <span className="font-bold text-emerald-900 block leading-tight">
@@ -590,19 +591,19 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               )}
 
               <div className="flex items-center justify-between pb-1">
-                <span className="text-[11px] font-display font-bold uppercase tracking-wider text-stone-500">Map View</span>
-                <div className="flex items-center gap-1 bg-stone-100 p-0.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider">
+                <span className="text-xs font-semibold text-stone-500">Map View</span>
+                <div className="flex items-center gap-1 bg-stone-100 p-0.5 rounded-md text-[11px] font-semibold">
                   <button
                     type="button"
                     onClick={() => setBasemapMode('street')}
-                    className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'street' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'}`}
+                    className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'street' ? 'bg-tagapo-800 text-white shadow-2xs' : 'text-stone-600 hover:text-stone-900'}`}
                   >
                     Street
                   </button>
                   <button
                     type="button"
                     onClick={() => setBasemapMode('satellite')}
-                    className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'satellite' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'}`}
+                    className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'satellite' ? 'bg-tagapo-800 text-white shadow-2xs' : 'text-stone-600 hover:text-stone-900'}`}
                   >
                     Satellite
                   </button>
@@ -713,7 +714,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
 
               {isOutOfJurisdiction && (
                 <div className="text-xs text-amber-900 py-1 space-y-0.5">
-                  <div className="flex items-center gap-1.5 font-display font-bold uppercase tracking-wider text-amber-950">
+                  <div className="flex items-center gap-1.5 font-semibold text-amber-950">
                     <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                     <span>{lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}</span>
                   </div>
@@ -731,18 +732,18 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   {t.tapToPinHint}
                 </span>
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-0.5 bg-stone-100 p-0.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider">
+                  <div className="flex items-center gap-0.5 bg-stone-100 p-0.5 rounded-md text-[11px] font-semibold">
                     <button
                       type="button"
                       onClick={() => setBasemapMode('street')}
-                      className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'street' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'}`}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'street' ? 'bg-tagapo-800 text-white shadow-2xs' : 'text-stone-600 hover:text-stone-900'}`}
                     >
                       Street
                     </button>
                     <button
                       type="button"
                       onClick={() => setBasemapMode('satellite')}
-                      className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'satellite' ? 'bg-tagapo-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'}`}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'satellite' ? 'bg-tagapo-800 text-white shadow-2xs' : 'text-stone-600 hover:text-stone-900'}`}
                     >
                       Satellite
                     </button>
@@ -780,7 +781,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs font-semibold text-stone-400">03</span>
               <span className="text-stone-300 font-mono">/</span>
-              <h2 className="font-display font-bold text-sm sm:text-base text-stone-950 uppercase tracking-wide">
+              <h2 className="font-semibold text-sm sm:text-base text-stone-900">
                 {t.descriptionTitle}
               </h2>
             </div>
@@ -813,7 +814,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           <div className="flex items-center gap-2">
             <span className="font-mono text-xs font-semibold text-stone-400">04</span>
             <span className="text-stone-300 font-mono">/</span>
-            <label className="font-display font-bold text-sm sm:text-base text-stone-950 uppercase tracking-wide">
+            <label className="font-semibold text-sm sm:text-base text-stone-900">
               {t.categoryHintLabel}
             </label>
           </div>
@@ -854,7 +855,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           <button
             type="submit"
             disabled={isSubmitting || isCompressing || !description.trim() || isOutOfJurisdiction}
-            className="w-full py-3.5 px-6 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 disabled:bg-stone-200 disabled:text-stone-400 text-white font-display font-bold tracking-wider uppercase text-sm rounded-lg shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3.5 px-6 bg-tagapo-900 hover:bg-tagapo-800 active:bg-tagapo-950 disabled:bg-stone-200 disabled:text-stone-400 text-white font-semibold text-sm rounded-lg shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             {isSubmitting ? (
               <>

@@ -108,7 +108,7 @@ export const CATEGORIES: Record<IncidentCategory, CategoryMetadata> = {
     descriptionEn: 'Illegal dumping, uncollected garbage, or waste clogging waterways.',
     descriptionFil: 'Tambak ng basura, kalat sa kalsada o baradong estero.',
     icon: 'trash-2',
-    badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200/80',
+    badgeColor: 'bg-stone-100 text-stone-700 border-stone-200',
   },
   water_pollution: {
     id: 'water_pollution',
@@ -117,7 +117,7 @@ export const CATEGORIES: Record<IncidentCategory, CategoryMetadata> = {
     descriptionEn: 'Chemical discharge, foul wastewater flowing to Laguna de Bay or canals.',
     descriptionFil: 'Maruming tubig, mabahong kanal, o dumi sa Laguna de Bay.',
     icon: 'droplets',
-    badgeColor: 'bg-sky-50 text-sky-800 border-sky-200/80',
+    badgeColor: 'bg-stone-100 text-stone-700 border-stone-200',
   },
   air_pollution_burning: {
     id: 'air_pollution_burning',
@@ -126,7 +126,7 @@ export const CATEGORIES: Record<IncidentCategory, CategoryMetadata> = {
     descriptionEn: 'Open burning of trash, plastics, or heavy agricultural/industrial smoke.',
     descriptionFil: 'Pagsisiga ng plastic/dahon, makapal at nakalalasong usok.',
     icon: 'flame',
-    badgeColor: 'bg-amber-50 text-amber-800 border-amber-200/80',
+    badgeColor: 'bg-stone-100 text-stone-700 border-stone-200',
   },
   illegal_logging_vegetation: {
     id: 'illegal_logging_vegetation',
@@ -135,7 +135,7 @@ export const CATEGORIES: Record<IncidentCategory, CategoryMetadata> = {
     descriptionEn: 'Unauthorized cutting of protected trees or vegetation in upland areas.',
     descriptionFil: 'Pagputol ng mga puno sa kabundukan o protektadong lugar.',
     icon: 'trees',
-    badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200/80',
+    badgeColor: 'bg-stone-100 text-stone-700 border-stone-200',
   },
   illegal_quarrying_extraction: {
     id: 'illegal_quarrying_extraction',
@@ -144,7 +144,7 @@ export const CATEGORIES: Record<IncidentCategory, CategoryMetadata> = {
     descriptionEn: 'Unauthorized excavation, gravel extraction, or hillside stripping.',
     descriptionFil: 'Ilegal na paghuhukay ng lupa, bato, o buhangin sa kabundukan.',
     icon: 'pickaxe',
-    badgeColor: 'bg-stone-100 text-stone-800 border-stone-200/80',
+    badgeColor: 'bg-stone-100 text-stone-700 border-stone-200',
   },
   wildlife: {
     id: 'wildlife',
@@ -153,7 +153,7 @@ export const CATEGORIES: Record<IncidentCategory, CategoryMetadata> = {
     descriptionEn: 'Endangered animal poaching, captive migratory birds, or reptile distress.',
     descriptionFil: 'Panghuhuli o pangangalakal ng ligaw na hayop, ibon sa lawa.',
     icon: 'paw-print',
-    badgeColor: 'bg-teal-50 text-teal-800 border-teal-200/80',
+    badgeColor: 'bg-stone-100 text-stone-700 border-stone-200',
   },
   noise_other: {
     id: 'noise_other',
@@ -162,7 +162,7 @@ export const CATEGORIES: Record<IncidentCategory, CategoryMetadata> = {
     descriptionEn: 'Industrial machine noise, constant loud disturbance disrupting communities.',
     descriptionFil: 'Labis na ingay mula sa makina o pabrika na perwisyo sa komunidad.',
     icon: 'volume-2',
-    badgeColor: 'bg-stone-100 text-stone-700 border-stone-200/80',
+    badgeColor: 'bg-stone-100 text-stone-700 border-stone-200',
   },
   other: {
     id: 'other',
@@ -171,7 +171,7 @@ export const CATEGORIES: Record<IncidentCategory, CategoryMetadata> = {
     descriptionEn: 'Other environmental hazard not listed above.',
     descriptionFil: 'Iba pang panganib sa kalikasan o komunidad.',
     icon: 'alert-triangle',
-    badgeColor: 'bg-stone-100 text-stone-700 border-stone-200/80',
+    badgeColor: 'bg-stone-100 text-stone-700 border-stone-200',
   },
   not_environmental: {
     id: 'not_environmental',
@@ -180,7 +180,7 @@ export const CATEGORIES: Record<IncidentCategory, CategoryMetadata> = {
     descriptionEn: 'Report is unrelated to MENRO mandates (e.g. traffic, pothole, vandalism).',
     descriptionFil: 'Hindi sakop ng MENRO (hal. sira sa kalsada, trapiko, away-kapitbahay).',
     icon: 'x-circle',
-    badgeColor: 'bg-stone-100 text-stone-600 border-stone-200/80',
+    badgeColor: 'bg-stone-100 text-stone-700 border-stone-200',
   },
 };
 

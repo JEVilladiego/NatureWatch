@@ -217,7 +217,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const renderProtectedZoneBadge = (zone?: ProtectedZoneHit | null, compact?: boolean) => {
     if (!zone) return null;
     return (
-      <div className="p-2.5 bg-stone-50 border-l-2 border-l-emerald-600 border border-stone-200 rounded-lg space-y-1 my-1.5">
+      <div className="p-2.5 bg-emerald-50/40 border border-emerald-200/80 rounded-lg space-y-1 my-1.5">
         <div className="flex items-center justify-between gap-1.5">
           <div className="flex items-center gap-1.5 min-w-0">
             <ShieldAlert className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
@@ -1097,7 +1097,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             setMapZoom(14);
                           }}
                           className={`p-3.5 hover:bg-stone-50 cursor-pointer transition flex items-start justify-between gap-3 ${
-                            isSelected ? 'bg-tagapo-50/70 ring-1 ring-tagapo-800' : ''
+                            isSelected ? 'bg-stone-100 ring-1 ring-stone-900/10' : ''
                           }`}
                         >
                           <div className="space-y-1 flex-1 min-w-0">
@@ -1106,7 +1106,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 {report.referenceCode}
                               </span>
                               <span
-                                className={`text-[11px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${catMeta.badgeColor}`}
+                                className={`text-[10px] font-mono px-1.5 py-0.2 rounded border ${catMeta.badgeColor}`}
                               >
                                 {lang === 'fil' ? catMeta.labelFil : catMeta.labelEn}
                               </span>
@@ -1129,18 +1129,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             </div>
                           </div>
 
-                          <div className="flex flex-col items-end gap-1 shrink-0">
+                          <div className="flex flex-col items-end gap-1.5 shrink-0">
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-display font-black uppercase tracking-wider ${
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
                                 sev >= 4
-                                  ? 'bg-rose-700 text-white animate-pulse'
+                                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
                                   : sev === 3
-                                  ? 'bg-amber-600 text-white'
-                                  : 'bg-tagapo-800 text-white'
+                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  : 'bg-stone-100 text-stone-600 border border-stone-200'
                               }`}
                             >
-                              Sev {sev}
+                              SEV {sev}
                             </span>
+                            {report.status === 'resolved' ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Closed
+                              </span>
+                            ) : report.status === 'in_progress' ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                In Prog
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-rose-700">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                Pending
+                              </span>
+                            )}
                           </div>
                         </div>
                       );
@@ -1171,21 +1187,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
 
                     <span
-                      className={`px-2.5 py-1 rounded text-xs font-display font-bold uppercase tracking-wider ${
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider inline-flex items-center gap-1 ${
                         selectedReport.status === 'resolved'
-                          ? 'bg-tagapo-50 text-tagapo-900 border border-tagapo-200'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
                           : selectedReport.status === 'in_progress'
-                          ? 'bg-amber-50 text-amber-900 border border-amber-200'
-                          : 'bg-navy-50 text-navy-900 border border-navy-200'
+                          ? 'bg-amber-50 text-amber-800 border border-amber-200/80'
+                          : 'bg-rose-50 text-rose-800 border border-rose-200/80'
                       }`}
                     >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          selectedReport.status === 'resolved'
+                            ? 'bg-emerald-500'
+                            : selectedReport.status === 'in_progress'
+                            ? 'bg-amber-500'
+                            : 'bg-rose-500'
+                        }`}
+                      />
                       {selectedReport.status.replace(/_/g, ' ')}
                     </span>
                   </div>
 
                   {/* Duplicate Cluster Notice */}
                   {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId && (
-                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 space-y-1">
+                    <div className="p-3 bg-amber-50/60 rounded-lg border border-amber-200/80 text-xs text-amber-900 space-y-1">
                       <div className="font-display font-bold uppercase tracking-wide flex items-center gap-1.5 text-amber-900">
                         <Layers className="w-4 h-4 text-amber-700" />
                         <span>{t.duplicateClusterDetected}</span>
@@ -1201,7 +1226,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <label className="font-display text-xs font-bold uppercase tracking-wide text-stone-600 block">
                       Incident Photo (Secured Access)
                     </label>
-                    <div className="relative rounded-xl overflow-hidden bg-stone-950 aspect-video flex items-center justify-center border border-stone-300">
+                    <div className="relative rounded-xl overflow-hidden bg-stone-950 aspect-video flex items-center justify-center border border-stone-200">
                       {photoDataUrl ? (
                         <img
                           src={photoDataUrl}
@@ -1214,21 +1239,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <span>{selectedReport.rawInput.hasImage ? 'Loading photo...' : 'No photo was submitted'}</span>
                         </div>
                       )}
-                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/75 backdrop-blur-xs text-[10px] font-mono font-bold text-tagapo-300 rounded border border-white/10">
-                        RA 10173 SECURED TELEMETRY
+                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-stone-900/80 backdrop-blur-xs text-[9px] font-mono text-stone-300 rounded border border-white/10 flex items-center gap-1">
+                        <ShieldCheck className="w-2.5 h-2.5 text-stone-400" />
+                        <span>RA 10173 SECURED</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Resident Description */}
-                  <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 space-y-1.5">
+                  <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200/80 space-y-1.5">
                     <div className="flex items-center justify-between text-[11px] font-display font-bold uppercase tracking-wide text-stone-600">
                       <span>Resident Description</span>
-                      <span className="text-[10px] text-amber-800 bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-200">
+                      <span className="text-[9px] font-mono text-stone-500 bg-stone-200/70 px-1.5 py-0.2 rounded border border-stone-300/60">
                         Untrusted Input
                       </span>
                     </div>
-                    <p className="text-xs text-stone-900 italic leading-relaxed">
+                    <p className="text-xs text-stone-900 italic leading-relaxed border-l-2 border-stone-300 pl-2.5 py-0.5">
                       "{selectedReport.rawInput.description}"
                     </p>
                     <div className="text-xs text-stone-500 font-mono pt-1">
@@ -1237,14 +1263,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* AI Multimodal Triage Assessment */}
-                  <div className="p-4 bg-tagapo-50/60 rounded-xl border border-tagapo-200 space-y-2.5">
+                  <div className="p-4 bg-white rounded-xl border border-stone-200 space-y-2.5 shadow-2xs">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wide text-tagapo-950">
+                      <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wide text-stone-800">
                         <Sparkles className="w-4 h-4 text-tagapo-800" />
                         <span>{t.aiTriageTitle}</span>
                       </div>
                       {selectedReport.aiTriage && (
-                        <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-tagapo-200 text-tagapo-950 border border-tagapo-300">
+                        <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-200">
                           {t.aiConfidence}: {(selectedReport.aiTriage.confidence * 100).toFixed(0)}%
                         </span>
                       )}
@@ -1252,7 +1278,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                     {selectedReport.triageStatus === 'failed' ? (
                       <div className="space-y-2">
-                        <div className="p-2.5 bg-rose-100/80 rounded-lg text-rose-800 text-xs font-bold flex items-center gap-2">
+                        <div className="p-2.5 bg-rose-50 rounded-lg text-rose-800 text-xs font-bold border border-rose-200 flex items-center gap-2">
                           <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                           <span>{t.needsReviewBadge}</span>
                         </div>
@@ -1271,7 +1297,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                         {renderProtectedZoneBadge(selectedReport.aiTriage.protectedZone)}
 
-                        <div className="pt-2 border-t border-tagapo-100">
+                        <div className="pt-2 border-t border-stone-200/70">
                           <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
                             {t.aiReasoning}
                           </span>
@@ -1302,7 +1328,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <span>{t.humanOverrideTitle}</span>
                       </h3>
                       {selectedReport.final && (
-                        <span className="font-display text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-navy-100 text-navy-900 border border-navy-200">
+                        <span className="font-mono text-[10px] font-medium px-2 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-200">
                           Human Verified
                         </span>
                       )}
@@ -1464,15 +1490,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* ========================================================= */}
-          {/* 2. FLOATING TOP-LEFT GLASS NAVIGATION PILL                */}
+          {/* 2. FLOATING TOP-LEFT NAVIGATION PILL                     */}
           {/* ========================================================= */}
-          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-40 flex items-center gap-2 bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-md rounded-2xl p-1.5 pointer-events-auto animate-nav-pill transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-40 flex items-center gap-2 bg-white border border-stone-200 shadow-md rounded-xl p-1.5 pointer-events-auto animate-nav-pill transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
             {/* NatureWatch GIS brand mark */}
             <div className="flex items-center gap-1.5 px-2 py-0.5">
-              <div className="w-6 h-6 rounded-lg bg-tagapo-800 text-white flex items-center justify-center font-display font-black text-xs shadow-xs">
+              <div className="w-6 h-6 rounded-md bg-tagapo-800 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
                 NW
               </div>
-              <span className="font-display font-extrabold text-xs tracking-tight text-stone-900 hidden sm:inline">
+              <span className="font-bold text-xs tracking-tight text-stone-900 hidden sm:inline">
                 LikasMap <span className="text-tagapo-800 font-mono text-[10px] font-bold">GIS</span>
               </span>
             </div>
@@ -1483,7 +1509,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                className="px-2.5 py-1 rounded-lg text-xs font-display font-bold uppercase tracking-wider bg-tagapo-800 text-white shadow-xs cursor-default flex items-center gap-1 transition-all duration-150"
+                className="px-2.5 py-1 rounded-md text-xs font-semibold bg-tagapo-800 text-white shadow-2xs cursor-default flex items-center gap-1.5 transition-all duration-150"
               >
                 <MapIcon className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Map</span>
@@ -1495,7 +1521,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   if (onNavigateTab) onNavigateTab('workbench');
                   else handleViewModeChange('workbench');
                 }}
-                className="px-2.5 py-1 rounded-lg text-xs font-display font-bold uppercase tracking-wider text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:scale-95 transition-all duration-150 cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:scale-95 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
                 title="Switch to split-screen Workbench"
               >
                 <Layout className="w-3.5 h-3.5 text-stone-500" />
@@ -1506,7 +1532,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigateTab('status')}
-                  className="px-2.5 py-1 rounded-lg text-xs font-display font-bold uppercase tracking-wider text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:scale-95 transition-all duration-150 cursor-pointer hidden md:flex items-center gap-1"
+                  className="px-2.5 py-1 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:scale-95 transition-all duration-150 cursor-pointer hidden md:flex items-center gap-1.5"
                   title="Track Status"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-stone-500" />
@@ -1522,7 +1548,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setLang(lang === 'fil' ? 'en' : 'fil')}
-                  className="px-2 py-1 rounded-md text-[11px] font-display font-bold uppercase text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:scale-90 transition-all duration-150 cursor-pointer"
+                  className="px-2 py-1 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 hover:bg-stone-100 active:scale-90 transition-all duration-150 cursor-pointer"
                   title="Switch language"
                 >
                   {lang === 'fil' ? 'EN' : 'FIL'}
@@ -1553,7 +1579,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <button
               type="button"
               onClick={() => setIsSheetOpen(true)}
-              className="absolute top-16 left-3 sm:left-4 z-30 pointer-events-auto px-3.5 py-2.5 bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-lg rounded-2xl text-xs font-display font-bold uppercase tracking-wider text-stone-800 hover:bg-stone-50 active:scale-95 transition-all duration-200 animate-nav-pill flex items-center gap-2 cursor-pointer"
+              className="absolute top-16 left-3 sm:left-4 z-30 pointer-events-auto px-3.5 py-2 bg-white border border-stone-200 shadow-md rounded-xl text-xs font-display font-bold uppercase tracking-wider text-stone-800 hover:bg-stone-50 active:scale-95 transition-all duration-200 animate-nav-pill flex items-center gap-2 cursor-pointer"
               title="Show Queue & Inspector"
             >
               <Layers className="w-4 h-4 text-tagapo-800" />
@@ -1561,14 +1587,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
             </button>
           ) : (
-            <div className="absolute top-16 left-3 sm:left-4 z-30 pointer-events-auto w-[calc(100vw-24px)] sm:w-[410px] max-h-[calc(100vh-80px)] bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-2xl rounded-2xl overflow-hidden flex flex-col transition-all duration-300 animate-nav-pill">
+            <div className="absolute top-16 left-3 sm:left-4 z-30 pointer-events-auto w-[calc(100vw-24px)] sm:w-[410px] max-h-[calc(100vh-80px)] bg-white border border-stone-200 shadow-xl rounded-xl overflow-hidden flex flex-col transition-all duration-300 animate-nav-pill">
               {/* ------------------------------------------------------- */}
               {/* SHEET MODE 1: SEARCH, FILTERS & QUEUE STREAM            */}
               {/* ------------------------------------------------------- */}
               {!selectedReport ? (
                 <div key="queue-mode" className="flex flex-col h-full overflow-hidden animate-sheet-morph">
                   {/* Search and Header */}
-                  <div className="p-3 bg-stone-50 border-b border-stone-200 flex items-center justify-between gap-2 shrink-0">
+                  <div className="p-3 bg-white border-b border-stone-200 flex items-center justify-between gap-2 shrink-0">
                     <div className="relative flex-1">
                       <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
@@ -1576,7 +1602,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search ref, barangay..."
-                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-white hover:bg-stone-50 focus:bg-white border border-stone-200 focus:border-tagapo-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 font-sans transition placeholder:text-stone-400"
+                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white border border-stone-200 focus:border-tagapo-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 font-sans transition placeholder:text-stone-400"
                       />
                       {searchTerm && (
                         <button
@@ -1592,7 +1618,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsSheetOpen(false)}
-                      className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded-lg transition cursor-pointer"
+                      className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition cursor-pointer"
                       title="Collapse panel"
                     >
                       <ChevronLeft className="w-4 h-4" />
@@ -1600,15 +1626,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* Quick telemetry chips & LGU horizontal scroll */}
-                  <div className="px-3 py-2 bg-stone-50/50 border-b border-stone-200/80 space-y-2 shrink-0">
+                  <div className="px-3 py-2 bg-stone-50 border-b border-stone-200/80 space-y-2 shrink-0">
                     {/* Active count badge summary */}
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-display font-bold uppercase tracking-wider text-stone-600">
                         Incident Queue ({filteredReports.length})
                       </span>
-                      <div className="flex items-center gap-2 text-[11px] font-mono font-bold">
-                        <span className="text-stone-700"><span className="text-emerald-600">●</span> {stats.openCount} Open</span>
-                        <span className="text-rose-700"><span className="text-rose-600">●</span> {stats.urgentCount} Urgent</span>
+                      <div className="flex items-center gap-2 text-[11px] font-mono font-medium">
+                        <span className="text-stone-700"><span className="text-emerald-600 font-bold">●</span> {stats.openCount} Open</span>
+                        <span className="text-rose-700"><span className="text-rose-600 font-bold">●</span> {stats.urgentCount} Urgent</span>
                       </div>
                     </div>
 
@@ -1620,7 +1646,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         className={`px-2.5 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
                           municipalityFilter === 'all'
                             ? 'bg-tagapo-800 text-white shadow-xs'
-                            : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100 bg-white border border-stone-200/70'
+                            : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70 bg-white border border-stone-200/80'
                         }`}
                       >
                         All LGUs
@@ -1636,7 +1662,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             className={`px-2.5 py-1 rounded-md text-xs font-display font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
                               isSelected
                                 ? 'bg-tagapo-800 text-white shadow-xs'
-                                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100 bg-white border border-stone-200/70'
+                                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70 bg-white border border-stone-200/80'
                             }`}
                           >
                             {shortName}
@@ -1650,7 +1676,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <select
                         value={categoryFilter}
                         onChange={(e) => setCategoryFilter(e.target.value)}
-                        className="text-[11px] font-semibold px-2 py-1 bg-white border border-stone-200 rounded-lg focus:outline-none truncate"
+                        className="text-[11px] font-semibold px-2 py-1 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 truncate"
                       >
                         <option value="all">All Categories</option>
                         {Object.entries(CATEGORIES).map(([key, cat]) => (
@@ -1663,7 +1689,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <select
                         value={severityFilter}
                         onChange={(e) => setSeverityFilter(e.target.value)}
-                        className="text-[11px] font-semibold px-2 py-1 bg-white border border-stone-200 rounded-lg focus:outline-none truncate"
+                        className="text-[11px] font-semibold px-2 py-1 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 truncate"
                       >
                         <option value="all">All Severities</option>
                         <option value="urgent">Urgent (4-5)</option>
@@ -1719,29 +1745,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               setMapCenter(coords);
                               setMapZoom(14);
                             }}
-                            className="p-3 cursor-pointer transition hover:bg-stone-50/90 flex items-start justify-between gap-2.5"
+                            className="p-3 cursor-pointer transition hover:bg-stone-50 flex items-start justify-between gap-2.5 group"
                           >
                             <div className="space-y-1 flex-1 min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-mono font-bold text-xs text-stone-900">
+                                <span className="font-mono font-bold text-xs text-stone-900 group-hover:text-tagapo-800 transition-colors">
                                   {report.referenceCode}
                                 </span>
-                                <span className={`text-[10px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${catMeta.badgeColor}`}>
+                                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded border ${catMeta.badgeColor}`}>
                                   {lang === 'fil' ? catMeta.labelFil : catMeta.labelEn}
                                 </span>
                                 {report.duplicateClusterId && (
-                                  <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-stone-200 text-stone-700 flex items-center gap-0.5">
+                                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200/70 flex items-center gap-0.5">
                                     <Layers className="w-2.5 h-2.5" />
                                     Cluster
                                   </span>
                                 )}
                               </div>
 
-                              <p className="text-xs text-stone-600 line-clamp-2">
+                              <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed">
                                 {report.aiTriage?.summary || report.rawInput.description}
                               </p>
 
-                              <div className="flex items-center gap-1.5 text-[11px] text-stone-400 font-mono">
+                              <div className="flex items-center gap-1.5 text-[10px] text-stone-400 font-mono pt-0.5">
                                 <span className="truncate">
                                   {[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
                                 </span>
@@ -1750,28 +1776,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               </div>
                             </div>
 
-                            <div className="flex flex-col items-end gap-1 shrink-0 pt-0.5">
+                            <div className="flex flex-col items-end gap-1.5 shrink-0 pt-0.5">
                               <span
-                                className={`px-1.5 py-0.5 rounded text-[10px] font-display font-black uppercase tracking-wider ${
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
                                   sev >= 4
-                                    ? 'bg-rose-700 text-white animate-pulse'
+                                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
                                     : sev === 3
-                                    ? 'bg-amber-600 text-white'
-                                    : 'bg-tagapo-800 text-white'
+                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                    : 'bg-stone-100 text-stone-600 border border-stone-200'
                                 }`}
                               >
-                                Sev {sev}
+                                SEV {sev}
                               </span>
                               {report.status === 'resolved' ? (
-                                <span className="text-[9px] font-display font-bold uppercase text-emerald-700">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                   Closed
                                 </span>
                               ) : report.status === 'in_progress' ? (
-                                <span className="text-[9px] font-display font-bold uppercase text-amber-700">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                                   In Prog
                                 </span>
                               ) : (
-                                <span className="text-[9px] font-display font-bold uppercase text-rose-700">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-rose-700">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                                   Pending
                                 </span>
                               )}
@@ -1788,11 +1817,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 /* ------------------------------------------------------- */
                 <div key={`dossier-mode-${selectedReport.id}`} className="flex flex-col h-full overflow-hidden animate-sheet-morph">
                   {/* Header with Back to Queue button */}
-                  <div className="px-3.5 py-2.5 bg-stone-50 border-b border-stone-200 flex items-center justify-between shrink-0">
+                  <div className="px-3.5 py-2.5 bg-white border-b border-stone-200 flex items-center justify-between shrink-0">
                     <button
                       type="button"
                       onClick={() => setSelectedReport(null)}
-                      className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-stone-700 hover:text-stone-950 hover:bg-stone-200/60 px-2 py-1 rounded-lg transition cursor-pointer"
+                      className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-stone-700 hover:text-stone-950 hover:bg-stone-100 px-2 py-1 rounded-md transition cursor-pointer"
                       title="Return to Incident Queue"
                     >
                       <ArrowLeft className="w-3.5 h-3.5 text-tagapo-800" />
@@ -1804,20 +1833,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         {selectedReport.referenceCode}
                       </span>
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-display font-bold uppercase tracking-wider ${
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1 ${
                           selectedReport.status === 'resolved'
-                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
                             : selectedReport.status === 'in_progress'
-                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                            : 'bg-rose-50 text-rose-800 border border-rose-200'
+                            ? 'bg-amber-50 text-amber-800 border border-amber-200/80'
+                            : 'bg-rose-50 text-rose-800 border border-rose-200/80'
                         }`}
                       >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            selectedReport.status === 'resolved'
+                              ? 'bg-emerald-500'
+                              : selectedReport.status === 'in_progress'
+                              ? 'bg-amber-500'
+                              : 'bg-rose-500'
+                          }`}
+                        />
                         {selectedReport.status.replace(/_/g, ' ')}
                       </span>
                       <button
                         type="button"
                         onClick={() => setIsSheetOpen(false)}
-                        className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded-md transition cursor-pointer"
+                        className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-md transition cursor-pointer"
                         title="Collapse panel"
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
@@ -1831,7 +1869,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className="space-y-2">
                       <div
                         onClick={() => photoDataUrl && setIsLightboxOpen(true)}
-                        className={`relative rounded-xl overflow-hidden bg-stone-950 h-36 sm:h-40 flex items-center justify-center border border-stone-200 group ${
+                        className={`relative rounded-lg overflow-hidden bg-stone-950 h-36 sm:h-40 flex items-center justify-center border border-stone-200 group ${
                           photoDataUrl ? 'cursor-pointer' : ''
                         }`}
                         title={photoDataUrl ? t.photoExpandHint : undefined}
@@ -1856,27 +1894,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <span className="text-[11px]">{selectedReport.rawInput.hasImage ? 'Loading photo...' : 'No photo submitted'}</span>
                           </div>
                         )}
-                        <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/70 backdrop-blur-xs text-[9px] font-mono text-tagapo-300 rounded border border-white/10">
-                          RA 10173 SECURED
+                        <div className="absolute top-2 left-2 px-2 py-0.5 bg-stone-900/80 backdrop-blur-xs text-[9px] font-mono text-stone-300 rounded border border-white/10 flex items-center gap-1">
+                          <ShieldCheck className="w-2.5 h-2.5 text-stone-400" />
+                          <span>RA 10173 SECURED</span>
                         </div>
                       </div>
 
                       {/* Citizen Description Card */}
-                      <div className="bg-stone-50 rounded-xl p-3 border border-stone-200/80 space-y-1.5">
+                      <div className="bg-stone-50 rounded-lg p-3 border border-stone-200/80 space-y-1.5">
                         <div className="flex items-center justify-between text-[10px] font-display font-bold uppercase tracking-wider text-stone-500">
                           <span>Citizen Report</span>
-                          <span className="text-[9px] text-amber-800 bg-amber-100/80 px-1 py-0.2 rounded border border-amber-200">
+                          <span className="text-[9px] font-mono text-stone-500 bg-stone-200/70 px-1.5 py-0.2 rounded border border-stone-300/60">
                             Untrusted Input
                           </span>
                         </div>
-                        <p className="text-xs text-stone-800 italic leading-relaxed">
+                        <p className="text-xs text-stone-800 italic leading-relaxed border-l-2 border-stone-300 pl-2.5 py-0.5">
                           "{selectedReport.rawInput.description}"
                         </p>
                         <div className="text-[10px] text-stone-500 font-mono pt-1 border-t border-stone-200/60 flex items-center justify-between">
-                          <span>
+                          <span className="truncate">
                             {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
                           </span>
-                          <span>
+                          <span className="shrink-0">
                             GPS: {selectedReport.location.lat.toFixed(4)}, {selectedReport.location.lng.toFixed(4)}
                           </span>
                         </div>
@@ -1884,15 +1923,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
 
                     {/* Gemini AI Triage Card */}
-                    <div className="p-3 bg-tagapo-50/50 rounded-xl border border-tagapo-200/70 space-y-2">
+                    <div className="p-3 bg-white rounded-lg border border-stone-200 space-y-2 shadow-2xs">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-tagapo-950">
+                        <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-stone-800">
                           <Sparkles className="w-3.5 h-3.5 text-tagapo-700" />
                           <span>Gemini AI Triage</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           {selectedReport.aiTriage?.confidence && (
-                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-tagapo-100 text-tagapo-800 border border-tagapo-200">
+                            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-200">
                               {Math.round(selectedReport.aiTriage.confidence * 100)}% Conf
                             </span>
                           )}
@@ -1901,13 +1940,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             onClick={handleRetryTriage}
                             disabled={isRetryingTriage}
                             title="Re-run AI triage on this report"
-                            className="p-1 text-tagapo-700 hover:text-tagapo-950 hover:bg-tagapo-100/80 rounded transition cursor-pointer"
+                            className="p-1 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded transition cursor-pointer"
                           >
                             <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
                           </button>
                         </div>
                       </div>
-                      <p className="text-xs text-stone-800 leading-relaxed font-sans">
+                      <p className="text-xs text-stone-800 leading-relaxed font-sans font-medium">
                         {selectedReport.aiTriage?.summary || 'AI triage assessment not available or pending.'}
                       </p>
 
@@ -1917,13 +1956,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <button
                             type="button"
                             onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
-                            className="text-[10px] text-tagapo-800 hover:text-tagapo-950 font-medium flex items-center gap-1 cursor-pointer"
+                            className="text-[10px] text-stone-500 hover:text-stone-800 font-medium flex items-center gap-1 cursor-pointer"
                           >
                             <span>{isReasoningExpanded ? 'Hide AI reasoning' : 'View AI reasoning'}</span>
                             <ChevronDown className={`w-3 h-3 transition-transform ${isReasoningExpanded ? 'rotate-180' : ''}`} />
                           </button>
                           {isReasoningExpanded && (
-                            <div className="mt-1.5 p-2 rounded-lg bg-white/90 border border-tagapo-200/80 text-[10px] text-stone-700 leading-relaxed font-sans">
+                            <div className="mt-1.5 p-2 rounded-md bg-stone-50 border border-stone-200 text-[10px] text-stone-600 leading-relaxed font-sans">
                               {selectedReport.aiTriage.reasoning}
                             </div>
                           )}
@@ -1938,52 +1977,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     )}
 
                     {/* Weather Telemetry */}
-                    {(() => {
-                      const weather = selectedReport.aiTriage?.weather;
-                      if (!weather) return null;
-                      return (
-                        <div className="p-2.5 bg-stone-50 rounded-xl border border-stone-200/80 space-y-1.5">
-                          <div className="flex items-center justify-between text-[10px] font-display font-bold uppercase tracking-wider text-stone-600">
-                            <span className="flex items-center gap-1">
-                              <Wind className="w-3 h-3 text-stone-500" />
-                              {t.weatherTelemetryTitle}
-                            </span>
-                            <span className="text-[9px] text-stone-400 font-mono">
-                              {new Date(weather.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-1.5 text-center">
-                            <div className="p-1.5 rounded-lg bg-white border border-stone-200">
-                              <span className="text-[9px] text-stone-400 block leading-none">{t.weatherTemp}</span>
-                              <span className="font-mono font-bold text-xs text-stone-900">{weather.temperature}°C</span>
-                            </div>
-                            <div className="p-1.5 rounded-lg bg-white border border-stone-200">
-                              <span className="text-[9px] text-stone-400 block leading-none">{t.weatherWind}</span>
-                              <span className="font-mono font-bold text-xs text-stone-900 truncate">{weather.windSpeed} km/h</span>
-                            </div>
-                            <div className="p-1.5 rounded-lg bg-white border border-stone-200">
-                              <span className="text-[9px] text-stone-400 block leading-none">{t.weatherHumidity}</span>
-                              <span className="font-mono font-bold text-xs text-stone-900">{weather.humidity}%</span>
-                            </div>
-                            <div className="p-1.5 rounded-lg bg-white border border-stone-200">
-                              <span className="text-[9px] text-stone-400 block leading-none">{t.weatherPrecipitation}</span>
-                              <span className="font-mono font-bold text-xs text-stone-900">{weather.precipitation} mm</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    {renderWeatherWidget(selectedReport.aiTriage?.weather)}
 
                     {/* Duplicate Cluster Alert */}
                     {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId && (
-                      <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 flex items-center gap-2">
+                      <div className="p-2.5 bg-amber-50/60 rounded-lg border border-amber-200/80 text-[11px] text-amber-900 flex items-center gap-2">
                         <Layers className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                         <span className="font-medium">{t.duplicateClusterDetected}</span>
                       </div>
                     )}
 
                     {/* Officer Decision Console */}
-                    <div className="bg-stone-50/80 p-3 rounded-xl border border-stone-200/90 space-y-2.5">
+                    <div className="bg-stone-50/70 p-3.5 rounded-lg border border-stone-200 space-y-3">
                       <span className="font-display font-bold text-[10px] uppercase tracking-wider text-stone-600 block">
                         Officer Decision Console
                       </span>
@@ -1993,20 +1998,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <label className="text-[9px] font-display font-bold uppercase tracking-wider text-stone-500 block mb-1">
                           Operational Status
                         </label>
-                        <div className="grid grid-cols-3 gap-1">
+                        <div className="grid grid-cols-3 gap-1 bg-stone-200/70 p-0.5 rounded-lg text-[10px]">
                           {(['pending', 'in_progress', 'resolved'] as ReportStatus[]).map((status) => (
                             <button
                               key={status}
                               type="button"
                               onClick={() => setNewStatus(status)}
-                              className={`py-1.5 px-1 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider border transition cursor-pointer text-center truncate ${
+                              className={`py-1.5 px-1 rounded-md text-center transition cursor-pointer font-semibold ${
                                 newStatus === status
                                   ? status === 'resolved'
-                                    ? 'bg-emerald-700 text-white border-emerald-800 shadow-xs'
+                                    ? 'bg-white text-emerald-800 shadow-2xs font-bold'
                                     : status === 'in_progress'
-                                    ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
-                                    : 'bg-rose-700 text-white border-rose-800 shadow-xs'
-                                  : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-100'
+                                    ? 'bg-white text-amber-800 shadow-2xs font-bold'
+                                    : 'bg-white text-rose-800 shadow-2xs font-bold'
+                                  : 'text-stone-600 hover:text-stone-900'
                               }`}
                             >
                               {status.replace(/_/g, ' ')}
@@ -2024,7 +2029,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <select
                             value={overrideCategory}
                             onChange={(e) => setOverrideCategory(e.target.value as any)}
-                            className="w-full text-xs font-semibold px-2 py-1 bg-white border border-stone-200 rounded-md focus:outline-none focus:ring-1 focus:ring-tagapo-800 truncate"
+                            className="w-full text-xs font-semibold px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 truncate"
                           >
                             {Object.entries(CATEGORIES).map(([key, cat]) => (
                               <option key={key} value={key}>
@@ -2040,7 +2045,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <select
                             value={overrideSeverity}
                             onChange={(e) => setOverrideSeverity(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)}
-                            className="w-full text-xs font-semibold px-2 py-1 bg-white border border-stone-200 rounded-md focus:outline-none focus:ring-1 focus:ring-tagapo-800 truncate"
+                            className="w-full text-xs font-semibold px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 truncate"
                           >
                             {Object.entries(SEVERITY_LEVELS).map(([lvl, meta]) => (
                               <option key={lvl} value={lvl}>
@@ -2061,7 +2066,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           value={officerNotes}
                           onChange={(e) => setOfficerNotes(e.target.value)}
                           placeholder="Action directives, dispatch instructions, or closure remarks..."
-                          className="w-full text-xs px-2.5 py-1.5 bg-white border border-stone-200 rounded-md focus:outline-none focus:ring-1 focus:ring-tagapo-800 placeholder:text-stone-400 resize-none font-sans"
+                          className="w-full text-xs px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-tagapo-800 placeholder:text-stone-400 resize-none font-sans"
                         />
                       </div>
 
@@ -2074,7 +2079,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           className={`w-full py-2 px-3 rounded-lg text-xs font-display font-bold uppercase tracking-wider text-white transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
                             unifiedSuccess
                               ? 'bg-emerald-600 hover:bg-emerald-700'
-                              : 'bg-tagapo-900 hover:bg-tagapo-800 disabled:bg-stone-300'
+                              : 'bg-tagapo-800 hover:bg-tagapo-900 disabled:bg-stone-300 active:scale-[0.99]'
                           }`}
                         >
                           {isSavingUnified ? (
@@ -2113,7 +2118,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* ========================================================= */}
           {/* 4. FLOATING BOTTOM-RIGHT MAP CONTROLS & LEGEND            */}
           {/* ========================================================= */}
-          <div className="absolute bottom-4 right-4 z-20 pointer-events-auto bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-md rounded-2xl p-2.5 space-y-2 max-w-[280px] transition-all duration-300">
+          <div className="absolute bottom-4 right-4 z-20 pointer-events-auto bg-white border border-stone-200 shadow-lg rounded-xl p-2.5 space-y-2 max-w-[280px] transition-all duration-300">
             <div className="flex items-center justify-between gap-2 pb-1 border-b border-stone-100">
               <span className="font-display font-bold text-[10px] uppercase tracking-wider text-stone-500">
                 Map Layers

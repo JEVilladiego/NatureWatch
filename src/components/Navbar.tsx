@@ -44,10 +44,10 @@ const NavTab: React.FC<{ active: boolean; onClick: () => void; label: string; ic
     type="button"
     onClick={onClick}
     aria-current={active ? 'page' : undefined}
-    className={`relative h-9 px-3 flex items-center gap-1.5 font-display text-xs font-bold tracking-wider uppercase transition-all duration-200 ease-out cursor-pointer rounded-lg active:scale-95 select-none ${FOCUS_RING} ${
+    className={`relative h-9 px-3 flex items-center gap-1.5 text-xs font-semibold tracking-wide transition-all duration-200 ease-out cursor-pointer rounded-lg active:scale-95 select-none ${FOCUS_RING} ${
       active
-        ? 'bg-tagapo-50/90 text-tagapo-950 shadow-2xs font-extrabold'
-        : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100/70'
+        ? 'bg-stone-100 text-stone-900 font-bold'
+        : 'text-stone-500 hover:text-stone-900 hover:bg-stone-50'
     }`}
   >
     {icon && (
@@ -77,9 +77,9 @@ const MobileRow: React.FC<{
     type="button"
     onClick={onClick}
     aria-current={active ? 'page' : undefined}
-    className={`w-full min-h-12 flex items-center gap-3 px-4 font-display text-sm font-bold tracking-wide uppercase rounded-lg transition-colors cursor-pointer ${FOCUS_RING} ${
+    className={`w-full min-h-12 flex items-center gap-3 px-4 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${FOCUS_RING} ${
       active
-        ? 'bg-tagapo-50 text-tagapo-950 font-bold'
+        ? 'bg-stone-100 text-stone-950 font-semibold'
         : tone === 'danger'
           ? 'text-stone-700 font-medium hover:bg-rose-50 hover:text-rose-700'
           : 'text-stone-700 font-medium hover:bg-stone-100'
@@ -210,13 +210,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="w-7 h-7 rounded-lg bg-tagapo-900 text-tagapo-50 flex items-center justify-center">
               <ShieldCheck className="w-4 h-4" strokeWidth={2.2} />
             </span>
-            <span className="font-display font-extrabold text-[16px] tracking-wide text-stone-950 uppercase">
+            <span className="font-bold text-[17px] tracking-tight text-stone-950">
               NatureWatch
             </span>
             {officialUser && (
               <span className="hidden md:flex items-center gap-2.5 text-xs text-stone-500">
                 <span className="h-4 w-px bg-stone-300" aria-hidden="true" />
-                <span className="font-display font-bold uppercase tracking-wider text-tagapo-900">{t.operationsLabel}</span>
+                <span className="font-semibold text-xs text-tagapo-800">{t.operationsLabel}</span>
               </span>
             )}
           </button>
