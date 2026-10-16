@@ -34,12 +34,14 @@ export interface ReportImageItem {
   isLiveCamera?: boolean;
 }
 
+export type ReportSource = 'gps' | 'manual_pin' | 'satellite_firms';
+
 export interface LocationInfo {
   lat: number;
   lng: number;
   accuracyMeters: number | null;
   geohash: string;
-  source: 'gps' | 'manual_pin';
+  source: ReportSource;
   municipality?: string;
   barangay?: string;
   landmark?: string;
@@ -61,6 +63,39 @@ export interface WeatherContext {
   windSpeed: number; // in km/h
   windGusts?: number; // in km/h
   fetchedAt: string;
+}
+
+export interface AirQualitySnapshot {
+  pm25: number; // in μg/m³
+  pm2_5?: number; // alias for pm25
+  pm10: number; // in μg/m³
+  carbonMonoxide: number; // in μg/m³
+  ozone?: number; // in μg/m³
+  europeanAqi: number; // EAQI (0-25 Good, 25-50 Fair, 50-75 Moderate, 75-100 Poor, >100 Very Poor)
+  aqiLabel: 'Good' | 'Fair' | 'Moderate' | 'Poor' | 'Very Poor';
+  fetchedAt: string;
+}
+
+export interface SatelliteHotspotData {
+  satellite: string; // 'VIIRS Suomi-NPP' | 'VIIRS NOAA-20' | 'MODIS'
+  instrument: string; // 'VIIRS' | 'MODIS'
+  frp: number; // Fire Radiative Power (MW)
+  brightnessTemp: number; // Kelvin (bright_ti4)
+  brightnessTemperature?: number; // alias for brightnessTemp
+  confidence: string; // 'nominal' | 'high' | 'low'
+  acqDate?: string; // YYYY-MM-DD
+  acqTime?: string; // HHMM UTC
+  dayNight?: 'D' | 'N';
+  daynight?: 'D' | 'N';
+}
+
+export interface MgbQuarryTenementHit {
+  isInsidePermittedTenement: boolean;
+  tenementName?: string;
+  operator?: string;
+  commodity?: string;
+  permitType?: 'MPSA' | 'CSAG' | 'ISAG';
+  regulatoryStatus?: string;
 }
 
 export type ProtectedZoneCategory = 'nipas' | 'llda_zomap' | 'kba_georeserve' | 'local_mountain';
@@ -109,7 +144,9 @@ export interface AITriage {
   model: string;
   triagedAt: string;
   weather?: WeatherContext | null;
+  airQuality?: AirQualitySnapshot | null;
   protectedZone?: ProtectedZoneHit | null;
+  mgbQuarryContext?: MgbQuarryTenementHit | null;
   isSpam?: boolean;
   authenticity?: AuthenticityScore | null;
 }
@@ -142,6 +179,10 @@ export interface IncidentReport {
   final: FinalReview | null;
   duplicateClusterId: string | null;
   isSpam?: boolean;
+  source?: ReportSource;
+  satelliteData?: SatelliteHotspotData;
+  satelliteHotspot?: SatelliteHotspotData;
+  mgbQuarryContext?: MgbQuarryTenementHit | null;
 }
 
 export interface CategoryMetadata {

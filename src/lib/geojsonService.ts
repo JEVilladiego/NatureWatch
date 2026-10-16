@@ -20,6 +20,7 @@ export interface ProvinceFeatureProperties {
 
 export interface GeoJSONFeature<P = any> {
   type: 'Feature';
+  id?: string | number;
   properties: P;
   geometry: GeoJSONGeometry;
 }
@@ -63,11 +64,29 @@ export interface ProtectedZoneFeatureProperties {
   zoomLevel?: number;
 }
 
+export interface MgbQuarryFeatureProperties {
+  id: string;
+  name: string;
+  shortName: string;
+  tenementName?: string;
+  permitNumber: string;
+  permitType: 'MPSA' | 'CSAG' | 'ISAG';
+  operator: string;
+  municipality: string;
+  commodity: string;
+  status: string;
+  areaHectares: string;
+  regulatoryAuthority: string;
+  strokeColor: string;
+  fillColor: string;
+}
+
 // In-memory singletons to avoid re-fetching
 let cachedProvince: GeoJSONFeatureCollection<ProvinceFeatureProperties> | null = null;
 let cachedMunicipalities: GeoJSONFeatureCollection<MunicipalityFeatureProperties> | null = null;
 let cachedInvertedMask: GeoJSONFeature | null = null;
 let cachedProtectedZones: GeoJSONFeatureCollection<ProtectedZoneFeatureProperties> | null = null;
+let cachedMgbQuarries: GeoJSONFeatureCollection<MgbQuarryFeatureProperties> | null = null;
 
 const WORLD_MASK_RING: [number, number][] = [
   [-180, 85],
@@ -111,8 +130,10 @@ export async function findProtectedZoneByCoordinates(lat: number, lng: number): 
 
     const broadZones = new Set(['umrbpl', 'proc-1636-wildlife-sanctuary', 'kaliwa-river-forest-reserve', 'laguna-shoreland-buffer']);
     const sortedFeatures = [...zones.features].sort((a, b) => {
-      const aBroad = broadZones.has(a.id || a.properties?.id) ? 1 : 0;
-      const bBroad = broadZones.has(b.id || b.properties?.id) ? 1 : 0;
+      const aId = String(a.id || a.properties?.id || '');
+      const bId = String(b.id || b.properties?.id || '');
+      const aBroad = broadZones.has(aId) ? 1 : 0;
+      const bBroad = broadZones.has(bId) ? 1 : 0;
       return aBroad - bBroad;
     });
 
@@ -124,6 +145,33 @@ export async function findProtectedZoneByCoordinates(lat: number, lng: number): 
     return null;
   } catch (err) {
     console.warn('[geojsonService] Protected zone lookup error:', err);
+    return null;
+  }
+}
+
+export async function fetchRizalMgbQuarriesGeoJSON(): Promise<GeoJSONFeatureCollection<MgbQuarryFeatureProperties>> {
+  if (cachedMgbQuarries) return cachedMgbQuarries;
+  const res = await fetch('/geojson/rizal-mgb-quarries.geojson');
+  if (!res.ok) throw new Error(`Failed to load rizal-mgb-quarries.geojson: ${res.statusText}`);
+  cachedMgbQuarries = await res.json();
+  return cachedMgbQuarries!;
+}
+
+/**
+ * Checks if a given coordinate falls within any authorized MGB mining or quarry tenement in Rizal
+ */
+export async function checkMgbQuarryTenement(lat: number, lng: number): Promise<MgbQuarryFeatureProperties | null> {
+  try {
+    const data = await fetchRizalMgbQuarriesGeoJSON();
+    if (!data?.features?.length) return null;
+    for (const feature of data.features) {
+      if (isPointInGeometry([lng, lat], feature.geometry)) {
+        return feature.properties;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.warn('[geojsonService] MGB quarry lookup error:', err);
     return null;
   }
 }

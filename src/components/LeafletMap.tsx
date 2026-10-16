@@ -11,6 +11,8 @@ import {
   GeoJSONFeatureCollection,
   MunicipalityFeatureProperties,
   ProtectedZoneFeatureProperties,
+  MgbQuarryFeatureProperties,
+  fetchRizalMgbQuarriesGeoJSON,
   getChoroplethStyle,
 } from '../lib/geojsonService';
 
@@ -80,6 +82,7 @@ interface LeafletMapProps {
   fitProvinceKey?: number | string;
   showProtectedZones?: boolean;
   onSelectProtectedZone?: (zoneId: string) => void;
+  showMgbQuarries?: boolean;
 }
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
@@ -102,6 +105,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   fitProvinceKey,
   showProtectedZones = true,
   onSelectProtectedZone,
+  showMgbQuarries = true,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -112,10 +116,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
   const maskLayerRef = useRef<L.GeoJSON | null>(null);
   const protectedZonesLayerRef = useRef<L.GeoJSON | null>(null);
+  const mgbQuarriesLayerRef = useRef<L.GeoJSON | null>(null);
   const [geoJsonData, setGeoJsonData] = useState<GeoJSONFeatureCollection<MunicipalityFeatureProperties> | null>(null);
   const [maskData, setMaskData] = useState<GeoJSONFeature | null>(null);
   const [protectedMaskData, setProtectedMaskData] = useState<GeoJSONFeature | null>(null);
   const [protectedZonesData, setProtectedZonesData] = useState<GeoJSONFeatureCollection<ProtectedZoneFeatureProperties> | null>(null);
+  const [mgbQuarriesData, setMgbQuarriesData] = useState<GeoJSONFeatureCollection<MgbQuarryFeatureProperties> | null>(null);
 
   const shouldMask = maskNonRizal !== undefined ? maskNonRizal : mode === 'dashboard';
 
@@ -127,6 +133,19 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         if (isMounted) setGeoJsonData(data);
       })
       .catch((err) => console.warn('[LeafletMap] GeoJSON load error:', err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Load MGB Permitted Quarries GeoJSON once
+  useEffect(() => {
+    let isMounted = true;
+    fetchRizalMgbQuarriesGeoJSON()
+      .then((data) => {
+        if (isMounted) setMgbQuarriesData(data);
+      })
+      .catch((err) => console.warn('[LeafletMap] MGB Quarries GeoJSON load error:', err));
     return () => {
       isMounted = false;
     };
@@ -455,6 +474,102 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     };
   }, [layerMode, protectedZonesData]);
 
+  // MGB Permitted Quarries Vector Layer Rendering
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mgbQuarriesData) return;
+    const map = mapInstanceRef.current;
+
+    if (mgbQuarriesLayerRef.current) {
+      mgbQuarriesLayerRef.current.remove();
+      mgbQuarriesLayerRef.current = null;
+    }
+
+    if (!showMgbQuarries) return;
+
+    const layer = L.geoJSON(mgbQuarriesData as any, {
+      style: () => ({
+        color: '#d97706',      // amber-600 border
+        weight: 2,
+        fillColor: '#f59e0b',  // amber-500 fill
+        fillOpacity: 0.16,
+        dashArray: '5, 4',
+      }),
+      onEachFeature: (feature: any, featureLayer: L.Layer) => {
+        const props = feature?.properties || {};
+        const name = props.tenementName || props.operator || 'Permitted Quarry';
+        const permit = props.permitNumber || 'MGB Tenement';
+        const operator = props.operator || 'Authorized Concessionaire';
+        const commodity = props.commodity || 'Aggregates / Sand & Gravel';
+        const municipality = props.municipality || 'Rizal';
+        const area = props.areaHectares ? `${props.areaHectares} ha` : '';
+
+        const tooltipHtml = `
+          <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 200px; max-width: 270px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 3px;">
+              <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #d97706;">
+                ⛏️ MGB PERMITTED CADASTRE
+              </span>
+              <span style="font-size: 8px; font-family: monospace; background: rgba(217,119,6,0.18); border: 1px solid rgba(217,119,6,0.3); padding: 1px 4px; border-radius: 3px; color: #fde68a;">
+                ACTIVE
+              </span>
+            </div>
+            <div style="font-weight: 700; font-size: 11px; color: #f8fafc; line-height: 1.3;">
+              ${name}
+            </div>
+            <div style="font-size: 10px; color: #cbd5e1; margin-top: 3px;">
+              <strong>Operator:</strong> ${operator}
+            </div>
+            <div style="font-size: 9.5px; color: #94a3b8; margin-top: 2px;">
+              📍 ${props.barangay ? `${props.barangay}, ` : ''}${municipality} ${area ? `• ${area}` : ''}
+            </div>
+            <div style="font-size: 9px; font-family: monospace; color: #f59e0b; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 3px;">
+              Permit: ${permit} • ${commodity}
+            </div>
+          </div>
+        `;
+
+        featureLayer.bindTooltip(tooltipHtml, {
+          sticky: true,
+          direction: 'auto',
+          className: 'tactical-map-tooltip',
+        });
+
+        const pathLayer = featureLayer as L.Path;
+        pathLayer.on('mouseover', () => {
+          pathLayer.setStyle({
+            weight: 3.5,
+            fillOpacity: 0.32,
+            color: '#b45309',
+          });
+        });
+        pathLayer.on('mouseout', () => {
+          pathLayer.setStyle({
+            weight: 2,
+            fillOpacity: 0.16,
+            color: '#d97706',
+          });
+        });
+        pathLayer.on('click', () => {
+          try {
+            const bounds = (pathLayer as any).getBounds?.();
+            if (bounds && map) {
+              map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
+            }
+          } catch (e) {}
+        });
+      },
+    }).addTo(map);
+
+    mgbQuarriesLayerRef.current = layer;
+
+    return () => {
+      if (mgbQuarriesLayerRef.current) {
+        mgbQuarriesLayerRef.current.remove();
+        mgbQuarriesLayerRef.current = null;
+      }
+    };
+  }, [showMgbQuarries, mgbQuarriesData]);
+
   // Update Center & Zoom
   useEffect(() => {
     if (!mapInstanceRef.current) return;
@@ -779,6 +894,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       if (group.maxSeverity === 4) color = '#ea580c'; // 4: Tactical Orange
       if (group.maxSeverity === 5) color = '#dc2626'; // 5: Critical Crimson
 
+      const isSatellite = !isCluster && (group.reports[0].source === 'satellite_firms' || group.reports[0].id.startsWith('SAT-'));
+
       // Size calculation
       const baseSize = isCluster ? (count >= 10 ? 34 : 28) : 22;
       const dotSize = isSelected ? baseSize + 6 : baseSize;
@@ -794,13 +911,13 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           align-items: center;
           justify-content: center;
         ">
-          ${group.maxSeverity >= 4
+          ${group.maxSeverity >= 4 || isSatellite
           ? `<div style="
                   position: absolute;
                   width: ${pulseSize}px;
                   height: ${pulseSize}px;
                   border-radius: 50%;
-                  background: ${color};
+                  background: ${isSatellite ? '#ea580c' : color};
                   opacity: 0.38;
                   animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
                 "></div>`
@@ -819,9 +936,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-size: ${isSelected ? '12px' : '11px'};
             font-weight: 800;
-            box-shadow: ${isSelected ? '0 0 0 2px #0e2019, 0 6px 14px rgba(0,0,0,0.45)' : '0 3px 8px rgba(0,0,0,0.35)'};
+            box-shadow: ${isSatellite ? '0 0 0 2px #ea580c, 0 4px 10px rgba(234,88,12,0.45)' : isSelected ? '0 0 0 2px #0e2019, 0 6px 14px rgba(0,0,0,0.45)' : '0 3px 8px rgba(0,0,0,0.35)'};
           ">
-            ${isCluster ? count : ''}
+            ${isCluster ? count : isSatellite ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>` : ''}
           </div>
         </div>
       `;
@@ -851,12 +968,28 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               ? '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:#292524;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span>In Prog</span>'
               : '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:#292524;"><span style="width:6px;height:6px;border-radius:50%;background:#f43f5e;"></span>Pending</span>';
 
+        const satBadge = isSatellite
+          ? `<div style="background: rgba(234,88,12,0.12); border: 1px solid rgba(234,88,12,0.3); border-radius: 4px; padding: 3px 6px; margin-bottom: 5px; font-size: 10px; color: #ea580c; display: flex; align-items: center; justify-content: space-between;">
+              <strong style="display:flex;align-items:center;gap:3px;">🛰️ NASA VIIRS HOTSPOT</strong>
+              <span>${report.satelliteHotspot?.frp ? report.satelliteHotspot.frp.toFixed(1) + ' MW' : 'Active'}</span>
+            </div>`
+          : '';
+
+        const aqiBadge = report.aiTriage?.airQuality
+          ? `<div style="font-size: 9.5px; color: #059669; font-weight: 600; margin-bottom: 5px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; padding: 2px 6px; display: flex; justify-content: space-between;">
+              <span>Air AQI: ${report.aiTriage.airQuality.europeanAqi} (${report.aiTriage.airQuality.aqiLabel})</span>
+              <span>PM2.5: ${report.aiTriage.airQuality.pm2_5}</span>
+            </div>`
+          : '';
+
         marker.bindPopup(`
-          <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; max-width: 220px;">
+          <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; max-width: 230px;">
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
               <strong style="font-family: monospace; font-size: 13px; color: #1c1917;">${report.referenceCode}</strong>
               ${statusBadge}
             </div>
+            ${satBadge}
+            ${aqiBadge}
             <div style="margin-bottom: 5px; color: #78716c; font-size: 11px; display: flex; align-items: center;">
               <svg style="width: 12px; height: 12px; margin-right: 4px; flex-shrink: 0; color: #78716c;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
               <span>${locationLabel}</span>

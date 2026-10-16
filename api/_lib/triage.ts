@@ -2,7 +2,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { z } from 'zod';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getDb, HttpError, sendUrgentAlert } from './admin.js';
-import { fetchWeatherContext, type WeatherSnapshot } from './weather.js';
+import { fetchWeatherContext, fetchAirQualityContext, type WeatherSnapshot, type AirQualitySnapshot } from './weather.js';
 import { findProtectedAreaByPoint, type ProtectedAreaHit } from './protectedAreas.js';
 
 const CATEGORIES = [
@@ -93,6 +93,7 @@ async function callGemini(
   model: string,
   weather: WeatherSnapshot | null = null,
   protectedZone: ProtectedAreaHit | null = null,
+  airQuality: AirQualitySnapshot | null = null,
 ) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new HttpError(500, 'GEMINI_API_KEY is not configured.');
@@ -119,6 +120,18 @@ Location Weather Conditions (via Open-Meteo):
 - Precipitation: ${weather.precipitation} mm
 Consider whether these current conditions amplify or mitigate the reported environmental hazard.
 </realtime_meteorological_context>`;
+  }
+
+  if (airQuality) {
+    promptText += `\n
+<realtime_air_quality_context>
+Atmospheric Particulate & Chemical Telemetry (via Open-Meteo Air Quality):
+- PM2.5: ${airQuality.pm25} μg/m³
+- PM10: ${airQuality.pm10} μg/m³
+- Carbon Monoxide: ${airQuality.carbonMonoxide} μg/m³
+- European Air Quality Index (AQI): ${airQuality.europeanAqi} (${airQuality.aqiLabel})
+Consider these particulate readings when evaluating open burning, toxic smoke, or industrial pollution.
+</realtime_air_quality_context>`;
   }
 
   if (protectedZone) {
@@ -229,6 +242,7 @@ export async function triageReport(reportId: string, opts: { retryFailed?: boole
     }
 
     let weather: WeatherSnapshot | null = null;
+    let airQuality: AirQualitySnapshot | null = null;
     let protectedZone: ProtectedAreaHit | null = null;
     const lat = data.location?.lat;
     const lng = data.location?.lng;
@@ -240,13 +254,19 @@ export async function triageReport(reportId: string, opts: { retryFailed?: boole
       }
 
       try {
+        airQuality = await fetchAirQualityContext(lat, lng);
+      } catch (aErr) {
+        console.warn(`[Triage] Air quality lookup skipped for ${reportId}:`, (aErr as Error)?.message || aErr);
+      }
+
+      try {
         protectedZone = findProtectedAreaByPoint(lat, lng);
       } catch (pErr) {
         console.warn(`[Triage] Protected area lookup skipped for ${reportId}:`, (pErr as Error)?.message || pErr);
       }
     }
 
-    const result = await callGemini(String(data.rawInput?.description || ''), imageDataUrl, model, weather, protectedZone);
+    const result = await callGemini(String(data.rawInput?.description || ''), imageDataUrl, model, weather, protectedZone, airQuality);
 
     const isSpamDetected =
       Boolean(result.isSpam) ||
@@ -266,6 +286,7 @@ export async function triageReport(reportId: string, opts: { retryFailed?: boole
         model,
         triagedAt: new Date().toISOString(),
         weather: weather || null,
+        airQuality: airQuality || null,
         protectedZone: protectedZone || null,
         isSpam: isSpamDetected,
         authenticity: {

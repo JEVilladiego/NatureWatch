@@ -42,6 +42,10 @@ import {
   Upload,
   Trees,
   Scale,
+  Flame,
+  Satellite,
+  Pickaxe,
+  Activity,
 } from 'lucide-react';
 import {
   IncidentReport,
@@ -52,11 +56,14 @@ import {
   RIZAL_MUNICIPALITIES,
   MUNICIPALITY_COORDINATES,
   WeatherContext,
+  AirQualitySnapshot,
+  SatelliteHotspotData,
   ProtectedZoneHit,
   ReportImageItem,
 } from '../types/report';
 import { LeafletMap, MapLayerMode, BasemapMode } from './LeafletMap';
 import { resolveReportCoordinates } from '../lib/barangayCoordinates';
+import { checkMgbQuarryTenement, MgbQuarryFeatureProperties } from '../lib/geojsonService';
 import { calculateDistanceMeters } from '../lib/geohash';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import {
@@ -682,6 +689,63 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedProtectedZoneId, setSelectedProtectedZoneId] = useState<string | null>(null);
   const [activeProtectedZoneFilter, setActiveProtectedZoneFilter] = useState<string | null>(null);
   const [isProhibitionsExpanded, setIsProhibitionsExpanded] = useState<boolean>(true);
+  const [showMgbQuarries, setShowMgbQuarries] = useState<boolean>(true);
+  const [isSyncingSatellites, setIsSyncingSatellites] = useState<boolean>(false);
+  const [syncSatelliteToast, setSyncSatelliteToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [activeMgbQuarryHit, setActiveMgbQuarryHit] = useState<MgbQuarryFeatureProperties | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (!selectedReport) {
+      setActiveMgbQuarryHit(undefined);
+      return;
+    }
+    const isQuarry =
+      selectedReport.final?.category === 'illegal_quarrying_extraction' ||
+      selectedReport.aiTriage?.category === 'illegal_quarrying_extraction';
+    if (!isQuarry) {
+      setActiveMgbQuarryHit(undefined);
+      return;
+    }
+    const coords = resolveReportCoordinates(selectedReport);
+    let isMounted = true;
+    checkMgbQuarryTenement(coords.lat, coords.lng).then((res) => {
+      if (isMounted) setActiveMgbQuarryHit(res);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedReport]);
+
+  const handleSyncSatellites = async () => {
+    setIsSyncingSatellites(true);
+    try {
+      const headers = await authHeaders();
+      const res = await fetch('/api/sync-firms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const msg = data.created > 0
+          ? `NASA FIRMS: Ingested ${data.created} new thermal anomaly incident${data.created === 1 ? '' : 's'} across Rizal.`
+          : `NASA FIRMS: Satellite scan complete. ${data.scanned || 0} hotspots analyzed; 0 new anomalies.`;
+        setSyncSatelliteToast({ message: msg, type: 'success' });
+        setTimeout(() => setSyncSatelliteToast(null), 7000);
+      } else {
+        setSyncSatelliteToast({ message: data.error || 'Failed to sync NASA satellite hotspots', type: 'error' });
+        setTimeout(() => setSyncSatelliteToast(null), 7000);
+      }
+    } catch (err: any) {
+      setSyncSatelliteToast({ message: `Satellite sync error: ${err?.message || 'Network error'}`, type: 'error' });
+      setTimeout(() => setSyncSatelliteToast(null), 7000);
+    } finally {
+      setIsSyncingSatellites(false);
+    }
+  };
 
   // Selected protected zone data lookup
   const selectedProtectedZone = useMemo(() => {
@@ -846,6 +910,175 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           )
         )}
+      </div>
+    );
+  };
+
+  // NASA FIRMS Satellite Hotspot Orbital Telemetry Card
+  const renderSatelliteHotspotCard = (report?: IncidentReport | null) => {
+    if (!report) return null;
+    const isSat = report.source === 'satellite_firms' || report.id.startsWith('SAT-') || !!report.satelliteHotspot;
+    if (!isSat) return null;
+
+    const sat = report.satelliteHotspot;
+    const frp = sat?.frp !== undefined ? sat.frp.toFixed(2) : 'N/A';
+    const tempK = sat?.brightnessTemperature !== undefined ? sat.brightnessTemperature.toFixed(1) : 'N/A';
+    const tempC = sat?.brightnessTemperature !== undefined ? (sat.brightnessTemperature - 273.15).toFixed(1) : 'N/A';
+    const confidence = sat?.confidence || 'Nominal';
+    const pass = sat?.daynight === 'N' ? 'Night Overpass' : sat?.daynight === 'D' ? 'Day Overpass' : 'Orbital Scan';
+    const sensor = sat?.instrument || 'VIIRS 375m (S-NPP / NOAA-20)';
+
+    return (
+      <div className="p-3 bg-amber-500/10 dark:bg-amber-950/40 border border-amber-500/30 dark:border-amber-700/50 rounded-xl space-y-2 my-2">
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Satellite className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span className="text-[11px] font-bold tracking-wide uppercase text-amber-900 dark:text-amber-200 truncate">
+              NASA FIRMS Orbital Telemetry
+            </span>
+          </div>
+          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-500/40 uppercase shrink-0 flex items-center gap-1">
+            <Flame className="w-2.5 h-2.5 text-orange-600" />
+            {frp} MW FRP
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-1.5 text-center p-1.5 bg-white/70 dark:bg-stone-900/80 rounded-lg border border-amber-500/20">
+          <div className="px-1">
+            <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Radiant Temp</span>
+            <span className="font-mono font-bold text-xs text-stone-900 dark:text-amber-200">{tempK} K ({tempC}°C)</span>
+          </div>
+          <div className="px-1 border-x border-stone-200 dark:border-stone-800">
+            <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Confidence</span>
+            <span className="font-mono font-bold text-xs text-amber-700 dark:text-amber-300 capitalize">{confidence}</span>
+          </div>
+          <div className="px-1">
+            <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Overpass</span>
+            <span className="font-mono font-bold text-xs text-stone-800 dark:text-stone-200 truncate block">{pass}</span>
+          </div>
+        </div>
+
+        <div className="text-[10px] text-stone-600 dark:text-stone-400 flex items-center justify-between font-mono pt-1 border-t border-amber-500/20">
+          <span>Sensor: {sensor}</span>
+          <span>Res: 375m Ground IFOV</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Open-Meteo Air Quality Telemetry Card
+  const renderAirQualityCard = (aq?: AirQualitySnapshot | null) => {
+    if (!aq) return null;
+    let badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800';
+    if (aq.aqiLabel === 'Fair') badgeColor = 'bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800';
+    if (aq.aqiLabel === 'Moderate') badgeColor = 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800';
+    if (aq.aqiLabel === 'Poor') badgeColor = 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-800';
+    if (aq.aqiLabel === 'Very Poor') badgeColor = 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800';
+
+    return (
+      <div className="p-3 bg-stone-50 dark:bg-stone-950/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-2 my-2">
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="text-[11px] font-bold tracking-wide uppercase text-stone-900 dark:text-stone-100 truncate">
+              Atmospheric Air Quality
+            </span>
+          </div>
+          <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${badgeColor}`}>
+            AQI {aq.europeanAqi} • {aq.aqiLabel}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-4 gap-1 p-2 bg-white dark:bg-stone-900/80 border border-stone-200 dark:border-stone-800 rounded-lg text-center divide-x divide-stone-200 dark:divide-stone-800">
+          <div className="px-1">
+            <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">PM2.5</span>
+            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">{aq.pm2_5} μg/m³</span>
+          </div>
+          <div className="px-1">
+            <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">PM10</span>
+            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">{aq.pm10} μg/m³</span>
+          </div>
+          <div className="px-1">
+            <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">CO</span>
+            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">{aq.carbonMonoxide ?? 'N/A'} μg/m³</span>
+          </div>
+          <div className="px-1">
+            <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Ozone</span>
+            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">{aq.ozone ?? 'N/A'} μg/m³</span>
+          </div>
+        </div>
+
+        <div className="text-[10px] text-stone-500 dark:text-stone-400 flex items-center justify-between">
+          <span>Source: Open-Meteo European Air Quality Model (CAMS)</span>
+          <span className="font-mono">{new Date(aq.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // MGB Region IV-A Permitted Quarry Concession Check Card
+  const renderMgbQuarryCard = (report?: IncidentReport | null) => {
+    if (!report) return null;
+    const isQuarrying =
+      report.final?.category === 'illegal_quarrying_extraction' ||
+      report.aiTriage?.category === 'illegal_quarrying_extraction';
+    if (!isQuarrying) return null;
+
+    if (activeMgbQuarryHit === undefined) {
+      return (
+        <div className="p-3 bg-stone-50 dark:bg-stone-950/60 border border-stone-200 dark:border-stone-800 rounded-xl my-2 text-xs text-stone-500 italic">
+          Cross-referencing MGB cadastre...
+        </div>
+      );
+    }
+
+    if (activeMgbQuarryHit) {
+      const hit = activeMgbQuarryHit;
+      return (
+        <div className="p-3 bg-amber-500/10 dark:bg-amber-950/40 border border-amber-500/30 dark:border-amber-800/60 rounded-xl space-y-1.5 my-2">
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Pickaxe className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span className="text-[11px] font-bold tracking-wide uppercase text-amber-900 dark:text-amber-200 truncate">
+                MGB Permitted Quarry Cadastre
+              </span>
+            </div>
+            <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 uppercase shrink-0">
+              Inside Permitted Tenement
+            </span>
+          </div>
+          <div className="text-xs font-bold text-stone-900 dark:text-stone-100">
+            {hit.tenementName || hit.name}
+          </div>
+          <div className="text-[10px] text-stone-600 dark:text-stone-300">
+            <strong>Permit:</strong> <span className="font-mono">{hit.permitNumber}</span> • <strong>Operator:</strong> {hit.operator}
+          </div>
+          <div className="text-[10px] text-stone-500 dark:text-stone-400 leading-relaxed pt-1 border-t border-amber-500/20">
+            ℹ️ Coordinates intersect an authorized MGB Region IV-A concession. Officers should verify whether on-ground activities exceed permitted boundaries, bench depths, or Environmental Compliance Certificate (ECC) conditions.
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900/60 rounded-xl space-y-1.5 my-2">
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+            <span className="text-[11px] font-bold tracking-wide uppercase text-rose-900 dark:text-rose-200 truncate">
+              MGB Cadastre Cross-Reference
+            </span>
+          </div>
+          <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-900/60 dark:text-rose-200 dark:border-rose-700 uppercase shrink-0 animate-pulse">
+            Wildcat Quarry Alert
+          </span>
+        </div>
+        <div className="text-xs font-semibold text-rose-950 dark:text-rose-200 leading-snug">
+          Zero Authorized Concessions Found at Coordinates
+        </div>
+        <div className="text-[10px] text-stone-600 dark:text-stone-300 leading-relaxed pt-1 border-t border-rose-200 dark:border-rose-900/40">
+          ⚠️ Report coordinates do NOT intersect any authorized MGB Region IV-A mining or quarrying concessions in Rizal Province. High probability of illegal or unpermitted extraction. Immediate ENRO / LGU field verification advised.
+        </div>
       </div>
     );
   };
@@ -1437,6 +1670,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
+      {/* NASA Satellite Sync Notification Toast */}
+      {syncSatelliteToast && (
+        <div
+          role="status"
+          className={`p-3 rounded-xl flex items-center justify-between gap-2 shadow-md text-xs font-medium z-50 ${
+            syncSatelliteToast.type === 'success'
+              ? 'bg-emerald-50 border border-emerald-200 text-emerald-900 dark:bg-emerald-950/80 dark:border-emerald-800 dark:text-emerald-200'
+              : 'bg-rose-50 border border-rose-200 text-rose-900 dark:bg-rose-950/80 dark:border-rose-800 dark:text-rose-200'
+          } ${viewMode === 'full_map' ? 'absolute top-16 left-1/2 -translate-x-1/2 max-w-md w-full' : 'mb-3'}`}
+        >
+          <div className="flex items-center gap-2">
+            <Satellite className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>{syncSatelliteToast.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSyncSatelliteToast(null)}
+            className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
 
 
       {/* ========================================================= */}
@@ -1589,13 +1846,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </button>
             )}
 
+            {/* Sync NASA FIRMS Satellites Button */}
+            <button
+              type="button"
+              onClick={handleSyncSatellites}
+              disabled={isSyncingSatellites}
+              title="Sync NASA FIRMS VIIRS satellite thermal anomaly hotspots for Rizal Province"
+              className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-300/80 dark:border-amber-800 disabled:opacity-40 text-amber-800 dark:text-amber-300 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ml-auto"
+            >
+              <Satellite className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{isSyncingSatellites ? 'Syncing...' : 'Sync Satellites'}</span>
+            </button>
+
             {/* Re-run AI Triage Button */}
             <button
               type="button"
               onClick={handleRetryTriage}
               disabled={isRetryingTriage || !selectedReport}
               title={selectedReport ? "Re-run AI triage on selected incident" : "Select an incident to re-run triage"}
-              className="px-2.5 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 disabled:opacity-40 disabled:hover:bg-stone-100 dark:disabled:hover:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ml-auto"
+              className="px-2.5 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 disabled:opacity-40 disabled:hover:bg-stone-100 dark:disabled:hover:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1 transition cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">{isRetryingTriage ? 'Triaging...' : 'AI Triage'}</span>
@@ -1654,6 +1923,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   onClusterClick={(group) => handleClusterClick(group)}
                   choroplethCounts={choroplethCounts}
                   maskNonRizal={false}
+                  showMgbQuarries={showMgbQuarries}
                   onSelectReport={(r) => {
                     setSelectedReport(r);
                     const coords = resolveReportCoordinates(r);
@@ -2103,7 +2373,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           </p>
                         </div>
 
+                        {renderSatelliteHotspotCard(selectedReport)}
+
                         {renderProtectedZoneBadge(selectedReport.aiTriage.protectedZone)}
+
+                        {renderMgbQuarryCard(selectedReport)}
+
+                        {renderAirQualityCard(selectedReport.aiTriage.airQuality)}
 
                         <div className="pt-2 border-t border-stone-200/70 dark:border-stone-800">
                           <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block">
@@ -2287,6 +2563,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               onClusterClick={(group) => handleClusterClick(group)}
               choroplethCounts={choroplethCounts}
               maskNonRizal={isMaskActive}
+              showMgbQuarries={showMgbQuarries}
               onSelectProtectedZone={(zoneId) => {
                 setSelectedProtectedZoneId(zoneId);
                 // On narrow viewports, close the left sheet to ensure drawer visibility
@@ -2367,6 +2644,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span className="hidden sm:inline">{t.officerNavStatus}</span>
                 </button>
               )}
+
+              <div className="h-4 w-px bg-stone-200 dark:bg-stone-800 hidden sm:block" />
+
+              {/* Sync Satellites Button */}
+              <button
+                type="button"
+                onClick={handleSyncSatellites}
+                disabled={isSyncingSatellites}
+                className="px-2.5 py-1 rounded-md text-xs font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/60 active:scale-95 transition-all duration-150 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                title="Sync NASA FIRMS VIIRS satellite thermal anomaly hotspots for Rizal Province"
+              >
+                <Satellite className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{isSyncingSatellites ? 'Syncing...' : 'Sync Satellites'}</span>
+              </button>
             </div>
           </div>
 
@@ -2995,11 +3286,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       )}
                     </div>
 
+                    {/* NASA Satellite Hotspot Telemetry Card */}
+                    {renderSatelliteHotspotCard(selectedReport)}
+
                     {/* Protected Zone Alert (if applicable) */}
                     {renderProtectedZoneBadge(
                       selectedReport.aiTriage?.protectedZone,
                       true
                     )}
+
+                    {/* MGB Tenement Cadastre Compliance Card */}
+                    {renderMgbQuarryCard(selectedReport)}
+
+                    {/* Atmospheric Air Quality Card */}
+                    {renderAirQualityCard(selectedReport.aiTriage?.airQuality)}
 
                     {/* Weather Telemetry */}
                     {renderWeatherWidget(selectedReport.aiTriage?.weather)}
@@ -3670,7 +3970,43 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 </div>
 
-                {/* 4. Refined Contextual Legend */}
+                {/* 4. Apple-Style Toggle Switch: MGB Permitted Quarries Cadastre */}
+                <div
+                  onClick={() => setShowMgbQuarries(!showMgbQuarries)}
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-stone-200/90 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-950/60 hover:bg-stone-50 dark:hover:bg-stone-950/80 transition cursor-pointer"
+                  title="Display MGB Region IV-A permitted sand, gravel & mineral concessions"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${
+                      showMgbQuarries ? 'bg-amber-600 text-white' : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                    }`}>
+                      <Pickaxe className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-stone-900 dark:text-stone-100 block leading-tight">
+                        Quarries (MGB)
+                      </span>
+                      <span className="text-[10px] text-stone-400 dark:text-stone-500 block leading-tight">
+                        Permitted mining cadastre
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Smooth Apple / iOS Sliding Toggle Switch */}
+                  <div
+                    className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${
+                      showMgbQuarries ? 'bg-amber-600' : 'bg-stone-300 dark:bg-stone-700'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${
+                        showMgbQuarries ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* 5. Refined Contextual Legend */}
                 <div className="pt-2 border-t border-stone-100 dark:border-stone-800 text-[11px] space-y-1.5">
                   {mapLayerMode === 'choropleth' && (
                     <div className="space-y-1">
@@ -3801,6 +4137,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <div className="text-[10px] text-stone-400 dark:text-stone-500 text-center font-normal">
                         14 LGUs of Rizal • Interactive map pins
                       </div>
+                    </div>
+                  )}
+
+                  {showMgbQuarries && (
+                    <div className="pt-1.5 mt-1 border-t border-stone-200/60 dark:border-stone-800 flex items-center justify-between text-[10px] text-amber-700 dark:text-amber-400 font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-1.5 rounded-xs bg-amber-500/30 border border-amber-600 border-dashed" />
+                        <span>MGB Permitted Tenements</span>
+                      </span>
+                      <span className="font-mono text-[9px] uppercase px-1 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">Active</span>
                     </div>
                   )}
                 </div>
