@@ -46,6 +46,7 @@ import { LeafletMap, BasemapMode } from './LeafletMap';
 import { getBarangayCoordinates, findNearestBarangay } from '../lib/barangayCoordinates';
 import { isPointInRizal, findMunicipalityByPoint, findProtectedZoneByCoordinates, type ProtectedZoneFeatureProperties } from '../lib/geojsonService';
 import { Language, translations } from '../lib/i18n';
+import { useTheme } from '../lib/theme';
 
 // Default Rizal Province center
 const RIZAL_COORDS = { lat: 14.5800, lng: 121.2800 };
@@ -73,6 +74,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   onReportCreated,
 }) => {
   const t = translations[lang];
+  const { theme } = useTheme();
 
   // 3-Slot Structured Evidence State
   const [slots, setSlots] = useState<Record<EvidenceSlotRole, EvidenceSlotItem | null>>({
@@ -113,10 +115,19 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   } | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [basemapMode, setBasemapMode] = useState<BasemapMode>('street');
+  const [basemapMode, setBasemapMode] = useState<BasemapMode>(() => (theme === 'dark' ? 'dark' : 'street'));
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Automatically sync map basemap with dark/light mode so no separate clicks are needed
+  useEffect(() => {
+    if (theme === 'dark') {
+      setBasemapMode('dark');
+    } else {
+      setBasemapMode('street');
+    }
+  }, [theme]);
 
   // Auto-acquire GPS on mount
   useEffect(() => {
@@ -458,41 +469,41 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   if (submittedReport) {
     return (
       <div className="max-w-xl mx-auto px-4 py-12 text-center space-y-6">
-        <div className="w-14 h-14 rounded-full bg-stone-100 text-stone-900 border border-stone-200 flex items-center justify-center mx-auto">
-          <CheckCircle className="w-7 h-7 text-emerald-600" strokeWidth={2} />
+        <div className="w-14 h-14 rounded-full bg-stone-100 dark:bg-stone-900 text-stone-900 dark:text-stone-100 border border-stone-200 dark:border-stone-800 flex items-center justify-center mx-auto">
+          <CheckCircle className="w-7 h-7 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
         </div>
 
         <div className="space-y-1.5">
-          <h2 className="font-bold text-2xl sm:text-3xl text-stone-900 tracking-tight">
+          <h2 className="font-bold text-2xl sm:text-3xl text-stone-900 dark:text-white tracking-tight">
             {t.successTitle}
           </h2>
-          <p className="text-sm text-stone-600 max-w-md mx-auto leading-relaxed">
+          <p className="text-sm text-stone-600 dark:text-stone-400 max-w-md mx-auto leading-relaxed">
             {t.successSubtitle}
           </p>
         </div>
 
         {submittedReport.offlineSaved && (
-          <div className="flex items-center justify-center gap-2 text-xs text-amber-800 font-medium py-1">
-            <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+          <div className="flex items-center justify-center gap-2 text-xs text-amber-800 dark:text-amber-400 font-medium py-1">
+            <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <span>{t.offlineSaved}</span>
           </div>
         )}
 
         {/* Reference Code Sheet */}
-        <div className="py-6 border-y border-stone-200 max-w-md mx-auto">
-          <span className="text-[11px] font-mono uppercase tracking-widest text-stone-500 block mb-1">
+        <div className="py-6 border-y border-stone-200 dark:border-stone-800 max-w-md mx-auto">
+          <span className="text-[11px] font-mono uppercase tracking-widest text-stone-500 dark:text-stone-400 block mb-1">
             {t.referenceCodeLabel}
           </span>
           <div className="flex items-center justify-center gap-3">
-            <span className="text-3xl sm:text-4xl font-mono font-bold text-stone-950 tracking-wider">
+            <span className="text-3xl sm:text-4xl font-mono font-bold text-stone-950 dark:text-white tracking-wider">
               {submittedReport.referenceCode}
             </span>
             <button
               type="button"
               onClick={handleCopyCode}
-              className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold rounded-md transition cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-semibold rounded-md transition cursor-pointer flex items-center gap-1.5"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Copy className="w-3.5 h-3.5 text-stone-600" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />}
               <span>{copied ? t.copied : t.copyCode}</span>
             </button>
           </div>
@@ -503,7 +514,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           <button
             type="button"
             onClick={() => onViewStatus(submittedReport.referenceCode)}
-            className="flex-1 py-3 px-4 bg-stone-900 hover:bg-black text-white font-semibold rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition cursor-pointer"
+            className="flex-1 py-3 px-4 bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition cursor-pointer"
           >
             <FileText className="w-4 h-4" />
             <span>{t.trackStatusBtn}</span>
@@ -512,15 +523,15 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           <button
             type="button"
             onClick={resetForm}
-            className="py-3 px-4 border border-stone-200 hover:bg-stone-50 text-stone-700 font-semibold rounded-lg text-xs transition cursor-pointer"
+            className="py-3 px-4 border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-900 text-stone-700 dark:text-stone-300 font-semibold rounded-lg text-xs transition cursor-pointer"
           >
             {t.reportAnotherBtn}
           </button>
         </div>
 
         {/* Footnote */}
-        <div className="pt-6 text-[11px] text-stone-400 flex items-center justify-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-stone-400" />
+        <div className="pt-6 text-[11px] text-stone-400 dark:text-stone-500 flex items-center justify-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500" />
           <span>{t.retentionNote}</span>
         </div>
       </div>
@@ -530,53 +541,53 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6">
       {/* Editorial Header */}
-      <div className="pb-6 border-b border-stone-200">
+      <div className="pb-6 border-b border-stone-200 dark:border-stone-800">
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
           <div>
-            <h1 className="font-bold text-2xl sm:text-3xl text-stone-900 tracking-tight leading-tight">
+            <h1 className="font-bold text-2xl sm:text-3xl text-stone-900 dark:text-white tracking-tight leading-tight">
               {t.appTitle}
             </h1>
-            <p className="text-sm text-stone-600 mt-1.5 max-w-xl leading-relaxed">
+            <p className="text-sm text-stone-600 dark:text-stone-400 mt-1.5 max-w-xl leading-relaxed">
               {t.tagline}
             </p>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-stone-500 font-medium shrink-0">
-            <ShieldCheck className="w-4 h-4 text-stone-400 shrink-0" />
+          <div className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400 font-medium shrink-0">
+            <ShieldCheck className="w-4 h-4 text-stone-400 dark:text-stone-500 shrink-0" />
             <span>{t.anonymousNotice}</span>
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="divide-y divide-stone-100">
+      <form onSubmit={handleSubmit} className="divide-y divide-stone-100 dark:divide-stone-850">
         {/* Step 1: Structured Evidence Capture */}
         <div className="py-6 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-semibold text-stone-400">01</span>
-              <span className="text-stone-300 font-mono">/</span>
-              <h2 className="font-semibold text-sm sm:text-base text-stone-900">
+              <span className="font-mono text-xs font-semibold text-stone-400 dark:text-stone-500">01</span>
+              <span className="text-stone-300 dark:text-stone-700 font-mono">/</span>
+              <h2 className="font-semibold text-sm sm:text-base text-stone-900 dark:text-white">
                 {t.evidenceTitle}
               </h2>
             </div>
-            <span className="text-xs text-stone-400">{t.photoCaptureHint}</span>
+            <span className="text-xs text-stone-400 dark:text-stone-500">{t.photoCaptureHint}</span>
           </div>
 
-          <p className="text-xs text-stone-500 leading-relaxed">
+          <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
             {t.evidenceSubtitle}
           </p>
 
           {/* Cooldown Alert Banner if currently rate-limited */}
           {!rateLimitInfo.allowed && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs flex items-center justify-between">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-lg text-amber-900 dark:text-amber-300 text-xs flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                <Lock className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0" />
                 <span className="font-medium">
                   {rateLimitInfo.reason === 'burst'
                     ? `${t.cooldownNotice} (${formatCooldownTime(rateLimitInfo.remainingSeconds)})`
                     : `${t.cooldownNotice} (Daily quota: 5/5 reached)`}
                 </span>
               </div>
-              <span className="font-mono font-bold text-amber-800 shrink-0">
+              <span className="font-mono font-bold text-amber-800 dark:text-amber-300 shrink-0">
                 {formatCooldownTime(rateLimitInfo.remainingSeconds)}
               </span>
             </div>
@@ -608,21 +619,21 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   title: t.slotPrimaryTitle,
                   desc: t.slotPrimaryDesc,
                   badge: 'Required',
-                  badgeClass: 'bg-stone-900 text-white',
+                  badgeClass: 'bg-stone-900 text-white dark:bg-emerald-700 dark:text-white',
                 },
                 {
                   role: 'wide_scene' as EvidenceSlotRole,
                   title: t.slotWideTitle,
                   desc: t.slotWideDesc,
                   badge: 'Recommended',
-                  badgeClass: 'bg-stone-100 text-stone-700',
+                  badgeClass: 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300',
                 },
                 {
                   role: 'landmark' as EvidenceSlotRole,
                   title: t.slotLandmarkTitle,
                   desc: t.slotLandmarkDesc,
                   badge: 'Optional',
-                  badgeClass: 'bg-stone-100 text-stone-500',
+                  badgeClass: 'bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400',
                 },
               ] as const
             ).map((slotDef) => {
@@ -635,21 +646,21 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   key={slotDef.role}
                   className={`rounded-lg border transition p-3 flex flex-col justify-between ${
                     slotData
-                      ? 'border-stone-300 bg-white shadow-2xs'
-                      : 'border-dashed border-stone-200 bg-stone-50/60 hover:bg-stone-50'
+                      ? 'border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 shadow-2xs'
+                      : 'border-dashed border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-900/40 hover:bg-stone-50 dark:hover:bg-stone-900/70'
                   }`}
                 >
                   {/* Slot Header */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-semibold text-xs text-stone-900 leading-tight">
+                      <span className="font-semibold text-xs text-stone-900 dark:text-stone-100 leading-tight">
                         {slotDef.title}
                       </span>
                       <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-medium shrink-0 ${slotDef.badgeClass}`}>
                         {slotDef.badge}
                       </span>
                     </div>
-                    <p className="text-[11px] text-stone-500 leading-snug">
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
                       {slotDef.desc}
                     </p>
                   </div>
@@ -657,8 +668,8 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   {/* Slot Content: Empty State vs Loaded Preview */}
                   <div className="mt-3">
                     {isCompressingThis ? (
-                      <div className="h-32 flex flex-col items-center justify-center gap-2 text-stone-500 text-xs rounded-md bg-stone-100 animate-pulse">
-                        <RefreshCw className="w-4 h-4 animate-spin text-stone-700" />
+                      <div className="h-32 flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-stone-400 text-xs rounded-md bg-stone-100 dark:bg-stone-800 animate-pulse">
+                        <RefreshCw className="w-4 h-4 animate-spin text-stone-700 dark:text-stone-300" />
                         <span>{t.compressing}</span>
                       </div>
                     ) : slotData ? (
@@ -680,13 +691,13 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
 
                           <div className="absolute bottom-1.5 left-1.5">
                             {slotData.captureMethod === 'live_camera' ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-100/95 backdrop-blur-xs px-1.5 py-0.5 rounded shadow-2xs">
-                                <Camera className="w-3 h-3 text-emerald-700" />
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-100/95 dark:text-emerald-300 dark:bg-emerald-950/90 backdrop-blur-xs px-1.5 py-0.5 rounded shadow-2xs">
+                                <Camera className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
                                 {t.liveCameraBadge}
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-stone-700 bg-white/95 backdrop-blur-xs px-1.5 py-0.5 rounded shadow-2xs">
-                                <Upload className="w-3 h-3 text-stone-500" />
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-stone-700 bg-white/95 dark:text-stone-300 dark:bg-stone-850/90 backdrop-blur-xs px-1.5 py-0.5 rounded shadow-2xs">
+                                <Upload className="w-3 h-3 text-stone-500 dark:text-stone-400" />
                                 {t.galleryBadge}
                               </span>
                             )}
@@ -694,7 +705,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                         </div>
 
                         {/* EXIF / File telemetry pill */}
-                        <div className="flex items-center justify-between text-[10px] text-stone-500 font-mono">
+                        <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 font-mono">
                           <span>{(slotData.compressedSize / 1024).toFixed(0)} KB</span>
                           {slotData.exif?.cameraModel && (
                             <span className="truncate max-w-[110px]" title={slotData.exif.cameraModel}>
@@ -702,7 +713,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                             </span>
                           )}
                           {slotData.exif?.distanceFromReportKm !== null && slotData.exif?.distanceFromReportKm !== undefined && (
-                            <span className="text-emerald-700 font-semibold">
+                            <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
                               GPS: {slotData.exif.distanceFromReportKm}km
                             </span>
                           )}
@@ -713,7 +724,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                         <button
                           type="button"
                           onClick={() => handleTriggerCapture(slotDef.role, 'live_camera')}
-                          className="w-full py-2 px-2.5 bg-stone-900 hover:bg-black text-white rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
+                          className="w-full py-2 px-2.5 bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
                         >
                           <Camera className="w-3.5 h-3.5" />
                           <span>{t.cameraBtn}</span>
@@ -721,17 +732,17 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                         <button
                           type="button"
                           onClick={() => handleTriggerCapture(slotDef.role, 'gallery')}
-                          className="w-full py-1.5 px-2 bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 rounded-md text-[11px] font-medium flex items-center justify-center gap-1.5 transition cursor-pointer"
+                          className="w-full py-1.5 px-2 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 rounded-md text-[11px] font-medium flex items-center justify-center gap-1.5 transition cursor-pointer"
                         >
-                          <Upload className="w-3 h-3 text-stone-500" />
+                          <Upload className="w-3 h-3 text-stone-500 dark:text-stone-400" />
                           <span>{t.galleryBtn}</span>
                         </button>
                       </div>
                     )}
 
                     {errorThis && (
-                      <div className="mt-1.5 flex items-center gap-1 text-[11px] text-rose-700">
-                        <AlertCircle className="w-3 h-3 text-rose-600 shrink-0" />
+                      <div className="mt-1.5 flex items-center gap-1 text-[11px] text-rose-700 dark:text-rose-400">
+                        <AlertCircle className="w-3 h-3 text-rose-600 dark:text-rose-400 shrink-0" />
                         <span>{errorThis}</span>
                       </div>
                     )}
@@ -746,25 +757,25 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         <div className="py-6 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-semibold text-stone-400">02</span>
-              <span className="text-stone-300 font-mono">/</span>
-              <h2 className="font-semibold text-sm sm:text-base text-stone-900">
+              <span className="font-mono text-xs font-semibold text-stone-400 dark:text-stone-500">02</span>
+              <span className="text-stone-300 dark:text-stone-700 font-mono">/</span>
+              <h2 className="font-semibold text-sm sm:text-base text-stone-900 dark:text-white">
                 {t.locationTitle}
               </h2>
             </div>
 
             {/* Segmented Mode Switcher */}
-            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-lg self-start sm:self-auto">
+            <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-900 p-1 rounded-lg self-start sm:self-auto border border-transparent dark:border-stone-800">
               <button
                 type="button"
                 onClick={() => handleTabSwitch('gps')}
                 className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                   locationTab === 'gps'
-                    ? 'bg-white text-stone-950 shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900'
+                    ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-white shadow-2xs'
+                    : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
                 }`}
               >
-                <Navigation className="w-3.5 h-3.5 text-stone-600" />
+                <Navigation className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />
                 <span>{t.locationTabGps}</span>
               </button>
               <button
@@ -772,19 +783,19 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 onClick={() => handleTabSwitch('manual')}
                 className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                   locationTab === 'manual'
-                    ? 'bg-white text-stone-950 shadow-2xs'
-                    : 'text-stone-600 hover:text-stone-900'
+                    ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-white shadow-2xs'
+                    : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
                 }`}
               >
-                <Map className="w-3.5 h-3.5 text-stone-600" />
+                <Map className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />
                 <span>{t.locationTabManual}</span>
               </button>
             </div>
           </div>
 
           {locationError && (
-            <div className="p-2.5 rounded-lg border border-amber-200 bg-amber-50/50 text-xs text-amber-900 flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="p-2.5 rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/40 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <span>{locationError}</span>
             </div>
           )}
@@ -795,13 +806,13 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               <div className="flex items-center justify-between py-1 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                  <span className="font-semibold text-stone-900">
+                  <span className="font-semibold text-stone-900 dark:text-stone-100">
                     {selectedBarangay && selectedMunicipality
                       ? `Brgy. ${selectedBarangay}, ${selectedMunicipality}`
                       : 'Rizal Province'}
                   </span>
                   {accuracyMeters !== null && (
-                    <span className="text-stone-400 font-mono text-[11px]">
+                    <span className="text-stone-400 dark:text-stone-500 font-mono text-[11px]">
                       (±{accuracyMeters}m)
                     </span>
                   )}
@@ -811,7 +822,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   type="button"
                   onClick={acquireGpsLocation}
                   disabled={isLocating}
-                  className="text-stone-500 hover:text-stone-900 font-semibold text-xs flex items-center gap-1 cursor-pointer"
+                  className="text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white font-semibold text-xs flex items-center gap-1 cursor-pointer"
                 >
                   <RefreshCw className={`w-3 h-3 ${isLocating ? 'animate-spin' : ''}`} />
                   <span>Sync GPS</span>
@@ -819,12 +830,12 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               </div>
 
               {isOutOfJurisdiction && (
-                <div className="text-xs text-amber-900 py-1 space-y-0.5">
-                  <div className="flex items-center gap-1.5 font-semibold text-amber-950">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <div className="text-xs text-amber-900 dark:text-amber-300 py-1 space-y-0.5">
+                  <div className="flex items-center gap-1.5 font-semibold text-amber-950 dark:text-amber-200">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                     <span>{lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}</span>
                   </div>
-                  <p className="text-stone-600 pl-5 leading-normal">
+                  <p className="text-stone-600 dark:text-stone-400 pl-5 leading-normal">
                     {lang === 'fil'
                       ? 'Ang napiling lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal (PG-ENRO). Pakisuyong ilagay ang pin sa loob ng Rizal.'
                       : 'The selected location is outside the jurisdiction of Rizal Province (PG-ENRO). Please place the pin inside Rizal.'}
@@ -833,13 +844,13 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               )}
 
               {detectedProtectedZone && !isOutOfJurisdiction && (
-                <div className="p-2.5 bg-stone-50 rounded-lg border border-stone-200 text-stone-800 text-xs flex items-start gap-2 shadow-2xs">
-                  <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                <div className="p-2.5 bg-stone-50 dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 text-xs flex items-start gap-2 shadow-2xs">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <div className="space-y-0.5 min-w-0">
-                    <span className="font-semibold text-stone-900 block leading-tight">
+                    <span className="font-semibold text-stone-900 dark:text-stone-100 block leading-tight">
                       {t.protectedZoneNoticeResident}: {detectedProtectedZone.shortName}
                     </span>
-                    <p className="text-[11px] text-stone-600 leading-snug">
+                    <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
                       {detectedProtectedZone.legalNote}
                     </p>
                   </div>
@@ -847,26 +858,34 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               )}
 
               <div className="flex items-center justify-between pb-1">
-                <span className="text-xs font-semibold text-stone-500">Map View</span>
-                <div className="flex items-center gap-1 bg-stone-100 p-0.5 rounded-md text-[11px] font-semibold">
+                <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">Map View</span>
+                <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-900 p-0.5 rounded-md text-[11px] font-semibold border border-transparent dark:border-stone-800">
                   <button
                     type="button"
-                    onClick={() => setBasemapMode('street')}
-                    className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'street' ? 'bg-stone-900 text-white shadow-2xs' : 'text-stone-600 hover:text-stone-900'}`}
+                    onClick={() => setBasemapMode(theme === 'dark' ? 'dark' : 'street')}
+                    className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                      basemapMode === 'street' || basemapMode === 'dark'
+                        ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
+                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                    }`}
                   >
-                    Street
+                    {theme === 'dark' ? 'Dark' : 'Street'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setBasemapMode('satellite')}
-                    className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'satellite' ? 'bg-stone-900 text-white shadow-2xs' : 'text-stone-600 hover:text-stone-900'}`}
+                    className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                      basemapMode === 'satellite'
+                        ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
+                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                    }`}
                   >
                     Satellite
                   </button>
                 </div>
               </div>
 
-              <div className="relative isolate z-0 rounded-lg overflow-hidden border border-stone-200">
+              <div className="relative isolate z-0 rounded-lg overflow-hidden border border-stone-200 dark:border-stone-800">
                 <LeafletMap
                   mode="picker"
                   center={coordinates}
@@ -883,8 +902,8 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   className="h-56 sm:h-64 w-full"
                 />
                 {isLocating && (
-                  <div className="absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center text-xs font-semibold text-stone-900 gap-2 z-10">
-                    <RefreshCw className="w-4 h-4 animate-spin text-stone-700" />
+                  <div className="absolute inset-0 bg-white/80 dark:bg-stone-950/80 backdrop-blur-xs flex items-center justify-center text-xs font-semibold text-stone-900 dark:text-white gap-2 z-10">
+                    <RefreshCw className="w-4 h-4 animate-spin text-stone-700 dark:text-emerald-400" />
                     <span>{t.locating}</span>
                   </div>
                 )}
@@ -897,7 +916,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             <div className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">
+                  <label className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1">
                     {t.manualMunicipalityLabel}
                   </label>
                   <select
@@ -911,7 +930,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                         setLocationSource('manual_pin');
                       }
                     }}
-                    className="w-full text-xs font-medium px-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-1 focus:ring-stone-900 focus:outline-none"
+                    className="w-full text-xs font-medium px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg text-stone-900 dark:text-white focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 focus:outline-none"
                   >
                     <option value="">{t.selectMunicipality}</option>
                     {RIZAL_MUNICIPALITIES.map((mun) => (
@@ -923,7 +942,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">
+                  <label className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1">
                     {t.manualBarangayLabel}
                   </label>
                   <select
@@ -943,7 +962,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                       }
                     }}
                     disabled={!selectedMunicipality}
-                    className="w-full text-xs font-medium px-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-1 focus:ring-stone-900 focus:outline-none disabled:bg-stone-50 disabled:text-stone-400"
+                    className="w-full text-xs font-medium px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg text-stone-900 dark:text-white focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 focus:outline-none disabled:bg-stone-50 dark:disabled:bg-stone-950 disabled:text-stone-400 dark:disabled:text-stone-600"
                   >
                     <option value="">
                       {selectedMunicipality ? t.selectBarangayActive : t.selectBarangay}
@@ -969,12 +988,12 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               </div>
 
               {isOutOfJurisdiction && (
-                <div className="text-xs text-amber-900 py-1 space-y-0.5">
-                  <div className="flex items-center gap-1.5 font-semibold text-amber-950">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <div className="text-xs text-amber-900 dark:text-amber-300 py-1 space-y-0.5">
+                  <div className="flex items-center gap-1.5 font-semibold text-amber-950 dark:text-amber-200">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                     <span>{lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}</span>
                   </div>
-                  <p className="text-stone-600 pl-5 leading-normal">
+                  <p className="text-stone-600 dark:text-stone-400 pl-5 leading-normal">
                     {lang === 'fil'
                       ? 'Ang napiling lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal (PG-ENRO). Pakisuyong ilagay ang pin sa loob ng Rizal.'
                       : 'The selected location is outside the jurisdiction of Rizal Province (PG-ENRO). Please place the pin inside Rizal.'}
@@ -982,35 +1001,43 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 </div>
               )}
 
-              <div className="flex items-center justify-between text-xs text-stone-500">
-                <span className="flex items-center gap-1 text-[11px] text-stone-600">
-                  <MapPin className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+              <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+                <span className="flex items-center gap-1 text-[11px] text-stone-600 dark:text-stone-400">
+                  <MapPin className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 shrink-0" />
                   {t.tapToPinHint}
                 </span>
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-0.5 bg-stone-100 p-0.5 rounded-md text-[11px] font-semibold">
+                  <div className="flex items-center gap-0.5 bg-stone-100 dark:bg-stone-900 p-0.5 rounded-md text-[11px] font-semibold border border-transparent dark:border-stone-800">
                     <button
                       type="button"
-                      onClick={() => setBasemapMode('street')}
-                      className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'street' ? 'bg-stone-900 text-white shadow-2xs' : 'text-stone-600 hover:text-stone-900'}`}
+                      onClick={() => setBasemapMode(theme === 'dark' ? 'dark' : 'street')}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                        basemapMode === 'street' || basemapMode === 'dark'
+                          ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
+                          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                      }`}
                     >
-                      Street
+                      {theme === 'dark' ? 'Dark' : 'Street'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setBasemapMode('satellite')}
-                      className={`px-2 py-0.5 rounded transition cursor-pointer ${basemapMode === 'satellite' ? 'bg-stone-900 text-white shadow-2xs' : 'text-stone-600 hover:text-stone-900'}`}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                        basemapMode === 'satellite'
+                          ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
+                          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                      }`}
                     >
                       Satellite
                     </button>
                   </div>
-                  <span className="text-[11px] text-stone-400 font-mono">
+                  <span className="text-[11px] text-stone-400 dark:text-stone-500 font-mono">
                     {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
                   </span>
                 </div>
               </div>
 
-              <div className="relative isolate z-0 rounded-lg overflow-hidden border border-stone-200">
+              <div className="relative isolate z-0 rounded-lg overflow-hidden border border-stone-200 dark:border-stone-800">
                 <LeafletMap
                   mode="picker"
                   center={coordinates}
@@ -1035,15 +1062,15 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         <div className="py-6 space-y-3">
           <div className="flex items-baseline justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-semibold text-stone-400">03</span>
-              <span className="text-stone-300 font-mono">/</span>
-              <h2 className="font-semibold text-sm sm:text-base text-stone-900">
+              <span className="font-mono text-xs font-semibold text-stone-400 dark:text-stone-500">03</span>
+              <span className="text-stone-300 dark:text-stone-700 font-mono">/</span>
+              <h2 className="font-semibold text-sm sm:text-base text-stone-900 dark:text-white">
                 {t.descriptionTitle}
               </h2>
             </div>
             <span
               className={`text-xs font-mono ${
-                description.length > 450 ? 'text-amber-700 font-bold' : 'text-stone-400'
+                description.length > 450 ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-stone-400 dark:text-stone-500'
               }`}
             >
               {500 - description.length} {t.charsRemaining}
@@ -1056,11 +1083,11 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             rows={3}
             required
             placeholder={t.descriptionPlaceholder}
-            className="w-full px-3.5 py-2.5 text-sm bg-stone-50/50 hover:bg-stone-50 focus:bg-white border border-stone-200 rounded-lg focus:ring-1 focus:ring-stone-900 focus:border-stone-900 focus:outline-none transition placeholder:text-stone-400 text-stone-900"
+            className="w-full px-3.5 py-2.5 text-sm bg-stone-50/50 dark:bg-stone-900/60 hover:bg-stone-50 dark:hover:bg-stone-900 focus:bg-white dark:focus:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 focus:outline-none transition placeholder:text-stone-400 dark:placeholder:text-stone-500 text-stone-900 dark:text-white"
           />
 
-          <p className="text-[11px] text-stone-400 flex items-center gap-1.5">
-            <Info className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+          <p className="text-[11px] text-stone-400 dark:text-stone-500 flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
             <span>{t.untrustedInputNotice}</span>
           </p>
         </div>
@@ -1068,9 +1095,9 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         {/* Step 4: Optional Category Hint */}
         <div className="py-6 space-y-3">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-semibold text-stone-400">04</span>
-            <span className="text-stone-300 font-mono">/</span>
-            <label className="font-semibold text-sm sm:text-base text-stone-900">
+            <span className="font-mono text-xs font-semibold text-stone-400 dark:text-stone-500">04</span>
+            <span className="text-stone-300 dark:text-stone-700 font-mono">/</span>
+            <label className="font-semibold text-sm sm:text-base text-stone-900 dark:text-white">
               {t.categoryHintLabel}
             </label>
           </div>
@@ -1088,8 +1115,8 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                     onClick={() => setCategoryHint(isSelected ? '' : catKey)}
                     className={`px-3 py-1.5 rounded-full text-xs transition cursor-pointer ${
                       isSelected
-                        ? 'bg-stone-900 text-white font-semibold shadow-2xs'
-                        : 'bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium'
+                        ? 'bg-stone-900 dark:bg-emerald-600 text-white font-semibold shadow-2xs'
+                        : 'bg-stone-100 dark:bg-stone-900 hover:bg-stone-200 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 font-medium border border-transparent dark:border-stone-800'
                     }`}
                   >
                     <span>{lang === 'fil' ? cat.labelFil : cat.labelEn}</span>
@@ -1116,8 +1143,8 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         {/* Submit & Compliance */}
         <div className="pt-6 space-y-3">
           {submitError && (
-            <div className="flex items-center gap-1.5 text-xs text-rose-700 py-1">
-              <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+            <div className="flex items-center gap-1.5 text-xs text-rose-700 dark:text-rose-400 py-1">
+              <AlertCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
               <span>{submitError}</span>
             </div>
           )}
@@ -1131,11 +1158,11 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               isOutOfJurisdiction ||
               !rateLimitInfo.allowed
             }
-            className="w-full py-3.5 px-6 bg-stone-900 hover:bg-black active:bg-stone-950 disabled:bg-stone-200 disabled:text-stone-400 text-white font-semibold text-sm rounded-lg shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3.5 px-6 bg-stone-900 hover:bg-black active:bg-stone-950 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white text-white font-semibold text-sm rounded-lg shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:bg-stone-200 disabled:text-stone-500 dark:disabled:bg-stone-800 dark:disabled:text-stone-500 disabled:cursor-not-allowed"
           >
             {!rateLimitInfo.allowed ? (
               <>
-                <Lock className="w-4 h-4 text-stone-400" />
+                <Lock className="w-4 h-4 text-stone-400 dark:text-stone-500" />
                 <span>
                   {t.cooldownNotice} ({formatCooldownTime(rateLimitInfo.remainingSeconds)})
                 </span>
@@ -1153,8 +1180,8 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             )}
           </button>
 
-          <div className="text-[11px] text-stone-400 text-center leading-relaxed">
-            <span className="font-semibold text-stone-600">RA 10173 Protected: </span>
+          <div className="text-[11px] text-stone-400 dark:text-stone-500 text-center leading-relaxed">
+            <span className="font-semibold text-stone-600 dark:text-stone-300">RA 10173 Protected: </span>
             {t.privacyNotice}
           </div>
         </div>

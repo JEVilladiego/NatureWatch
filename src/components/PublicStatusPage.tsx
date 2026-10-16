@@ -86,21 +86,21 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
     switch (status) {
       case 'resolved':
         return (
-          <span className="px-2.5 py-1 bg-stone-100 text-stone-900 border border-stone-200 font-semibold text-xs rounded-md flex items-center gap-1.5">
+          <span className="px-2.5 py-1 bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100 border border-stone-200 dark:border-stone-700 font-semibold text-xs rounded-md flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
             <span>{t.statusResolved}</span>
           </span>
         );
       case 'in_progress':
         return (
-          <span className="px-2.5 py-1 bg-stone-100 text-stone-900 border border-stone-200 font-semibold text-xs rounded-md flex items-center gap-1.5">
+          <span className="px-2.5 py-1 bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100 border border-stone-200 dark:border-stone-700 font-semibold text-xs rounded-md flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
             <span>{t.statusInProgress}</span>
           </span>
         );
       default:
         return (
-          <span className="px-2.5 py-1 bg-stone-100 text-stone-900 border border-stone-200 font-semibold text-xs rounded-md flex items-center gap-1.5">
+          <span className="px-2.5 py-1 bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100 border border-stone-200 dark:border-stone-700 font-semibold text-xs rounded-md flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
             <span>{t.statusPending}</span>
           </span>
@@ -111,28 +111,28 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6">
       {/* Top Utility Bar */}
-      <div className="flex items-center justify-between pb-4 border-b border-stone-200">
+      <div className="flex items-center justify-between pb-4 border-b border-stone-200 dark:border-stone-800">
         {!isOfficial && onBackToReport ? (
           <button
             onClick={onBackToReport}
-            className="inline-flex items-center gap-1.5 font-semibold text-xs text-stone-700 hover:text-stone-950 cursor-pointer"
+            className="inline-flex items-center gap-1.5 font-semibold text-xs text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{lang === 'fil' ? 'Bumalik sa Pag-uulat' : 'Back to Reporting'}</span>
           </button>
         ) : (
-          <span className="font-semibold text-xs text-stone-500">
+          <span className="font-semibold text-xs text-stone-500 dark:text-stone-400">
             {lang === 'fil' ? 'Suriin ang Status ng Code' : 'Reference Code Lookup'}
           </span>
         )}
-        <span className="text-[11px] font-mono text-stone-400">RA 10173 Protected</span>
+        <span className="text-[11px] font-mono text-stone-400 dark:text-stone-500">RA 10173 Protected</span>
       </div>
 
       <div className="pt-6 pb-1">
-        <h1 className="font-bold text-2xl sm:text-3xl text-stone-900 tracking-tight leading-tight">
+        <h1 className="font-bold text-2xl sm:text-3xl text-stone-900 dark:text-white tracking-tight leading-tight">
           {lang === 'fil' ? 'Subaybayan ang Katayuan ng Ulat' : 'Track Incident Report Status'}
         </h1>
-        <p className="text-sm text-stone-600 mt-1.5">
+        <p className="text-sm text-stone-600 dark:text-stone-400 mt-1.5">
           {lang === 'fil'
             ? 'Ilagay ang iyong Reference Code upang makita ang kasalukuyang opisyal na aksyon ng MENRO.'
             : 'Enter your Reference Code to view current municipal action.'}
@@ -154,34 +154,34 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             placeholder="Hal. BK-7K2M9"
-            className="w-full pl-10 pr-4 py-2.5 text-sm font-mono uppercase bg-white border border-stone-200 rounded-lg focus:ring-1 focus:ring-stone-900 focus:outline-none"
+            className="w-full pl-10 pr-4 py-2.5 text-sm font-mono uppercase bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-stone-600 focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 focus:outline-none"
           />
         </div>
         <button
           type="submit"
           disabled={loading || !code.trim()}
-          className="px-5 py-2.5 bg-stone-900 hover:bg-black active:bg-stone-950 disabled:bg-stone-200 disabled:text-stone-400 text-white font-semibold text-xs rounded-lg shadow-2xs transition cursor-pointer"
+          className="px-5 py-2.5 bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 active:bg-stone-950 disabled:bg-stone-200 dark:disabled:bg-stone-800 disabled:text-stone-400 dark:disabled:text-stone-600 text-white font-semibold text-xs rounded-lg shadow-2xs transition cursor-pointer"
         >
           {loading ? 'Searching...' : 'Search'}
         </button>
       </form>
 
       {error && (
-        <div className="mt-4 flex items-center gap-1.5 text-xs text-rose-700">
-          <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+        <div className="mt-4 flex items-center gap-1.5 text-xs text-rose-700 dark:text-rose-400">
+          <AlertCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {result && (
-        <div className="mt-8 border border-stone-200 rounded-xl p-5 sm:p-6 space-y-6 bg-white shadow-2xs">
+        <div className="mt-8 border border-stone-200 dark:border-stone-800 rounded-xl p-5 sm:p-6 space-y-6 bg-white dark:bg-stone-900 shadow-2xs">
           {/* Reference & Badge Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-stone-100 gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-stone-100 dark:border-stone-800 gap-3">
             <div>
-              <span className="text-[11px] font-mono uppercase tracking-widest text-stone-400 block">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500 block">
                 Reference Code
               </span>
-              <div className="text-2xl sm:text-3xl font-mono font-bold text-stone-950 mt-0.5 tracking-wider">
+              <div className="text-2xl sm:text-3xl font-mono font-bold text-stone-950 dark:text-white mt-0.5 tracking-wider">
                 {result.referenceCode}
               </div>
             </div>
@@ -191,27 +191,27 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
           {/* Key Metadata Row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div>
-              <span className="font-mono text-[11px] uppercase tracking-wider text-stone-400 block">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-stone-400 dark:text-stone-500 block">
                 Location / LGU
               </span>
-              <span className="font-semibold text-stone-900 mt-0.5 block text-sm">
+              <span className="font-semibold text-stone-900 dark:text-stone-100 mt-0.5 block text-sm">
                 {[result.barangay, result.municipality || 'Rizal Province'].filter(Boolean).join(', ')}
               </span>
             </div>
             <div>
-              <span className="font-mono text-[11px] uppercase tracking-wider text-stone-400 block">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-stone-400 dark:text-stone-500 block">
                 Date Reported
               </span>
-              <span className="font-semibold text-stone-900 mt-0.5 block text-sm">
+              <span className="font-semibold text-stone-900 dark:text-stone-100 mt-0.5 block text-sm">
                 {new Date(result.createdAt).toLocaleDateString()}
               </span>
             </div>
             {result.finalCategory && (
               <div>
-                <span className="font-mono text-[11px] uppercase tracking-wider text-stone-400 block">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-stone-400 dark:text-stone-500 block">
                   Classification
                 </span>
-                <span className="font-semibold text-stone-900 mt-0.5 block text-sm uppercase">
+                <span className="font-semibold text-stone-900 dark:text-stone-100 mt-0.5 block text-sm uppercase">
                   {result.finalCategory.replace(/_/g, ' ')}
                 </span>
               </div>
@@ -220,24 +220,24 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
 
           {/* Action Timeline */}
           {result.statusHistory && result.statusHistory.length > 0 && (
-            <div className="border-t border-stone-100 pt-5 space-y-4">
-              <h3 className="text-xs font-semibold text-stone-900">
+            <div className="border-t border-stone-100 dark:border-stone-800 pt-5 space-y-4">
+              <h3 className="text-xs font-semibold text-stone-900 dark:text-stone-100">
                 Official Action Timeline
               </h3>
-              <div className="space-y-4 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-stone-200">
+              <div className="space-y-4 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-stone-200 dark:before:bg-stone-800">
                 {result.statusHistory.map((item, idx) => (
                   <div key={idx} className="relative pl-6 text-xs">
-                    <div className="absolute left-1 top-1.5 w-2 h-2 rounded-full bg-stone-900" />
+                    <div className="absolute left-1 top-1.5 w-2 h-2 rounded-full bg-stone-900 dark:bg-emerald-500" />
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-stone-900 capitalize text-sm">
+                      <span className="font-bold text-stone-900 dark:text-white capitalize text-sm">
                         {item.status.replace(/_/g, ' ')}
                       </span>
-                      <span className="text-[11px] text-stone-400 font-mono">
+                      <span className="text-[11px] text-stone-400 dark:text-stone-500 font-mono">
                         {new Date(item.changedAt).toLocaleString()}
                       </span>
                     </div>
                     {item.notes && (
-                      <p className="text-stone-600 mt-1 italic text-xs">
+                      <p className="text-stone-600 dark:text-stone-400 mt-1 italic text-xs">
                         "{item.notes}"
                       </p>
                     )}
@@ -248,10 +248,10 @@ export const PublicStatusPage: React.FC<PublicStatusPageProps> = ({
           )}
 
           {/* Footnote Privacy Note */}
-          <div className="border-t border-stone-100 pt-4 text-[11px] text-stone-400 leading-relaxed flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+          <div className="border-t border-stone-100 dark:border-stone-800 pt-4 text-[11px] text-stone-400 dark:text-stone-500 leading-relaxed flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
             <span>
-              <strong className="text-stone-600 font-semibold">RA 10173 Protected: </strong>
+              <strong className="text-stone-600 dark:text-stone-300 font-semibold">RA 10173 Protected: </strong>
               Photos and GPS telemetry are restricted from public disclosure to protect resident anonymity.
             </span>
           </div>

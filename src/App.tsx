@@ -17,7 +17,20 @@ import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<Tab>('report');
-  const [lang, setLang] = useState<Language>('fil');
+  const [lang, setLangState] = useState<Language>(() => {
+    try {
+      const saved = localStorage.getItem('naturewatch_lang');
+      if (saved === 'fil' || saved === 'en') return saved;
+    } catch {}
+    return 'fil';
+  });
+
+  const setLang = (newLang: Language) => {
+    setLangState(newLang);
+    try {
+      localStorage.setItem('naturewatch_lang', newLang);
+    } catch {}
+  };
   const [statusLookupCode, setStatusLookupCode] = useState<string>('');
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
@@ -79,7 +92,7 @@ export default function App() {
   };
 
   return (
-    <div className={`bg-white flex flex-col font-sans text-stone-900 ${isFullMap ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+    <div className={`bg-white dark:bg-stone-950 flex flex-col font-sans text-stone-900 dark:text-stone-200 ${isFullMap ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
       {/* Primary Navigation Bar (Smoothly glides out of view in LikasMap GIS full-screen mode) */}
       <div
         className={`sticky top-0 z-50 w-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${
@@ -137,15 +150,15 @@ export default function App() {
 
       {/* Footer (hidden in Full Map mode to ensure edge-to-edge canvas) */}
       {!isFullMap && (
-        <footer className="bg-stone-50 text-stone-600 py-8 border-t border-stone-200 text-xs">
+        <footer className="bg-stone-50 dark:bg-stone-950 text-stone-600 dark:text-stone-400 py-8 border-t border-stone-200 dark:border-stone-850 text-xs">
           <div className="max-w-7xl mx-auto px-4 text-center space-y-1.5">
-            <p className="font-semibold text-stone-900 text-xs">
+            <p className="font-semibold text-stone-900 dark:text-stone-300 text-xs">
               NatureWatch • Provincial Government of Rizal Environment and Natural Resources Office (PG-ENRO)
             </p>
-            <p className="text-stone-500 text-[11px]">
+            <p className="text-stone-500 dark:text-stone-400 text-[11px]">
               Pamahalaang Lalawigan ng Rizal • Republic of the Philippines
             </p>
-            <div className="pt-2.5 text-[11px] text-stone-400 border-t border-stone-200 max-w-xl mx-auto">
+            <div className="pt-2.5 text-[11px] text-stone-400 dark:text-stone-500 border-t border-stone-200 dark:border-stone-850 max-w-xl mx-auto">
               Protektado sa ilalim ng Republic Act No. 10173 (Data Privacy Act of 2012). Walang personal na datos ng mamamayan ang kinokolekta.
             </div>
           </div>

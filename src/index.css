@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Inter', system-ui, -apple-system, sans-serif;
@@ -30,6 +32,14 @@
   --color-navy-800: #244460;
   --color-navy-900: #1b3348;
   --color-navy-950: #0f1e2e;
+
+  /* Carbon / Anthracite Grayish-Black Palette (replaces harsh pitch black with sophisticated matte carbon) */
+  --color-stone-950: #141517; /* Base carbon canvas */
+  --color-stone-900: #1c1d22; /* Primary carbon card surface */
+  --color-stone-850: #23252c; /* Elevated container surface */
+  --color-stone-800: #2b2e37; /* Interactive card / input wells */
+  --color-stone-750: #333642; /* Sub-surface hover */
+  --color-stone-700: #3b3f4d; /* High-definition carbon borders */
 }
 
 @layer base {
@@ -39,13 +49,52 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     background-color: #ffffff;
-    color: #1c1917;
+    color: #1c1d22;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .dark body {
+    background-color: #141517;
+    color: #c4c7cf;
   }
 
   ::selection {
     background-color: #c2dbcd;
     color: #0e2019;
   }
+
+  .dark ::selection {
+    background-color: #274d3b;
+    color: #e1ede6;
+  }
+}
+
+/* Soften harsh white text in dark mode to prevent eye strain, glare, and halation */
+.dark,
+:where(.dark, .dark *) {
+  --color-stone-100: #d4d7dc;
+  --color-stone-200: #b8bcc5;
+  --color-stone-300: #9da1ab;
+}
+
+.dark .dark\:text-white,
+:where(.dark, .dark *) .dark\:text-white {
+  color: #d8dade !important;
+}
+
+.dark .dark\:text-stone-100,
+:where(.dark, .dark *) .dark\:text-stone-100 {
+  color: #d0d3d9 !important;
+}
+
+.dark .dark\:text-stone-200,
+:where(.dark, .dark *) .dark\:text-stone-200 {
+  color: #b8bcc5 !important;
+}
+
+.dark .dark\:text-stone-300,
+:where(.dark, .dark *) .dark\:text-stone-300 {
+  color: #9da1ab !important;
 }
 
 /* Isolate Leaflet stacking context so tiles/controls never bleed into sticky navbars or modals */
@@ -68,6 +117,14 @@
 .non-rizal-jurisdiction-mask {
   mix-blend-mode: multiply;
   transition: fill 0.3s ease, fill-opacity 0.3s ease;
+}
+
+.dark .non-rizal-jurisdiction-mask {
+  mix-blend-mode: normal !important;
+  fill: #141517 !important;
+  fill-opacity: 0.76 !important;
+  stroke: #22c55e !important;
+  stroke-opacity: 0.9 !important;
 }
 
 /* Tactical Cartography: Gentle calming of raw tile saturation */
@@ -99,6 +156,12 @@
   color: #ffffff !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
   padding: 6px 10px !important;
+}
+
+.dark .tactical-map-tooltip {
+  background: rgba(20, 21, 23, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
 .tactical-map-tooltip.leaflet-tooltip-top::before {
@@ -135,6 +198,23 @@
   border-bottom: none !important;
 }
 
+/* Dark Leaflet Controls */
+.dark .leaflet-bar {
+  border-color: rgba(59, 63, 77, 0.8) !important;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.35) !important;
+}
+
+.dark .leaflet-bar a {
+  background-color: #1c1d22 !important;
+  color: #d4d4d8 !important;
+  border-bottom-color: #2b2e37 !important;
+}
+
+.dark .leaflet-bar a:hover {
+  background-color: #2b2e37 !important;
+  color: #22c55e !important;
+}
+
 .leaflet-top.leaflet-right {
   margin-top: 52px;
   margin-right: 12px;
@@ -152,9 +232,20 @@
   padding: 2px 6px !important;
 }
 
+.dark .leaflet-control-attribution {
+  background: rgba(20, 21, 23, 0.92) !important;
+  color: #9ca3af !important;
+  border-top-color: rgba(59, 63, 77, 0.7) !important;
+  border-left-color: rgba(59, 63, 77, 0.7) !important;
+}
+
 .leaflet-control-attribution a {
   color: #2a5342 !important;
   text-decoration: none !important;
+}
+
+.dark .leaflet-control-attribution a {
+  color: #4ade80 !important;
 }
 
 .leaflet-control-attribution a:hover {
@@ -171,8 +262,43 @@
   padding: 4px !important;
 }
 
+.dark .leaflet-popup-content-wrapper {
+  background: #1c1d22 !important;
+  color: #f4f4f5 !important;
+  border: 1px solid rgba(59, 63, 77, 0.6) !important;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark .leaflet-popup-content-wrapper strong {
+  color: #f4f4f5 !important;
+}
+
+.dark .nw-cluster-item {
+  background: #23252c !important;
+  border-color: #2b2e37 !important;
+  color: #e4e4e7 !important;
+}
+
+.dark .nw-cluster-item:hover {
+  background: #2b2e37 !important;
+  border-color: #3b3f4d !important;
+}
+
+.dark .nw-cluster-view-queue {
+  background: #2b2e37 !important;
+  color: #ffffff !important;
+}
+
+.dark .nw-cluster-view-queue:hover {
+  background: #333642 !important;
+}
+
 .leaflet-popup-tip {
   background: #ffffff !important;
+}
+
+.dark .leaflet-popup-tip {
+  background: #1c1d22 !important;
 }
 
 /* ========================================================= */
