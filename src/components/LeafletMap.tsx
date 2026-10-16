@@ -79,6 +79,7 @@ interface LeafletMapProps {
   maskNonRizal?: boolean;
   fitProvinceKey?: number | string;
   showProtectedZones?: boolean;
+  onSelectProtectedZone?: (zoneId: string) => void;
 }
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
@@ -100,6 +101,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   maskNonRizal,
   fitProvinceKey,
   showProtectedZones = true,
+  onSelectProtectedZone,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -434,6 +436,10 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             }
           } catch (e) {
             // Safe fallback
+          }
+          const zoneId = props.id || feature.id;
+          if (zoneId && onSelectProtectedZone) {
+            onSelectProtectedZone(String(zoneId));
           }
         });
       },

@@ -40,6 +40,8 @@ import {
   Trash2,
   Camera,
   Upload,
+  Trees,
+  Scale,
 } from 'lucide-react';
 import {
   IncidentReport,
@@ -90,50 +92,126 @@ interface CuratedProtectedZoneItem {
   shortName: string;
   category: 'nipas' | 'llda_zomap' | 'kba_georeserve' | 'local_mountain';
   categoryLabel: string;
+  type: string;
   color: string;
   lat: number;
   lng: number;
   zoom: number;
   municipality: string;
+  areaHectares: string;
+  elevation: string;
+  legalBasis: string;
+  prohibitions: string[];
+  penalties: string;
+  barangays: string[];
+  ecosystemRole: string;
+  polygon: [number, number][];
+}
+
+function isPointInPolygonRing(point: [number, number], ring: [number, number][]): boolean {
+  const [lng, lat] = point;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
 }
 
 const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
   // DENR-NIPAS
   {
     id: 'umrbpl',
-    name: 'Upper Marikina River Basin Protected Landscape',
+    name: 'Upper Marikina River Basin Protected Landscape (UMRBPL)',
     shortName: 'Upper Marikina Watershed',
     category: 'nipas',
     categoryLabel: 'DENR-NIPAS',
+    type: 'Protected Landscape',
     color: '#047857',
     lat: 14.6711,
     lng: 121.2139,
     zoom: 12,
     municipality: 'Rodriguez, Antipolo, San Mateo, Baras, Tanay',
+    areaHectares: '26,125.60 ha',
+    elevation: '120m – 1,469m ASL',
+    legalBasis: 'Executive Order No. 33 (1904), Presidential Proclamation No. 296 (2011), Republic Act No. 11038',
+    prohibitions: [
+      'Timber harvesting & unauthorized tree cutting',
+      'Slash-and-burn (kaingin) & charcoal making (ulingan)',
+      'Quarrying, gravel extraction & slope alteration',
+      'Motorized recreational trail blazes in core zones',
+      'Solid waste dumping & illegal structural expansion',
+    ],
+    penalties: 'Mandatory criminal prosecution under RA 11038 Sec. 21 with fines up to ₱5,000,000 and 6–12 years imprisonment.',
+    barangays: ['Mascap', 'Puray', 'San Rafael', 'Calawis', 'San Jose', 'San Juan', 'Pinugay', 'Pintong Bocawe', 'Cuyambay'],
+    ecosystemRole: 'Primary headwater catchment for Boso-Boso, Tayabasan, Wawa, and Puray sub-basins. Critical natural buffer mitigating flash floods down into Marikina and Metro Manila.',
+    polygon: [
+      [121.1750, 14.6550], [121.1920, 14.7150], [121.2150, 14.7600], [121.2480, 14.7950],
+      [121.3150, 14.8150], [121.3650, 14.7850], [121.3850, 14.7400], [121.3700, 14.6650],
+      [121.3350, 14.5950], [121.2850, 14.5750], [121.2350, 14.5900], [121.1950, 14.6250],
+      [121.1750, 14.6550]
+    ],
   },
   {
     id: 'kaliwa-river-forest-reserve',
-    name: 'Kaliwa River Forest Reserve',
+    name: 'Kaliwa River Forest Reserve (KRFR)',
     shortName: 'Kaliwa Forest Reserve',
     category: 'nipas',
     categoryLabel: 'DENR-NIPAS',
+    type: 'Forest Reserve',
     color: '#065f46',
     lat: 14.6167,
     lng: 121.3667,
     zoom: 12,
     municipality: 'Tanay (Rizal) / Gen. Nakar (Quezon)',
+    areaHectares: '~27,608 ha',
+    elevation: '200m – 1,200m ASL',
+    legalBasis: 'Presidential Proclamation No. 573 (1969) / Initial NIPAS Component',
+    prohibitions: [
+      'Commercial logging & illegal timber transport',
+      'Slash-and-burn agriculture (kaingin) in upland forests',
+      'Unpermitted road construction & river diversion',
+      'Wildlife poaching & bird trapping',
+    ],
+    penalties: 'Statutory imprisonment and fines under PD 705 (Revised Forestry Code) and RA 11038.',
+    barangays: ['Cayabu', 'Laiban', 'Sta. Ines', 'Sto. Niño', 'San Andres', 'Tinucan', 'Daraitan'],
+    ecosystemRole: 'Upland Sierra Madre headwater corridor sustaining the Kaliwa River system and ancestral domain territory of indigenous Dumagat-Remontado communities.',
+    polygon: [
+      [121.3050, 14.5800], [121.3120, 14.6400], [121.3350, 14.6950], [121.3850, 14.7250],
+      [121.4350, 14.6850], [121.4500, 14.6250], [121.4350, 14.5650], [121.3950, 14.5450],
+      [121.3450, 14.5500], [121.3050, 14.5800]
+    ],
   },
   {
     id: 'pamitinan-protected-landscape',
-    name: 'Pamitinan Protected Landscape',
+    name: 'Pamitinan Protected Landscape (PPL)',
     shortName: 'Pamitinan Landscape',
     category: 'nipas',
     categoryLabel: 'DENR-NIPAS',
+    type: 'Protected Landscape',
     color: '#0f766e',
     lat: 14.7339,
     lng: 121.1900,
     zoom: 14,
     municipality: 'Rodriguez (Montalban)',
+    areaHectares: '608.64 ha',
+    elevation: '80m – 426m ASL',
+    legalBasis: 'Presidential Proclamation No. 901 (1996), Republic Act No. 11038',
+    prohibitions: [
+      'Rock quarrying & limestone karst destruction',
+      'Disfiguring caves (Pamitinan Cave & geological formations)',
+      'Discharging waste into Wawa Gorge & Dam basin',
+      'Squatting & unauthorized permanent structures',
+    ],
+    penalties: 'Strict penalties under RA 11038 and National Cave Protection Act (RA 9072).',
+    barangays: ['San Rafael (Sitio Wawa)'],
+    ecosystemRole: 'Iconic geological water gap between Mt. Pamitinan and Mt. Binacayan, enclosing Wawa Dam, historical cavern networks, and riparian wildlife habitats.',
+    polygon: [
+      [121.1820, 14.7260], [121.1850, 14.7430], [121.1980, 14.7440], [121.2020, 14.7350],
+      [121.1970, 14.7240], [121.1880, 14.7230], [121.1820, 14.7260]
+    ],
   },
   {
     id: 'hinulugang-taktak-park',
@@ -141,97 +219,235 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     shortName: 'Hinulugang Taktak',
     category: 'nipas',
     categoryLabel: 'DENR-NIPAS',
+    type: 'Protected Landscape',
     color: '#b45309',
     lat: 14.5972,
     lng: 121.1653,
     zoom: 15,
     municipality: 'Antipolo City',
+    areaHectares: '3.20 ha',
+    elevation: '160m – 180m ASL',
+    legalBasis: 'Proclamation No. 330 (1952), RA 6964 (1990), Proclamation No. 412 (2000), RA 11038',
+    prohibitions: [
+      'Discharging untreated sewage & commercial runoff into Taktak River',
+      'Littering, plastic waste abandonment & open burning',
+      'Unauthorized commercial encroachment & informal structures',
+      'Tree hacking & floral vandalism',
+    ],
+    penalties: 'Fines up to ₱1,000,000 and mandatory environmental rehabilitation orders under RA 11038 and Clean Water Act (RA 9275).',
+    barangays: ['Dela Paz (Sitio Taktak)', 'Santa Cruz'],
+    ecosystemRole: 'Historical Antipolo pilgrimage waterfall and urban riparian sanctuary serving as a public ecological education and recreation park.',
+    polygon: [
+      [121.1610, 14.5980], [121.1710, 14.5990], [121.1730, 14.5900], [121.1620, 14.5890], [121.1610, 14.5980]
+    ],
   },
   {
     id: 'proc-1636-wildlife-sanctuary',
-    name: 'National Park, Wildlife Sanctuary & Game Preserve',
+    name: 'National Park, Wildlife Sanctuary & Game Preserve (Proc. 1636)',
     shortName: 'Proc. 1636 Sanctuary',
     category: 'nipas',
     categoryLabel: 'DENR-NIPAS',
+    type: 'Wildlife Sanctuary',
     color: '#115e59',
     lat: 14.7500,
     lng: 121.4722,
     zoom: 11,
-    municipality: 'Eastern Sierra Madre corridor',
+    municipality: 'Rodriguez, San Mateo, Antipolo, Baras, Tanay, Pililla',
+    areaHectares: '~46,310 ha (Multi-Provincial)',
+    elevation: '300m – 1,400m ASL',
+    legalBasis: 'Presidential Proclamation No. 1636 (April 18, 1977)',
+    prohibitions: [
+      'Hunting, capturing or trading wildlife (birds, mammals, reptiles)',
+      'Clearing forest cover for settlement or agriculture',
+      'Operating unregistered chainsaws & timber equipment',
+      'Mineral prospecting & commercial extraction',
+    ],
+    penalties: 'Criminal penalties under Wildlife Resources Conservation Act (RA 9147) and NIPAS Act.',
+    barangays: ['Puray', 'Calawis', 'Cuyambay', 'Daraitan', 'Sierra Madre High Ridge'],
+    ecosystemRole: 'Regional mega-biodiversity spine connecting the eastern highlands of Rizal to Bulacan, Laguna, and Quezon; habitat for endemic Philippine wildlife.',
+    polygon: [
+      [121.3600, 14.8500], [121.4200, 14.8800], [121.5100, 14.8400], [121.5200, 14.6500],
+      [121.4600, 14.5200], [121.4100, 14.5400], [121.4200, 14.6800], [121.3800, 14.7700],
+      [121.3600, 14.8500]
+    ],
   },
   {
     id: 'la-mesa-watershed-buffer',
-    name: 'La Mesa Watershed Reservation Buffer',
+    name: 'La Mesa Watershed Reservation Buffer (Rizal Flank)',
     shortName: 'La Mesa Buffer',
     category: 'nipas',
     categoryLabel: 'DENR-NIPAS',
+    type: 'Watershed Reservation',
     color: '#047857',
     lat: 14.7150,
     lng: 121.1450,
     zoom: 13,
     municipality: 'San Mateo & Rodriguez',
+    areaHectares: '~2,700 ha (Buffer Corridor)',
+    elevation: '100m – 350m ASL',
+    legalBasis: 'Presidential Proclamation No. 1336 & Executive Order No. 601',
+    prohibitions: [
+      'Commercial land conversion & unauthorized subdivisions',
+      'Industrial and chemical runoff into reservoir feeder streams',
+      'Illegal excavation, land leveling & soil dumping',
+      'Open burning & solid waste accumulation',
+    ],
+    penalties: 'Immediate cease-and-desist orders, structural demolition, and criminal prosecution under Water Code (PD 1067).',
+    barangays: ['Pintong Bocawe', 'Guinayang', 'Ampid', 'San Jose', 'Burgos'],
+    ecosystemRole: 'Direct catchment buffer protecting the last remaining rainforest parcel in the Metro Manila border, feeding raw water into the La Mesa Dam potable reservoir.',
+    polygon: [
+      [121.1350, 14.6900], [121.1380, 14.7350], [121.1550, 14.7450], [121.1620, 14.7250],
+      [121.1540, 14.6920], [121.1350, 14.6900]
+    ],
   },
   // LLDA ZOMAP
   {
     id: 'rayap-fish-sanctuary',
-    name: 'Rayap Fish Sanctuary (Talim Island)',
+    name: 'Rayap Fish Sanctuary (LLDA Central Bay)',
     shortName: 'Rayap Fish Sanctuary',
     category: 'llda_zomap',
     categoryLabel: 'LLDA ZOMAP',
+    type: 'Aquatic Fish Sanctuary',
     color: '#0284c7',
     lat: 14.3300,
     lng: 121.2500,
     zoom: 12,
     municipality: 'Binangonan, Cardona, Jalajala',
+    areaHectares: '5,000 ha (~5% of Laguna de Bay)',
+    elevation: '12.5m (Mean Lower Low Water)',
+    legalBasis: 'Republic Act No. 4826, LLDA Board Resolution No. 136 (Series of 2000)',
+    prohibitions: [
+      'Commercial fishpen & fishcage construction in open sanctuary',
+      'Motorized commercial trawling & destructive fishing gears',
+      'Toxic industrial discharge & chemical dumping',
+      'Reclaiming lake bed or creating artificial islets',
+    ],
+    penalties: 'Demolition of structures, vessel confiscation, and LLDA statutory fines under RA 4826 and Fisheries Code (RA 8550/10654).',
+    barangays: ['Rayap', 'Habagatan', 'Janosa', 'Subay', 'Malahi Island', 'Punta', 'Bayugo'],
+    ecosystemRole: 'Central Bay aquatic nursery and breeding sanctuary for native fish species (kanduli, ayungin, bangus) safeguarding the ecological equilibrium of Laguna de Bay.',
+    polygon: [
+      [121.3200, 14.3100], [121.2380, 14.3050], [121.2350, 14.3250], [121.2480, 14.3480],
+      [121.2650, 14.3650], [121.3150, 14.3580], [121.3250, 14.3350], [121.3200, 14.3100]
+    ],
   },
   {
     id: 'laguna-shoreland-buffer',
-    name: 'Laguna de Bay 12.5m Shoreland Buffer',
+    name: 'Laguna de Bay Protected Shoreland Buffer Zone (12.5m Contour)',
     shortName: 'Laguna 12.5m Buffer',
     category: 'llda_zomap',
     categoryLabel: 'LLDA ZOMAP',
+    type: 'Shoreland Buffer',
     color: '#2563eb',
     lat: 14.4500,
     lng: 121.2200,
     zoom: 11,
-    municipality: '9 Coastal LGUs',
+    municipality: '9 Coastal LGUs across Rizal',
+    areaHectares: '~4,200 ha (Linear Lakeshore Corridor)',
+    elevation: 'At or below 12.50m reglementary mark',
+    legalBasis: 'LLDA ZOMAP, Presidential Decree No. 1067, LLDA Res. 136',
+    prohibitions: [
+      'Unauthorized reclamation & backfilling of shoreline wetlands',
+      'Dumping municipal solid waste & construction debris',
+      'Direct discharge of untreated sewage & septic overflow',
+      'Building non-compliant structures within public easement',
+    ],
+    penalties: 'Administrative fines, summary eviction, and demolition by LLDA and Provincial Government of Rizal.',
+    barangays: ['Littoral wetlands across Taytay, Angono, Binangonan, Cardona, Morong, Baras, Tanay, Pililla, Jalajala'],
+    ecosystemRole: 'Natural flood attenuation buffer, filtration zone for terrestrial runoff entering Laguna de Bay, and coastal wetland bird habitat.',
+    polygon: [
+      [121.1450, 14.5200], [121.1700, 14.5250], [121.1980, 14.4850], [121.2250, 14.4600],
+      [121.2550, 14.4850], [121.2900, 14.4800], [121.3250, 14.4500], [121.3400, 14.4100],
+      [121.3250, 14.3600], [121.2900, 14.4200], [121.2500, 14.4400], [121.2150, 14.4250],
+      [121.1850, 14.4450], [121.1600, 14.4800], [121.1450, 14.5200]
+    ],
   },
   // KBA & Georeserves
   {
     id: 'mounts-irid-angilo-kba',
-    name: 'Mounts Irid–Angilo & Binuang KBA (9720)',
+    name: 'Mounts Irid–Angilo & Binuang Key Biodiversity Area (KBA 9720)',
     shortName: 'Mts. Irid–Angilo KBA',
     category: 'kba_georeserve',
     categoryLabel: 'KBA / Karst',
+    type: 'Key Biodiversity Area',
     color: '#6366f1',
     lat: 14.7889,
     lng: 121.3383,
     zoom: 12,
     municipality: 'Rodriguez (Puray / San Rafael)',
+    areaHectares: '170,572 ha (Regional KBA 9720)',
+    elevation: '400m – 1,469m ASL (Highest in Rizal)',
+    legalBasis: 'DENR-BMB National KBA Directory, RA 8371 (IPRA)',
+    prohibitions: [
+      'Unlawful entry into ancestral domain without Free, Prior and Informed Consent (FPIC)',
+      'Poaching endemic montane wildlife & rare orchid harvesting',
+      'Illegal logging of old-growth dipterocarp forests',
+      'Unpermitted mining or mineral exploratory work',
+    ],
+    penalties: 'Severe penal prosecution under IPRA Law (RA 8371) and National Integrated Protected Areas System.',
+    barangays: ['Puray', 'San Rafael', 'Mt. Irid Summit', 'Mt. Tukduan Banoi'],
+    ecosystemRole: 'Crowning mountain massif of Rizal Province; pristine cloud forest and primary refuge for threatened Sierra Madre avian and mammalian species.',
+    polygon: [
+      [121.2650, 14.7600], [121.2850, 14.8350], [121.3550, 14.8600], [121.3950, 14.8250],
+      [121.3800, 14.7600], [121.3200, 14.7450], [121.2650, 14.7600]
+    ],
   },
   {
     id: 'masungi-georeserve',
-    name: 'Masungi Georeserve & Karst Area',
+    name: 'Masungi Georeserve & Karst Conservation Area',
     shortName: 'Masungi Georeserve',
     category: 'kba_georeserve',
     categoryLabel: 'KBA / Karst',
+    type: 'Karst Georeserve',
     color: '#16a34a',
     lat: 14.5986,
     lng: 121.3183,
     zoom: 13,
     municipality: 'Baras & Tanay',
+    areaHectares: '~2,700 ha (Lot A & Restoration Area)',
+    elevation: '300m – 680m ASL',
+    legalBasis: 'DENR-Masungi Reforestation Agreement, DAO 96-37, Cave Protection Act',
+    prohibitions: [
+      'Quarrying, limestone blasting & mechanical rock crushing',
+      'Illegal fencing, barbed wire enclosures & land-grabbing',
+      'Armed intimidation of environmental rangers & personnel',
+      'Unpermitted construction of private resorts & piggery waste',
+    ],
+    penalties: 'Permanent revocation of ECCs, criminal charges under NIPAS Act, Cave Act (RA 9072), and Provincial Ordinances.',
+    barangays: ['Pinugay (Baras)', 'Cuyambay (Tanay)'],
+    ecosystemRole: '66-million-year-old Paleocene limestone karst sanctuary acting as natural water catchment divide between the Marikina River and Kaliwa River systems.',
+    polygon: [
+      [121.3020, 14.5880], [121.3120, 14.6150], [121.3340, 14.6160], [121.3400, 14.5940],
+      [121.3250, 14.5820], [121.3080, 14.5810], [121.3020, 14.5880]
+    ],
   },
   {
     id: 'angono-binangonan-petroglyphs',
-    name: 'Angono–Binangonan Petroglyphs Reserve',
+    name: 'Angono–Binangonan Petroglyphs Site & Micro-Forest',
     shortName: 'Petroglyphs Reserve',
     category: 'kba_georeserve',
     categoryLabel: 'KBA / Karst',
+    type: 'Cultural-Ecological Reserve',
     color: '#c2410c',
     lat: 14.5328,
     lng: 121.1872,
     zoom: 15,
     municipality: 'Binangonan & Angono',
+    areaHectares: '~12 ha (Core & Forest Buffer)',
+    elevation: '140m – 210m ASL',
+    legalBasis: 'Presidential Decree No. 260 (1973), Proclamation No. 2146',
+    prohibitions: [
+      'Defacing, scratching, or painting rock art panels',
+      'Vandalism, graffiti & unauthorized archaeological digging',
+      'Quarrying & dynamite blasting in secondary forest buffer',
+      'Littering & unattended open flames near shelter',
+    ],
+    penalties: 'Mandatory criminal prosecution under National Cultural Heritage Act (RA 10066) with heavy fines and prison terms.',
+    barangays: ['Bilibiran (Binangonan)', 'Mahabang Parang (Angono)'],
+    ecosystemRole: 'Oldest known prehistoric rock art in the Philippines (circa 3000 BC) set within a preserved volcanic tuff rock shelter and secondary biodiversity grove.',
+    polygon: [
+      [121.1810, 14.5290], [121.1820, 14.5380], [121.1940, 14.5390], [121.1950, 14.5280],
+      [121.1870, 14.5260], [121.1810, 14.5290]
+    ],
   },
   // Local Mountain Watersheds
   {
@@ -240,11 +456,29 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     shortName: 'Mt. Tagapo Sanctuary',
     category: 'local_mountain',
     categoryLabel: 'Local Mountain',
+    type: 'Local Mountain Reserve',
     color: '#059669',
     lat: 14.3310,
     lng: 121.2280,
     zoom: 13,
     municipality: 'Binangonan & Cardona (Talim)',
+    areaHectares: '~1,200 ha (Talim Mountain Spine)',
+    elevation: '438 MASL',
+    legalBasis: 'Binangonan & Cardona Municipal Ecological Reserve Ordinances',
+    prohibitions: [
+      'Tree cutting & harvesting endemic bamboo/timber',
+      'Open burning (siga) & setting brushfires on grass slopes',
+      'Quarrying volcanic basalt & unauthorized excavation',
+      'Unregulated mountaineering & leaving non-biodegradable trash',
+    ],
+    penalties: 'Municipal statutory fines, mandatory community ecological service, and blacklisting from Talim ecotourism.',
+    barangays: ['Janosa', 'Sapang', 'Kaytome', 'Binitagan', 'Rayap', 'Tuna', 'Balibago', 'Subay'],
+    ecosystemRole: 'Heart of Talim Island; cone-shaped volcanic peak ("Susong Dalaga") acting as the primary island watershed and microclimate regulator.',
+    polygon: [
+      [121.2160, 14.3680], [121.2280, 14.3690], [121.2380, 14.3610], [121.2430, 14.3450],
+      [121.2420, 14.3250], [121.2320, 14.3150], [121.2180, 14.3200], [121.2120, 14.3380],
+      [121.2140, 14.3580], [121.2160, 14.3680]
+    ],
   },
   {
     id: 'mt-sembrano-watershed',
@@ -252,11 +486,28 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     shortName: 'Mt. Sembrano Watershed',
     category: 'local_mountain',
     categoryLabel: 'Local Mountain',
+    type: 'Municipal Watershed',
     color: '#4d7c0f',
     lat: 14.3856,
     lng: 121.3639,
     zoom: 13,
     municipality: 'Pililla & Jalajala',
+    areaHectares: '~2,400 ha (Peninsula Ridge)',
+    elevation: '743m – 745m ASL',
+    legalBasis: 'Pililla & Jalajala Municipal Environmental Ordinances',
+    prohibitions: [
+      'Kaingin (slash-and-burn) on steep mountain slopes',
+      'Illegal charcoal kilns & clearing of mango/forest groves',
+      'Contaminating Manggahan waterfalls & feeder creeks',
+      'Unregistered camping & wildfire risks',
+    ],
+    penalties: 'Ordinance penalties and confiscation of cutting/charcoal tools by joint Pililla-Jalajala Task Force.',
+    barangays: ['Malaya', 'Niogan', 'Quisao', 'Halayhayin', 'Sipsipin', 'Bagumbong', 'Lubo', 'Pagkalinawan'],
+    ecosystemRole: 'Volcanic divide separating the windward slopes of Pililla and Jalajala, protecting headwater springs feeding eastern Laguna de Bay.',
+    polygon: [
+      [121.3450, 14.3720], [121.3520, 14.4120], [121.3780, 14.4180], [121.3920, 14.3850],
+      [121.3850, 14.3620], [121.3620, 14.3550], [121.3450, 14.3720]
+    ],
   },
   {
     id: 'mt-balagbag-maranat',
@@ -264,11 +515,28 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     shortName: 'Mt. Balagbag Foothills',
     category: 'local_mountain',
     categoryLabel: 'Local Mountain',
+    type: 'Local Ecotourism Buffer',
     color: '#475569',
     lat: 14.8219,
     lng: 121.1761,
     zoom: 13,
     municipality: 'Rodriguez (San Isidro)',
+    areaHectares: '~1,800 ha (Northern Foothills)',
+    elevation: '350m – 777m ASL',
+    legalBasis: 'Rodriguez Municipal Ecotourism & Watershed Buffer Resolution',
+    prohibitions: [
+      'Unlicensed off-road 4x4 / motorcycle trail destruction',
+      'Kaingin & land clearing along Ipo-Angat perimeter',
+      'Commercial waste dumping & illegal cottages',
+      'Unpermitted bonfire / fireworks lighting',
+    ],
+    penalties: 'Impoundment of off-road vehicles and local municipal environmental citations.',
+    barangays: ['San Isidro (Sitio Balagbag / Macaingalan)'],
+    ecosystemRole: 'Headwater corridor linking Rodriguez with the southern boundary of the Ipo-Angat watershed reserve, safeguarding Metro Manila drinking catchments.',
+    polygon: [
+      [121.1580, 14.8080], [121.1620, 14.8380], [121.1850, 14.8450], [121.1960, 14.8280],
+      [121.1880, 14.8050], [121.1680, 14.8020], [121.1580, 14.8080]
+    ],
   },
   {
     id: 'daranak-batlag-sanctuary',
@@ -276,11 +544,28 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     shortName: 'Daranak Falls Sanctuary',
     category: 'local_mountain',
     categoryLabel: 'Local Mountain',
+    type: 'Municipal Sanctuary',
     color: '#0d9488',
     lat: 14.5428,
     lng: 121.3533,
     zoom: 14,
     municipality: 'Tanay',
+    areaHectares: '~150 ha',
+    elevation: '220m – 340m ASL',
+    legalBasis: 'Tanay Municipal Environmental Protection Ordinance No. 2',
+    prohibitions: [
+      'Dumping solid or chemical waste into Daranak River',
+      'Defacing rock formations & limestone cliff faces',
+      'Soap washing / bathing animals in natural river pools',
+      'Hacking riverside vegetation & tree branches',
+    ],
+    penalties: 'Mandatory spot fines up to ₱5,000, eviction from park premises, and prosecution under Clean Water Act.',
+    barangays: ['Tandang Kutyo', 'Plaza Aldea'],
+    ecosystemRole: 'Critical riparian headwaters fed by Sierra Madre mountain streams, surrounding Daranak Falls, Batlag Falls, and Calinawan Cave.',
+    polygon: [
+      [121.3450, 14.5360], [121.3480, 14.5520], [121.3620, 14.5540], [121.3650, 14.5410],
+      [121.3560, 14.5340], [121.3450, 14.5360]
+    ],
   },
 ];
 
@@ -394,6 +679,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isMaskActive, setIsMaskActive] = useState<boolean>(true);
   const [fitProvinceKey, setFitProvinceKey] = useState<number>(0);
   const [activeZoneCatFilter, setActiveZoneCatFilter] = useState<'all' | 'nipas' | 'llda_zomap' | 'kba_georeserve' | 'local_mountain'>('all');
+  const [selectedProtectedZoneId, setSelectedProtectedZoneId] = useState<string | null>(null);
+  const [activeProtectedZoneFilter, setActiveProtectedZoneFilter] = useState<string | null>(null);
+  const [isProhibitionsExpanded, setIsProhibitionsExpanded] = useState<boolean>(true);
+
+  // Selected protected zone data lookup
+  const selectedProtectedZone = useMemo(() => {
+    if (!selectedProtectedZoneId) return null;
+    return RIZAL_PROTECTED_ZONES_CATALOG.find((z) => z.id === selectedProtectedZoneId) || null;
+  }, [selectedProtectedZoneId]);
+
+  // Spatial index: maps each protected zone ID to legitimate active/historical reports situated within its boundaries
+  const reportsByProtectedZone = useMemo(() => {
+    const map: Record<string, IncidentReport[]> = {};
+    for (const zone of RIZAL_PROTECTED_ZONES_CATALOG) {
+      map[zone.id] = [];
+    }
+
+    const legitimateReports = reports.filter((r) => r.status !== 'spam');
+
+    for (const report of legitimateReports) {
+      const coords = resolveReportCoordinates(report);
+      const point: [number, number] = [coords.lng, coords.lat];
+
+      for (const zone of RIZAL_PROTECTED_ZONES_CATALOG) {
+        if (zone.polygon && zone.polygon.length >= 3) {
+          if (isPointInPolygonRing(point, zone.polygon)) {
+            map[zone.id].push(report);
+          }
+        }
+      }
+    }
+
+    return map;
+  }, [reports]);
 
   // Aggregated incident counts per municipality for real-time choropleth shading
   const choroplethCounts = useMemo(() => {
@@ -533,6 +852,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const handleQuickJump = (munKey: string) => {
     setActiveClusterFilter(null);
+    setActiveProtectedZoneFilter(null);
     if (munKey === 'all') {
       setMunicipalityFilter('all');
       setSelectedReport(null);
@@ -720,12 +1040,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return list;
   }, [reports]);
 
-  // Reports visible on the map (preserves municipal/category/severity context)
+  // Reports visible on the map (preserves municipal/category/severity context & protected zone filters)
   const mapVisibleReports = useMemo(() => {
     return clusteredReports.filter((report) => {
       // Spam queue separation
       if (queueTab === 'active' && report.status === 'spam') return false;
       if (queueTab === 'spam' && report.status !== 'spam') return false;
+
+      // Active protected zone filter
+      if (activeProtectedZoneFilter) {
+        const zoneReports = reportsByProtectedZone[activeProtectedZoneFilter] || [];
+        if (!zoneReports.some((r) => r.id === report.id)) return false;
+      }
 
       if (municipalityFilter !== 'all' && report.location?.municipality !== municipalityFilter) return false;
       if (statusFilter !== 'all' && report.status !== statusFilter) return false;
@@ -736,7 +1062,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (severityFilter !== 'all' && severityFilter !== 'urgent' && activeSev !== Number(severityFilter)) return false;
       return true;
     });
-  }, [clusteredReports, queueTab, municipalityFilter, statusFilter, categoryFilter, severityFilter]);
+  }, [clusteredReports, queueTab, activeProtectedZoneFilter, reportsByProtectedZone, municipalityFilter, statusFilter, categoryFilter, severityFilter]);
 
   // Filtered reports for queue stream (narrows by activeClusterFilter and searchTerm)
   const filteredReports = useMemo(() => {
@@ -1961,6 +2287,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               onClusterClick={(group) => handleClusterClick(group)}
               choroplethCounts={choroplethCounts}
               maskNonRizal={isMaskActive}
+              onSelectProtectedZone={(zoneId) => {
+                setSelectedProtectedZoneId(zoneId);
+                // On narrow viewports, close the left sheet to ensure drawer visibility
+                if (window.innerWidth < 640) {
+                  setIsSheetOpen(false);
+                }
+              }}
               onSelectReport={(r) => {
                 setSelectedReport(r);
                 setIsSheetOpen(true);
@@ -2221,13 +2554,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
                     )}
 
-                    {(activeClusterFilter || municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
+                    {/* Active Protected Zone Pill Banner */}
+                    {activeProtectedZoneFilter && (
+                      <div className="flex items-center justify-between px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <ShieldAlert className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
+                          <span className="font-semibold text-emerald-900 dark:text-emerald-200 truncate">
+                            Zone: {RIZAL_PROTECTED_ZONES_CATALOG.find((z) => z.id === activeProtectedZoneFilter)?.shortName || 'Protected Reserve'}
+                          </span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-200/80 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-300 font-medium shrink-0">
+                            {filteredReports.length}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActiveProtectedZoneFilter(null)}
+                          className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-200 p-0.5 rounded transition cursor-pointer shrink-0 ml-1"
+                          title="Clear zone filter"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+
+                    {(activeClusterFilter || activeProtectedZoneFilter || municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
                       <div className="flex items-center justify-between pt-0.5">
                         <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">Filters active</span>
                         <button
                           type="button"
                           onClick={() => {
                             setActiveClusterFilter(null);
+                            setActiveProtectedZoneFilter(null);
                             setMunicipalityFilter('all');
                             setStatusFilter('all');
                             setCategoryFilter('all');
@@ -2813,6 +3170,341 @@ export const Dashboard: React.FC<DashboardProps> = ({
           )}
 
           {/* ========================================================= */}
+          {/* 3.5 RIGHT SLIDE-OVER PROTECTED ZONE DOSSIER & THREAT HUD  */}
+          {/* ========================================================= */}
+          {selectedProtectedZone && (
+            <div className="absolute top-16 right-3 sm:right-4 z-30 pointer-events-auto w-[calc(100vw-24px)] sm:w-[420px] max-h-[calc(100vh-80px)] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xl rounded-xl overflow-hidden flex flex-col transition-all duration-300 animate-nav-pill">
+              {/* Header */}
+              <div className="p-3.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 shrink-0 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {selectedProtectedZone.category === 'nipas' && (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                        <ShieldAlert className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
+                        DENR-NIPAS
+                      </span>
+                    )}
+                    {selectedProtectedZone.category === 'llda_zomap' && (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
+                        <Droplets className="w-3 h-3 text-sky-700 dark:text-sky-400" />
+                        LLDA ZOMAP
+                      </span>
+                    )}
+                    {selectedProtectedZone.category === 'kba_georeserve' && (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                        <Trees className="w-3 h-3 text-amber-700 dark:text-amber-400" />
+                        KBA / GEORESERVE
+                      </span>
+                    )}
+                    {selectedProtectedZone.category === 'local_mountain' && (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-300 border border-stone-300 dark:border-stone-700">
+                        <Mountain className="w-3 h-3 text-stone-700 dark:text-stone-300" />
+                        LOCAL MOUNTAIN
+                      </span>
+                    )}
+                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400">
+                      {selectedProtectedZone.type}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMapCenter({ lat: selectedProtectedZone.lat, lng: selectedProtectedZone.lng });
+                        setMapZoom(selectedProtectedZone.zoom);
+                      }}
+                      className="p-1.5 text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                      title="Center map on reserve"
+                    >
+                      <Crosshair className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProtectedZoneId(null)}
+                      className="p-1.5 text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                      title="Close dossier"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-display font-bold text-sm sm:text-base text-stone-900 dark:text-white leading-tight">
+                    {selectedProtectedZone.name}
+                  </h3>
+                  <div className="flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400 mt-1">
+                    <MapPin className="w-3 h-3 shrink-0 text-stone-400" />
+                    <span className="truncate">{selectedProtectedZone.municipality}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scrollable Content Body */}
+              <div className="overflow-y-auto p-3.5 space-y-3 custom-scrollbar flex-1">
+                {/* 1. Vital Statistics Grid */}
+                <div className="grid grid-cols-3 gap-2 bg-stone-50 dark:bg-stone-850 border border-stone-200/80 dark:border-stone-800 rounded-lg p-2.5 text-center">
+                  <div>
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-stone-400 dark:text-stone-500 block">
+                      Declared Area
+                    </span>
+                    <span className="text-xs font-bold text-stone-900 dark:text-stone-100 mt-0.5 block truncate">
+                      {selectedProtectedZone.areaHectares}
+                    </span>
+                  </div>
+                  <div className="border-x border-stone-200/80 dark:border-stone-800 px-1">
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-stone-400 dark:text-stone-500 block">
+                      Elevation
+                    </span>
+                    <span className="text-xs font-bold text-stone-900 dark:text-stone-100 mt-0.5 block truncate">
+                      {selectedProtectedZone.elevation}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-stone-400 dark:text-stone-500 block">
+                      Governance
+                    </span>
+                    <span className="text-xs font-bold text-stone-900 dark:text-stone-100 mt-0.5 block truncate">
+                      {selectedProtectedZone.categoryLabel}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Live Threat Telemetry & Filter Card */}
+                {(() => {
+                  const zoneThreatReports = reportsByProtectedZone[selectedProtectedZone.id] || [];
+                  const activeThreats = zoneThreatReports.filter((r) => r.status !== 'resolved');
+                  const urgentThreats = activeThreats.filter((r) => (r.final?.severity || r.aiTriage?.severity || 0) >= 4);
+
+                  const catBreakdown: Record<string, number> = {};
+                  for (const rep of activeThreats) {
+                    const c = rep.final?.category || rep.aiTriage?.category || 'other';
+                    catBreakdown[c] = (catBreakdown[c] || 0) + 1;
+                  }
+
+                  const isFilterActive = activeProtectedZoneFilter === selectedProtectedZone.id;
+
+                  return (
+                    <div className="space-y-2">
+                      <div className={`p-3 rounded-xl border space-y-2.5 ${
+                        activeThreats.length > 0
+                          ? 'border-rose-200 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/30'
+                          : 'border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/60 dark:bg-emerald-950/30'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            {activeThreats.length > 0 ? (
+                              <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                            ) : (
+                              <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            )}
+                            <span className={`text-xs font-bold ${
+                              activeThreats.length > 0
+                                ? 'text-rose-900 dark:text-rose-200'
+                                : 'text-emerald-900 dark:text-emerald-200'
+                            }`}>
+                              {activeThreats.length > 0
+                                ? `${activeThreats.length} Active Environmental ${activeThreats.length === 1 ? 'Violation' : 'Violations'}`
+                                : 'No Active Violations Detected'}
+                            </span>
+                          </div>
+
+                          {urgentThreats.length > 0 && (
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-200 dark:bg-rose-900 text-rose-900 dark:text-rose-200 font-bold shrink-0">
+                              {urgentThreats.length} Urgent
+                            </span>
+                          )}
+                        </div>
+
+                        {activeThreats.length > 0 ? (
+                          <>
+                            {/* Category chips */}
+                            <div className="flex flex-wrap gap-1">
+                              {Object.entries(catBreakdown).map(([catKey, count]) => {
+                                const info = (CATEGORIES as any)[catKey];
+                                const label = info ? (lang === 'fil' ? info.labelFil : info.labelEn) : catKey;
+                                return (
+                                  <span
+                                    key={catKey}
+                                    className="px-2 py-0.5 rounded text-[10px] font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800"
+                                  >
+                                    {count} {label}
+                                  </span>
+                                );
+                              })}
+                            </div>
+
+                            {/* One-click "Filter Queue to this Zone" button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isFilterActive) {
+                                  setActiveProtectedZoneFilter(null);
+                                } else {
+                                  setActiveProtectedZoneFilter(selectedProtectedZone.id);
+                                  setIsSheetOpen(true);
+                                  setSelectedReport(null);
+                                }
+                              }}
+                              className={`w-full py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-[0.99] ${
+                                isFilterActive
+                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                  : 'bg-stone-900 hover:bg-black text-white dark:bg-emerald-600 dark:hover:bg-emerald-500'
+                              }`}
+                            >
+                              <Filter className="w-3.5 h-3.5" />
+                              <span>
+                                {isFilterActive
+                                  ? '✓ Queue Filtered to this Zone (Clear)'
+                                  : `Filter Queue to this Zone (${activeThreats.length})`}
+                              </span>
+                            </button>
+
+                            {/* Mini stream of active reports in zone */}
+                            <div className="space-y-1 pt-1 border-t border-rose-200/60 dark:border-rose-900/60">
+                              <span className="text-[10px] font-medium text-rose-800 dark:text-rose-300 block">
+                                Zone Incidents:
+                              </span>
+                              {activeThreats.slice(0, 3).map((rep) => {
+                                const c = rep.final?.category || rep.aiTriage?.category;
+                                const catLabel = (CATEGORIES as any)[c || '']?.labelEn || c || 'Incident';
+                                const sev = rep.final?.severity || rep.aiTriage?.severity || 0;
+                                return (
+                                  <button
+                                    key={rep.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedReport(rep);
+                                      setIsSheetOpen(true);
+                                      const coords = resolveReportCoordinates(rep);
+                                      setMapCenter(coords);
+                                      setMapZoom(14);
+                                    }}
+                                    className="w-full text-left p-1.5 rounded-md bg-white/70 dark:bg-stone-900/70 hover:bg-white dark:hover:bg-stone-900 border border-rose-200/50 dark:border-rose-900/40 transition flex items-center justify-between gap-2 cursor-pointer group"
+                                  >
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1 text-[11px] font-semibold text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                                        <span className="font-mono text-[10px] text-stone-500">{rep.referenceCode}</span>
+                                        <span>•</span>
+                                        <span className="truncate">{catLabel}</span>
+                                      </div>
+                                      <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
+                                        {rep.location.barangay ? `${rep.location.barangay}, ` : ''}{rep.location.municipality}
+                                      </div>
+                                    </div>
+                                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded shrink-0 ${
+                                      sev >= 4
+                                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/80 dark:text-rose-200'
+                                        : 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
+                                    }`}>
+                                      Sev {sev}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-relaxed">
+                            Zero active citizen violation reports are mapped within this reserve's polygon.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 3. Statutory Safeguards & Enforceable Penalties Accordion */}
+                <div className="border border-stone-200/90 dark:border-stone-800 rounded-xl overflow-hidden bg-stone-50/50 dark:bg-stone-950/40">
+                  <button
+                    type="button"
+                    onClick={() => setIsProhibitionsExpanded(!isProhibitionsExpanded)}
+                    className="w-full p-3 flex items-center justify-between text-left hover:bg-stone-100/60 dark:hover:bg-stone-850/60 transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Scale className="w-4 h-4 text-stone-700 dark:text-stone-300 shrink-0" />
+                      <span className="text-xs font-bold text-stone-900 dark:text-stone-100">
+                        Statutory Safeguards & Penalties
+                      </span>
+                    </div>
+                    <ChevronDown className={`w-3.5 h-3.5 text-stone-400 dark:text-stone-500 transition-transform ${isProhibitionsExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isProhibitionsExpanded && (
+                    <div className="p-3 pt-0 space-y-2.5 border-t border-stone-200/60 dark:border-stone-800/80">
+                      {/* Legal Basis Mandate */}
+                      <div className="pt-2">
+                        <span className="text-[9px] font-bold tracking-wider uppercase text-stone-400 dark:text-stone-500 block mb-0.5">
+                          Statutory Enactment
+                        </span>
+                        <div className="text-[11px] text-stone-700 dark:text-stone-300 leading-relaxed font-sans bg-white dark:bg-stone-900 p-2 rounded-lg border border-stone-200/80 dark:border-stone-800">
+                          {selectedProtectedZone.legalBasis}
+                        </div>
+                      </div>
+
+                      {/* Unlawful Activities */}
+                      <div>
+                        <span className="text-[9px] font-bold tracking-wider uppercase text-stone-400 dark:text-stone-500 block mb-1">
+                          Prohibited Activities & Violations
+                        </span>
+                        <ul className="space-y-1">
+                          {selectedProtectedZone.prohibitions.map((act, idx) => (
+                            <li key={idx} className="flex items-start gap-1.5 text-[11px] text-stone-700 dark:text-stone-300">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 mt-1.5" />
+                              <span className="leading-tight">{act}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Enforceable Penalties Callout */}
+                      <div className="p-2.5 rounded-lg bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60 space-y-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 block">
+                          Enforceable Penalties & Liability:
+                        </span>
+                        <p className="text-[11px] text-stone-700 dark:text-stone-300 leading-relaxed font-sans">
+                          {selectedProtectedZone.penalties}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Ecosystem Role Card */}
+                <div className="p-3 rounded-xl border border-emerald-200/70 dark:border-emerald-900/50 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 dark:text-emerald-300">
+                    <Trees className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>Ecosystem Role & Headwaters</span>
+                  </div>
+                  <p className="text-[11px] text-stone-700 dark:text-stone-300 leading-relaxed">
+                    {selectedProtectedZone.ecosystemRole}
+                  </p>
+                </div>
+
+                {/* 5. Covered Barangays Chips */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold tracking-wider uppercase text-stone-400 dark:text-stone-500">
+                      Covered Barangays ({selectedProtectedZone.barangays.length})
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedProtectedZone.barangays.map((brgy) => (
+                      <span
+                        key={brgy}
+                        className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-stone-750"
+                      >
+                        {brgy}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
           {/* 4. GOOGLE / APPLE MAPS FLOATING LAYERS TRIGGER & POPOVER   */}
           {/* ========================================================= */}
           <div className="absolute bottom-8 sm:bottom-9 right-4 z-20 pointer-events-auto flex flex-col items-end gap-2 transition-all duration-200">
@@ -3039,35 +3731,50 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         ))}
                       </div>
 
-                      {/* Interactive Zone List with Click-to-Fly */}
+                      {/* Interactive Zone List with Click-to-Fly & Dossier Inspection */}
                       <div className="max-h-28 overflow-y-auto space-y-0.5 pr-0.5 custom-scrollbar text-[10px]">
                         {RIZAL_PROTECTED_ZONES_CATALOG
                           .filter((zone) => activeZoneCatFilter === 'all' || zone.category === activeZoneCatFilter)
-                          .map((zone) => (
-                            <button
-                              key={zone.id}
-                              type="button"
-                              onClick={() => {
-                                setMapCenter({ lat: zone.lat, lng: zone.lng });
-                                setMapZoom(zone.zoom);
-                              }}
-                              className="w-full text-left p-1 rounded-md hover:bg-stone-100 dark:hover:bg-stone-800/80 transition flex items-center justify-between gap-1.5 cursor-pointer group"
-                              title={`Focus on ${zone.name} (${zone.municipality})`}
-                            >
-                              <span className="flex items-center gap-1.5 truncate">
-                                <span
-                                  className="w-2 h-2 rounded-full shrink-0"
-                                  style={{ backgroundColor: zone.color }}
-                                />
-                                <span className="truncate text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-white font-medium">
-                                  {zone.shortName}
+                          .map((zone) => {
+                            const isSelected = selectedProtectedZoneId === zone.id;
+                            return (
+                              <button
+                                key={zone.id}
+                                type="button"
+                                onClick={() => {
+                                  setMapCenter({ lat: zone.lat, lng: zone.lng });
+                                  setMapZoom(zone.zoom);
+                                  setSelectedProtectedZoneId(zone.id);
+                                  if (window.innerWidth < 640) {
+                                    setIsSheetOpen(false);
+                                  }
+                                }}
+                                className={`w-full text-left p-1 rounded-md transition flex items-center justify-between gap-1.5 cursor-pointer group ${
+                                  isSelected
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/80 ring-1 ring-emerald-500/60'
+                                    : 'hover:bg-stone-100 dark:hover:bg-stone-800/80'
+                                }`}
+                                title={`Inspect ${zone.name} (${zone.municipality})`}
+                              >
+                                <span className="flex items-center gap-1.5 truncate">
+                                  <span
+                                    className="w-2 h-2 rounded-full shrink-0"
+                                    style={{ backgroundColor: zone.color }}
+                                  />
+                                  <span className={`truncate font-medium ${
+                                    isSelected
+                                      ? 'text-emerald-900 dark:text-emerald-200 font-semibold'
+                                      : 'text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-white'
+                                  }`}>
+                                    {zone.shortName}
+                                  </span>
                                 </span>
-                              </span>
-                              <span className="text-[9px] text-stone-400 dark:text-stone-500 shrink-0 font-mono">
-                                {zone.categoryLabel}
-                              </span>
-                            </button>
-                          ))}
+                                <span className="text-[9px] text-stone-400 dark:text-stone-500 shrink-0 font-mono">
+                                  {zone.categoryLabel}
+                                </span>
+                              </button>
+                            );
+                          })}
                       </div>
                       <div className="text-[9px] text-stone-400 dark:text-stone-500 text-center font-normal pt-0.5">
                         Click any reserve to focus map
