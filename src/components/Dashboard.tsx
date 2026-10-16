@@ -1071,36 +1071,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="lg:col-span-7 space-y-4">
               {/* Map Canvas with Integrated HUD */}
               <div className="relative border border-stone-300 dark:border-stone-800 rounded-xl overflow-hidden shadow-xs bg-stone-100 dark:bg-stone-950">
-                {/* Top In-Map HUD: Quick Jump LGU Chips */}
-                <div className="absolute top-2.5 left-2.5 z-20 flex flex-wrap items-center gap-0.5 max-w-[calc(100%-140px)] bg-white/95 dark:bg-stone-900/95 backdrop-blur-md p-1 rounded-xl border border-stone-200/90 dark:border-stone-800 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 dark:ring-white/5">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickJump('all')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
-                      municipalityFilter === 'all'
-                        ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs'
-                        : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100/80 dark:hover:bg-stone-800'
-                    }`}
-                  >
-                    All Rizal
-                  </button>
-                  {['Antipolo City', 'Tanay', 'Rodriguez (Montalban)', 'Binangonan'].map((mun) => (
-                    <button
-                      key={mun}
-                      type="button"
-                      onClick={() => handleQuickJump(mun)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
-                        municipalityFilter === mun
-                          ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs'
-                          : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100/80 dark:hover:bg-stone-800'
-                      }`}
-                    >
-                      {mun.replace(' City', '').replace(' (Montalban)', '')}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Top-Right Secondary Shortcut: Maximize to Full Map */}
+                {/* Top-Right Shortcut: Maximize to Full Map */}
                 <button
                   type="button"
                   onClick={() => handleViewModeChange('full_map')}
@@ -1111,109 +1082,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span className="hidden sm:inline">Full Map</span>
                 </button>
 
-                {/* Bottom-left In-Map HUD: Tactical Mutually Exclusive Layer Controller */}
-                <div className="absolute bottom-6 left-2.5 z-20 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md p-1 rounded-xl border border-stone-200/90 dark:border-stone-800 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 dark:ring-white/5 flex items-center gap-0.5 text-xs font-semibold text-stone-700 dark:text-stone-300">
-                  <button
-                    type="button"
-                    onClick={() => setMapLayerMode(mapLayerMode === 'boundaries' ? 'standard' : 'boundaries')}
-                    className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
-                      mapLayerMode === 'boundaries' ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs' : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100/80 dark:hover:bg-stone-800'
-                    }`}
-                    title="Municipal vector boundaries across all 14 LGUs"
-                  >
-                    <Layers className="w-3.5 h-3.5" />
-                    <span>Boundaries</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMapLayerMode(mapLayerMode === 'choropleth' ? 'standard' : 'choropleth')}
-                    className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
-                      mapLayerMode === 'choropleth' ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs' : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100/80 dark:hover:bg-stone-800'
-                    }`}
-                    title="Thematic incident density volume"
-                  >
-                    <BarChart3 className="w-3.5 h-3.5" />
-                    <span>Choropleth</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMapLayerMode(mapLayerMode === 'protected_zones' ? 'standard' : 'protected_zones')}
-                    className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
-                      mapLayerMode === 'protected_zones'
-                        ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs'
-                        : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100/80 dark:hover:bg-stone-800'
-                    }`}
-                    title="Curated ecological reserves, lake easement, & watersheds"
-                  >
-                    <ShieldAlert className="w-3.5 h-3.5" />
-                    <span>{t.protectedZonesToggle}</span>
-                  </button>
-
-                  <div className="h-4 w-px bg-stone-200/80 dark:bg-stone-700 mx-0.5" />
-
-                  <button
-                    type="button"
-                    onClick={() => setIsMaskActive(!isMaskActive)}
-                    className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer ${
-                      isMaskActive
-                        ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs'
-                        : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100/80 dark:hover:bg-stone-800'
-                    }`}
-                    title={
-                      mapLayerMode === 'protected_zones'
-                        ? (isMaskActive ? "Click to disable dimming of surrounding terrain" : "Click to dim surroundings and spotlight protected reserves")
-                        : (isMaskActive ? "Click to disable non-Rizal dimming mask" : "Click to gray out non-Rizal regions")
-                    }
-                  >
-                    <Crosshair className="w-3.5 h-3.5" />
-                    <span>{mapLayerMode === 'protected_zones' ? 'Dim Outside' : 'Focus: Rizal'}</span>
-                  </button>
+                {/* Bottom-right Severity Indication Legend */}
+                <div className="absolute bottom-9 right-2.5 z-20 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] font-display font-bold uppercase tracking-wide border border-stone-200/90 dark:border-stone-800 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 dark:ring-white/5 flex items-center gap-2.5 text-stone-700 dark:text-stone-300 pointer-events-none select-none">
+                  <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    1-2 Minor
+                  </span>
+                  <span className="flex items-center gap-1 text-amber-800 dark:text-amber-400">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    3 Mod
+                  </span>
+                  <span className="flex items-center gap-1 text-rose-800 dark:text-rose-400">
+                    <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
+                    4-5 Urgent
+                  </span>
+                  <span className="hidden sm:inline-block text-stone-300 dark:text-stone-700">|</span>
+                  <span className="hidden sm:inline-block text-stone-500 dark:text-stone-400 font-medium normal-case">
+                    num = count
+                  </span>
                 </div>
 
-                {/* Bottom-right In-Map HUD: Contextual Legend */}
-                {mapLayerMode === 'protected_zones' ? (
-                  <div className="absolute bottom-6 right-2.5 z-20 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-display font-bold uppercase tracking-wide border border-stone-200/90 dark:border-stone-800 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 dark:ring-white/5 flex items-center gap-2.5 text-stone-700 dark:text-stone-300">
-                    <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-400">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      Sanctuary
-                    </span>
-                    <span className="flex items-center gap-1 text-sky-800 dark:text-sky-400">
-                      <span className="w-2 h-2 rounded-full bg-sky-500" />
-                      Shore Buffer
-                    </span>
-                    <span className="flex items-center gap-1 text-green-900 dark:text-emerald-300">
-                      <span className="w-2 h-2 rounded-full bg-green-700" />
-                      Watershed
-                    </span>
-                    <span className="flex items-center gap-1 text-amber-800 dark:text-amber-400">
-                      <span className="w-2 h-2 rounded-full bg-amber-500" />
-                      Nat'l Park
-                    </span>
-                  </div>
-                ) : (
-                  <div className="absolute bottom-6 right-2.5 z-20 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] font-display font-bold uppercase tracking-wide border border-stone-200/90 dark:border-stone-800 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 dark:ring-white/5 flex items-center gap-2.5 text-stone-700 dark:text-stone-300">
-                    <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-400">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      1-2 Minor
-                    </span>
-                    <span className="flex items-center gap-1 text-amber-800 dark:text-amber-400">
-                      <span className="w-2 h-2 rounded-full bg-amber-500" />
-                      3 Mod
-                    </span>
-                    <span className="flex items-center gap-1 text-rose-800 dark:text-rose-400">
-                      <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
-                      4-5 Urgent
-                    </span>
-                    <span className="hidden sm:inline-block text-stone-300 dark:text-stone-700">|</span>
-                    <span className="hidden sm:inline-block text-stone-500 dark:text-stone-400 font-medium normal-case">
-                      num = count
-                    </span>
-                  </div>
-                )}
-
-                {/* Map Component */}
+                {/* Map Component: Plain map with markers */}
                 <LeafletMap
                   mode="dashboard"
                   center={mapCenter}
@@ -1221,13 +1110,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   fitProvinceKey={fitProvinceKey}
                   reports={mapVisibleReports}
                   selectedReportId={selectedReport?.id}
-                  layerMode={mapLayerMode}
+                  layerMode="standard"
                   basemap={basemapMode}
                   activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
                   onMunicipalityClick={(mun) => handleQuickJump(mun)}
                   onClusterClick={(group) => handleClusterClick(group)}
                   choroplethCounts={choroplethCounts}
-                  maskNonRizal={isMaskActive}
+                  maskNonRizal={false}
                   onSelectReport={(r) => {
                     setSelectedReport(r);
                     const coords = resolveReportCoordinates(r);
