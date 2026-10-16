@@ -29,16 +29,38 @@ export interface GeoJSONFeatureCollection<P = any> {
   features: GeoJSONFeature<P>[];
 }
 
+export type ProtectedZoneCategory = 'nipas' | 'llda_zomap' | 'kba_georeserve' | 'local_mountain';
+
+export type ProtectedZoneType =
+  | 'protected_landscape'
+  | 'forest_reserve'
+  | 'wildlife_sanctuary'
+  | 'aquatic_sanctuary'
+  | 'shoreland_buffer'
+  | 'key_biodiversity_area'
+  | 'georeserve'
+  | 'cultural_reserve'
+  | 'local_reserve'
+  | 'watershed'
+  | 'sanctuary'
+  | 'shoreline_easement'
+  | 'national_park';
+
 export interface ProtectedZoneFeatureProperties {
   id: string;
   name: string;
   shortName: string;
-  type: 'sanctuary' | 'shoreline_easement' | 'watershed' | 'national_park';
+  category?: ProtectedZoneCategory;
+  type: ProtectedZoneType;
   severityBonus: number;
   municipality: string;
+  barangays?: string[];
+  legalBasis?: string;
   legalNote: string;
   strokeColor: string;
   fillColor: string;
+  center?: [number, number];
+  zoomLevel?: number;
 }
 
 // In-memory singletons to avoid re-fetching
@@ -87,7 +109,14 @@ export async function findProtectedZoneByCoordinates(lat: number, lng: number): 
     const zones = await fetchRizalProtectedZonesGeoJSON();
     if (!zones?.features?.length) return null;
 
-    for (const feature of zones.features) {
+    const broadZones = new Set(['umrbpl', 'proc-1636-wildlife-sanctuary', 'kaliwa-river-forest-reserve', 'laguna-shoreland-buffer']);
+    const sortedFeatures = [...zones.features].sort((a, b) => {
+      const aBroad = broadZones.has(a.id || a.properties?.id) ? 1 : 0;
+      const bBroad = broadZones.has(b.id || b.properties?.id) ? 1 : 0;
+      return aBroad - bBroad;
+    });
+
+    for (const feature of sortedFeatures) {
       if (isPointInGeometry([lng, lat], feature.geometry)) {
         return feature.properties;
       }
@@ -124,13 +153,29 @@ let cachedProtectedZonesInvertedMask: GeoJSONFeature | null = null;
 
 /**
  * Generates an inverted polygon GeoJSON feature covering the entire world
- * with interior holes cut out precisely for the 4 curated protected ecological zones.
+ * with interior holes cut out precisely for all curated protected ecological zones.
  * Rendered with SVG evenodd fill-rule, this dims everything except the protected zones.
  */
 export async function fetchProtectedZonesInvertedMaskGeoJSON(): Promise<GeoJSONFeature> {
   if (cachedProtectedZonesInvertedMask) return cachedProtectedZonesInvertedMask;
   const zones = await fetchRizalProtectedZonesGeoJSON();
-  const holes = zones.features.map((f: any) => f.geometry.coordinates[0]);
+  const holes: [number, number][][] = [];
+
+  for (const feature of zones.features) {
+    const geom = feature.geometry;
+    if (geom.type === 'Polygon') {
+      if (Array.isArray(geom.coordinates?.[0])) {
+        holes.push(geom.coordinates[0]);
+      }
+    } else if (geom.type === 'MultiPolygon') {
+      for (const poly of geom.coordinates || []) {
+        if (Array.isArray(poly?.[0])) {
+          holes.push(poly[0]);
+        }
+      }
+    }
+  }
+
   cachedProtectedZonesInvertedMask = {
     type: 'Feature',
     properties: { name: 'Protected Zones Inverted Mask' },

@@ -63,14 +63,34 @@ export interface WeatherContext {
   fetchedAt: string;
 }
 
+export type ProtectedZoneCategory = 'nipas' | 'llda_zomap' | 'kba_georeserve' | 'local_mountain';
+
+export type ProtectedZoneType =
+  | 'protected_landscape'
+  | 'forest_reserve'
+  | 'wildlife_sanctuary'
+  | 'aquatic_sanctuary'
+  | 'shoreland_buffer'
+  | 'key_biodiversity_area'
+  | 'georeserve'
+  | 'cultural_reserve'
+  | 'local_reserve'
+  | 'watershed'
+  | 'sanctuary'
+  | 'shoreline_easement'
+  | 'national_park';
+
 export interface ProtectedZoneHit {
   id: string;
   name: string;
   shortName: string;
-  type: 'sanctuary' | 'shoreline_easement' | 'watershed' | 'national_park';
+  category?: ProtectedZoneCategory;
+  type: ProtectedZoneType;
   severityBonus: number;
   municipality: string;
+  legalBasis?: string;
   legalNote: string;
+  center?: [number, number];
 }
 
 export interface AuthenticityScore {

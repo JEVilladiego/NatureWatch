@@ -342,12 +342,35 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     const layer = L.geoJSON(protectedZonesData as any, {
       style: (feature: any) => {
         const props = feature?.properties;
+        const cat = props?.category;
+        let dashArray = '5, 5';
+        let weight = 2;
+        let fillOpacity = 0.16;
+
+        if (cat === 'nipas') {
+          dashArray = '6, 4';
+          weight = 2.5;
+          fillOpacity = 0.18;
+        } else if (cat === 'llda_zomap') {
+          dashArray = '4, 4';
+          weight = 2;
+          fillOpacity = 0.22;
+        } else if (cat === 'kba_georeserve') {
+          dashArray = '5, 3';
+          weight = 2.2;
+          fillOpacity = 0.18;
+        } else {
+          dashArray = '4, 4';
+          weight = 1.8;
+          fillOpacity = 0.16;
+        }
+
         return {
           color: props?.strokeColor || '#059669',
-          weight: 2,
+          weight,
           fillColor: props?.fillColor || '#10b981',
-          fillOpacity: 0.14,
-          dashArray: '5, 5',
+          fillOpacity,
+          dashArray,
         };
       },
       onEachFeature: (feature: any, featureLayer: L.Layer) => {
@@ -355,18 +378,30 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         const title = props.shortName || props.name || 'Protected Zone';
         const type = String(props.type || 'Sanctuary').toUpperCase().replace(/_/g, ' ');
         const mun = props.municipality || 'Rizal';
+        const legal = props.legalBasis ? `<div style="font-size: 9px; color: #a1a1aa; margin-top: 2px;">⚖️ ${props.legalBasis}</div>` : '';
+
+        let catBadge = '🛡️ DENR-NIPAS';
+        if (props.category === 'llda_zomap') catBadge = '🌊 LLDA ZOMAP';
+        else if (props.category === 'kba_georeserve') catBadge = '🌲 KEY BIODIVERSITY / GEORESERVE';
+        else if (props.category === 'local_mountain') catBadge = '⛰️ LOCAL MOUNTAIN WATERSHED';
 
         const tooltipHtml = `
-          <div style="font-family: system-ui, sans-serif; min-width: 170px;">
-            <div style="font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: ${props.strokeColor || '#059669'};">
-              🛡️ ${type}
+          <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 190px; max-width: 260px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 2px;">
+              <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: ${props.strokeColor || '#059669'};">
+                ${catBadge}
+              </span>
+              <span style="font-size: 8px; font-family: monospace; background: rgba(255,255,255,0.08); padding: 1px 4px; border-radius: 3px; color: #cbd5e1;">
+                ${type}
+              </span>
             </div>
-            <div style="font-weight: 700; font-size: 11px; color: #f8fafc; margin-top: 1px;">
+            <div style="font-weight: 700; font-size: 11.5px; color: #f8fafc; line-height: 1.25;">
               ${title}
             </div>
-            <div style="font-size: 10px; color: #94a3b8; font-family: system-ui;">
-              ${mun}
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              📍 ${mun}
             </div>
+            ${legal}
           </div>
         `;
 
@@ -379,16 +414,27 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         const pathLayer = featureLayer as L.Path;
         pathLayer.on('mouseover', () => {
           pathLayer.setStyle({
-            weight: 3,
-            fillOpacity: 0.28,
+            weight: 3.5,
+            fillOpacity: 0.32,
           });
         });
 
         pathLayer.on('mouseout', () => {
           pathLayer.setStyle({
-            weight: 2,
-            fillOpacity: 0.14,
+            weight: props.category === 'nipas' ? 2.5 : 2,
+            fillOpacity: props.category === 'llda_zomap' ? 0.22 : 0.16,
           });
+        });
+
+        pathLayer.on('click', () => {
+          try {
+            const bounds = (pathLayer as any).getBounds?.();
+            if (bounds && map) {
+              map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14, animate: true });
+            }
+          } catch (e) {
+            // Safe fallback
+          }
         });
       },
     }).addTo(map);

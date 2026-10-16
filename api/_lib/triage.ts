@@ -122,15 +122,27 @@ Consider whether these current conditions amplify or mitigate the reported envir
   }
 
   if (protectedZone) {
+    let statutoryDirectives = 'Environmental violations occurring within this protected zone carry elevated statutory penalties.';
+    if (protectedZone.category === 'llda_zomap') {
+      statutoryDirectives = 'Violations involve Laguna de Bay aquatic sanctuary or 12.5m public shoreland buffer under LLDA ZOMAP / RA 4826 / PD 1067. Strictly flag unauthorized commercial fishpens, motorized trawling in sanctuaries, lakeshore encroachment, and toxic effluent dumping.';
+    } else if (protectedZone.category === 'kba_georeserve') {
+      statutoryDirectives = 'Violations involve high-value Key Biodiversity Areas, karst conservation zones (Masungi), or prehistoric archaeological cultural treasures (Angono-Binangonan Petroglyphs). Strictly flag karst excavation, unauthorized quarrying/blasting, land-grabbing/fencing, or rock art defacement/vandalism.';
+    } else if (protectedZone.category === 'nipas') {
+      statutoryDirectives = 'Violations involve a legislated National Protected Area or Forest Reserve under Republic Act No. 11038 (E-NIPAS) and PD 705. Strictly flag timber poaching, slash-and-burn (kaingin), charcoal making (ulingan), upland quarrying, and watershed encroachment.';
+    } else if (protectedZone.category === 'local_mountain') {
+      statutoryDirectives = 'Violations involve declared municipal mountain reserves, headwaters, or ecotourism sanctuaries. Strictly flag forest fire risks (siga), tree felling, stream pollution, and unauthorized excavation under local ordinances.';
+    }
+
     promptText += `\n
 <protected_ecological_zone_alert>
 CRITICAL JURISDICTION CONTEXT:
-The reported incident location falls within a declared protected ecological sanctuary or conservation watershed:
+The reported incident location falls within a declared protected ecological sanctuary, forest reserve, or conservation watershed:
 - Area: "${protectedZone.name}" (${protectedZone.municipality})
-- Classification: ${protectedZone.type.toUpperCase()}
-- Legal / Regulatory Framework: ${protectedZone.legalNote}
+- Classification: [${protectedZone.category.toUpperCase()}] ${protectedZone.type.toUpperCase().replace(/_/g, ' ')}
+- Statutory Authority: ${protectedZone.legalBasis || 'Philippine Environmental Law'}
+- Statutory Framework & Safeguards: ${protectedZone.legalNote}
 SPECIAL MANDATE:
-Environmental violations occurring within this protected zone (illegal tree cutting, slash-and-burn/kaingin, solid waste dumping, quarrying, chemical runoff) carry elevated statutory penalties.
+${statutoryDirectives}
 Elevate severity by +${protectedZone.severityBonus} level(s) (capped at 5). Explicitly mention the protected zone violation in your objective summary and internal reasoning.
 </protected_ecological_zone_alert>`;
   }

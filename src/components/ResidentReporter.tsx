@@ -837,10 +837,22 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               {detectedProtectedZone && !isOutOfJurisdiction && (
                 <div className="p-2.5 bg-stone-50 dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 text-xs flex items-start gap-2 shadow-2xs">
                   <ShieldCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
-                  <div className="space-y-0.5 min-w-0">
-                    <span className="font-semibold text-stone-900 dark:text-stone-100 block leading-tight">
-                      {t.protectedZoneNoticeResident}: {detectedProtectedZone.shortName}
-                    </span>
+                  <div className="space-y-1 min-w-0 w-full">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="font-semibold text-stone-900 dark:text-stone-100 block leading-tight truncate">
+                        {t.protectedZoneNoticeResident}: {detectedProtectedZone.shortName}
+                      </span>
+                      {detectedProtectedZone.category && (
+                        <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-stone-200/80 dark:bg-stone-800 text-stone-700 dark:text-stone-300 shrink-0">
+                          {detectedProtectedZone.category.replace(/_/g, ' ')}
+                        </span>
+                      )}
+                    </div>
+                    {detectedProtectedZone.legalBasis && (
+                      <div className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">
+                        ⚖️ {detectedProtectedZone.legalBasis}
+                      </div>
+                    )}
                     <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
                       {detectedProtectedZone.legalNote}
                     </p>

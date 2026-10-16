@@ -84,6 +84,206 @@ interface DashboardProps {
   onLogout?: () => void;
 }
 
+interface CuratedProtectedZoneItem {
+  id: string;
+  name: string;
+  shortName: string;
+  category: 'nipas' | 'llda_zomap' | 'kba_georeserve' | 'local_mountain';
+  categoryLabel: string;
+  color: string;
+  lat: number;
+  lng: number;
+  zoom: number;
+  municipality: string;
+}
+
+const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
+  // DENR-NIPAS
+  {
+    id: 'umrbpl',
+    name: 'Upper Marikina River Basin Protected Landscape',
+    shortName: 'Upper Marikina Watershed',
+    category: 'nipas',
+    categoryLabel: 'DENR-NIPAS',
+    color: '#047857',
+    lat: 14.6711,
+    lng: 121.2139,
+    zoom: 12,
+    municipality: 'Rodriguez, Antipolo, San Mateo, Baras, Tanay',
+  },
+  {
+    id: 'kaliwa-river-forest-reserve',
+    name: 'Kaliwa River Forest Reserve',
+    shortName: 'Kaliwa Forest Reserve',
+    category: 'nipas',
+    categoryLabel: 'DENR-NIPAS',
+    color: '#065f46',
+    lat: 14.6167,
+    lng: 121.3667,
+    zoom: 12,
+    municipality: 'Tanay (Rizal) / Gen. Nakar (Quezon)',
+  },
+  {
+    id: 'pamitinan-protected-landscape',
+    name: 'Pamitinan Protected Landscape',
+    shortName: 'Pamitinan Landscape',
+    category: 'nipas',
+    categoryLabel: 'DENR-NIPAS',
+    color: '#0f766e',
+    lat: 14.7339,
+    lng: 121.1900,
+    zoom: 14,
+    municipality: 'Rodriguez (Montalban)',
+  },
+  {
+    id: 'hinulugang-taktak-park',
+    name: 'Hinulugang Taktak Protected Landscape',
+    shortName: 'Hinulugang Taktak',
+    category: 'nipas',
+    categoryLabel: 'DENR-NIPAS',
+    color: '#b45309',
+    lat: 14.5972,
+    lng: 121.1653,
+    zoom: 15,
+    municipality: 'Antipolo City',
+  },
+  {
+    id: 'proc-1636-wildlife-sanctuary',
+    name: 'National Park, Wildlife Sanctuary & Game Preserve',
+    shortName: 'Proc. 1636 Sanctuary',
+    category: 'nipas',
+    categoryLabel: 'DENR-NIPAS',
+    color: '#115e59',
+    lat: 14.7500,
+    lng: 121.4722,
+    zoom: 11,
+    municipality: 'Eastern Sierra Madre corridor',
+  },
+  {
+    id: 'la-mesa-watershed-buffer',
+    name: 'La Mesa Watershed Reservation Buffer',
+    shortName: 'La Mesa Buffer',
+    category: 'nipas',
+    categoryLabel: 'DENR-NIPAS',
+    color: '#047857',
+    lat: 14.7150,
+    lng: 121.1450,
+    zoom: 13,
+    municipality: 'San Mateo & Rodriguez',
+  },
+  // LLDA ZOMAP
+  {
+    id: 'rayap-fish-sanctuary',
+    name: 'Rayap Fish Sanctuary (Talim Island)',
+    shortName: 'Rayap Fish Sanctuary',
+    category: 'llda_zomap',
+    categoryLabel: 'LLDA ZOMAP',
+    color: '#0284c7',
+    lat: 14.3300,
+    lng: 121.2500,
+    zoom: 12,
+    municipality: 'Binangonan, Cardona, Jalajala',
+  },
+  {
+    id: 'laguna-shoreland-buffer',
+    name: 'Laguna de Bay 12.5m Shoreland Buffer',
+    shortName: 'Laguna 12.5m Buffer',
+    category: 'llda_zomap',
+    categoryLabel: 'LLDA ZOMAP',
+    color: '#2563eb',
+    lat: 14.4500,
+    lng: 121.2200,
+    zoom: 11,
+    municipality: '9 Coastal LGUs',
+  },
+  // KBA & Georeserves
+  {
+    id: 'mounts-irid-angilo-kba',
+    name: 'Mounts Irid–Angilo & Binuang KBA (9720)',
+    shortName: 'Mts. Irid–Angilo KBA',
+    category: 'kba_georeserve',
+    categoryLabel: 'KBA / Karst',
+    color: '#6366f1',
+    lat: 14.7889,
+    lng: 121.3383,
+    zoom: 12,
+    municipality: 'Rodriguez (Puray / San Rafael)',
+  },
+  {
+    id: 'masungi-georeserve',
+    name: 'Masungi Georeserve & Karst Area',
+    shortName: 'Masungi Georeserve',
+    category: 'kba_georeserve',
+    categoryLabel: 'KBA / Karst',
+    color: '#16a34a',
+    lat: 14.5986,
+    lng: 121.3183,
+    zoom: 13,
+    municipality: 'Baras & Tanay',
+  },
+  {
+    id: 'angono-binangonan-petroglyphs',
+    name: 'Angono–Binangonan Petroglyphs Reserve',
+    shortName: 'Petroglyphs Reserve',
+    category: 'kba_georeserve',
+    categoryLabel: 'KBA / Karst',
+    color: '#c2410c',
+    lat: 14.5328,
+    lng: 121.1872,
+    zoom: 15,
+    municipality: 'Binangonan & Angono',
+  },
+  // Local Mountain Watersheds
+  {
+    id: 'mt-tagapo-sanctuary',
+    name: 'Mount Tagapo Local Forest & Ecotourism Zone',
+    shortName: 'Mt. Tagapo Sanctuary',
+    category: 'local_mountain',
+    categoryLabel: 'Local Mountain',
+    color: '#059669',
+    lat: 14.3310,
+    lng: 121.2280,
+    zoom: 13,
+    municipality: 'Binangonan & Cardona (Talim)',
+  },
+  {
+    id: 'mt-sembrano-watershed',
+    name: 'Mount Sembrano Watershed & Forest Reserve',
+    shortName: 'Mt. Sembrano Watershed',
+    category: 'local_mountain',
+    categoryLabel: 'Local Mountain',
+    color: '#4d7c0f',
+    lat: 14.3856,
+    lng: 121.3639,
+    zoom: 13,
+    municipality: 'Pililla & Jalajala',
+  },
+  {
+    id: 'mt-balagbag-maranat',
+    name: 'Mount Balagbag–Mount Maranat Foothills',
+    shortName: 'Mt. Balagbag Foothills',
+    category: 'local_mountain',
+    categoryLabel: 'Local Mountain',
+    color: '#475569',
+    lat: 14.8219,
+    lng: 121.1761,
+    zoom: 13,
+    municipality: 'Rodriguez (San Isidro)',
+  },
+  {
+    id: 'daranak-batlag-sanctuary',
+    name: 'Daranak & Batlag Falls Ecotourism Sanctuary',
+    shortName: 'Daranak Falls Sanctuary',
+    category: 'local_mountain',
+    categoryLabel: 'Local Mountain',
+    color: '#0d9488',
+    lat: 14.5428,
+    lng: 121.3533,
+    zoom: 14,
+    municipality: 'Tanay',
+  },
+];
+
 export const Dashboard: React.FC<DashboardProps> = ({
   lang,
   setLang,
@@ -193,6 +393,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [basemapMode, setBasemapMode] = useState<BasemapMode>('street');
   const [isMaskActive, setIsMaskActive] = useState<boolean>(true);
   const [fitProvinceKey, setFitProvinceKey] = useState<number>(0);
+  const [activeZoneCatFilter, setActiveZoneCatFilter] = useState<'all' | 'nipas' | 'llda_zomap' | 'kba_georeserve' | 'local_mountain'>('all');
 
   // Aggregated incident counts per municipality for real-time choropleth shading
   const choroplethCounts = useMemo(() => {
@@ -277,6 +478,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Protected Ecological Zone alert banner
   const renderProtectedZoneBadge = (zone?: ProtectedZoneHit | null, compact?: boolean) => {
     if (!zone) return null;
+    let catLabel = 'Statutory Reserve';
+    if (zone.category === 'nipas') catLabel = 'DENR-NIPAS Protected Area';
+    else if (zone.category === 'llda_zomap') catLabel = 'LLDA Aquatic Sanctuary / Buffer';
+    else if (zone.category === 'kba_georeserve') catLabel = 'Key Biodiversity Area / Karst';
+    else if (zone.category === 'local_mountain') catLabel = 'Local Mountain Watershed';
+
     return (
       <div className="p-3 bg-stone-50 dark:bg-stone-950/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-1.5 my-1.5">
         <div className="flex items-center justify-between gap-1.5">
@@ -292,6 +499,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
         <div className="text-xs font-semibold text-stone-900 dark:text-emerald-400 leading-snug">
           {zone.name}
+        </div>
+        <div className="text-[10px] text-stone-500 dark:text-stone-400 flex items-center gap-1">
+          <span>{catLabel}</span>
+          {zone.legalBasis && <span>• ⚖️ {zone.legalBasis}</span>}
         </div>
         {zone.legalNote && (
           compact ? (
@@ -2794,27 +3005,72 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                   {mapLayerMode === 'protected_zones' && (
                     <div className="space-y-1.5">
-                      <div className="text-[10px] font-semibold text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
-                        <ShieldAlert className="w-3.5 h-3.5 text-stone-700 dark:text-emerald-400" />
-                        <span>Protected Reserves & Buffers</span>
+                      <div className="text-[10px] font-semibold text-stone-700 dark:text-stone-300 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <ShieldAlert className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>Protected Reserves & Buffers</span>
+                        </div>
+                        <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400">
+                          {activeZoneCatFilter === 'all' ? '15 Active' : `${RIZAL_PROTECTED_ZONES_CATALOG.filter(z => z.category === activeZoneCatFilter).length} Active`}
+                        </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                        <div className="flex items-center gap-1.5 text-stone-700 dark:text-stone-300">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="truncate">Mt. Tagapo</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-stone-700 dark:text-stone-300">
-                          <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
-                          <span className="truncate">Laguna Buffer</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-stone-700 dark:text-stone-300">
-                          <span className="w-2 h-2 rounded-full bg-emerald-700 dark:bg-emerald-400 shrink-0" />
-                          <span className="truncate">Sierra Madre</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-stone-700 dark:text-stone-300">
-                          <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                          <span className="truncate">Hinulugang Taktak</span>
-                        </div>
+
+                      {/* Category Selector Chips */}
+                      <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar text-[9px]">
+                        {[
+                          { id: 'all', label: 'All (15)' },
+                          { id: 'nipas', label: 'NIPAS (6)' },
+                          { id: 'llda_zomap', label: 'LLDA (2)' },
+                          { id: 'kba_georeserve', label: 'KBA (3)' },
+                          { id: 'local_mountain', label: 'Local (4)' },
+                        ].map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setActiveZoneCatFilter(cat.id as any)}
+                            className={`px-1.5 py-0.5 rounded-md font-medium shrink-0 transition cursor-pointer ${
+                              activeZoneCatFilter === cat.id
+                                ? 'bg-stone-900 dark:bg-emerald-600 text-white'
+                                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                            }`}
+                          >
+                            {cat.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Interactive Zone List with Click-to-Fly */}
+                      <div className="max-h-28 overflow-y-auto space-y-0.5 pr-0.5 custom-scrollbar text-[10px]">
+                        {RIZAL_PROTECTED_ZONES_CATALOG
+                          .filter((zone) => activeZoneCatFilter === 'all' || zone.category === activeZoneCatFilter)
+                          .map((zone) => (
+                            <button
+                              key={zone.id}
+                              type="button"
+                              onClick={() => {
+                                setMapCenter({ lat: zone.lat, lng: zone.lng });
+                                setMapZoom(zone.zoom);
+                              }}
+                              className="w-full text-left p-1 rounded-md hover:bg-stone-100 dark:hover:bg-stone-800/80 transition flex items-center justify-between gap-1.5 cursor-pointer group"
+                              title={`Focus on ${zone.name} (${zone.municipality})`}
+                            >
+                              <span className="flex items-center gap-1.5 truncate">
+                                <span
+                                  className="w-2 h-2 rounded-full shrink-0"
+                                  style={{ backgroundColor: zone.color }}
+                                />
+                                <span className="truncate text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-white font-medium">
+                                  {zone.shortName}
+                                </span>
+                              </span>
+                              <span className="text-[9px] text-stone-400 dark:text-stone-500 shrink-0 font-mono">
+                                {zone.categoryLabel}
+                              </span>
+                            </button>
+                          ))}
+                      </div>
+                      <div className="text-[9px] text-stone-400 dark:text-stone-500 text-center font-normal pt-0.5">
+                        Click any reserve to focus map
                       </div>
                     </div>
                   )}
