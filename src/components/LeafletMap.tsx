@@ -30,7 +30,7 @@ export const PHILIPPINES_BOUNDS: [[number, number], [number, number]] = [
 ];
 
 export type MapLayerMode = 'standard' | 'boundaries' | 'choropleth' | 'protected_zones';
-export type BasemapMode = 'street' | 'satellite' | 'terrain' | 'dark';
+export type BasemapMode = 'street' | 'satellite' | 'terrain';
 
 export const BASEMAP_CONFIGS: Record<BasemapMode, { url: string; attribution: string; maxZoom: number; subdomains?: string }> = {
   street: {
@@ -38,13 +38,6 @@ export const BASEMAP_CONFIGS: Record<BasemapMode, { url: string; attribution: st
     attribution:
       'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom | PG-ENRO Rizal',
     maxZoom: 19,
-  },
-  dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> | PG-ENRO Rizal',
-    maxZoom: 20,
-    subdomains: 'abcd',
   },
   satellite: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',

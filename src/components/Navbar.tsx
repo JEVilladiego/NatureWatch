@@ -188,27 +188,27 @@ export const Navbar: React.FC<NavbarProps> = ({
   );
 
   const langToggle = (
-    <div className="flex items-center text-xs font-semibold" role="group" aria-label="Language">
+    <div className="flex items-center text-xs font-semibold bg-stone-100 dark:bg-stone-850 p-0.5 rounded-lg border border-transparent dark:border-stone-800" role="group" aria-label="Language">
       <button
         type="button"
         onClick={() => setLang('fil')}
         aria-pressed={lang === 'fil'}
-        className={`px-1 py-0.5 rounded cursor-pointer transition-colors ${FOCUS_RING} ${
+        className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${FOCUS_RING} ${
           lang === 'fil'
-            ? 'text-stone-900 dark:text-white font-bold'
+            ? 'text-stone-900 dark:text-stone-100 font-bold bg-white dark:bg-stone-750 shadow-2xs'
             : 'text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
         }`}
       >
         FIL
       </button>
-      <span className="text-stone-300 dark:text-stone-700" aria-hidden="true">·</span>
+      <span className="text-stone-300 dark:text-stone-700 px-0.5" aria-hidden="true">·</span>
       <button
         type="button"
         onClick={() => setLang('en')}
         aria-pressed={lang === 'en'}
-        className={`px-1 py-0.5 rounded cursor-pointer transition-colors ${FOCUS_RING} ${
+        className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${FOCUS_RING} ${
           lang === 'en'
-            ? 'text-stone-900 dark:text-white font-bold'
+            ? 'text-stone-900 dark:text-stone-100 font-bold bg-white dark:bg-stone-750 shadow-2xs'
             : 'text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
         }`}
       >
@@ -277,10 +277,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             )}
 
-            {/* Theme Switcher Button */}
-            {themeToggleButton}
+            {/* Language & Theme Switchers (shown directly on navbar only for public visitors) */}
+            {!officialUser && (
+              <>
+                <div className="hidden sm:flex items-center">
+                  {langToggle}
+                </div>
+                {themeToggleButton}
+              </>
+            )}
 
-            {/* Desktop account / language area */}
+            {/* Desktop account area */}
             <div className="hidden sm:flex items-center gap-3">
               {officialUser ? (
                 <div className="relative" ref={userMenuRef}>
@@ -289,17 +296,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => setIsUserMenuOpen((open) => !open)}
                     aria-expanded={isUserMenuOpen}
                     aria-haspopup="menu"
-                    className={`flex items-center gap-2 pl-1 pr-1.5 py-1 rounded-full hover:bg-stone-100 dark:hover:bg-stone-900 active:scale-95 transition-all duration-150 cursor-pointer select-none ${FOCUS_RING}`}
+                    className={`flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-stone-100 dark:hover:bg-stone-900 active:scale-95 transition-all duration-150 cursor-pointer select-none border border-transparent hover:border-stone-200 dark:hover:border-stone-800 ${
+                      isUserMenuOpen ? 'bg-stone-100 dark:bg-stone-850 border-stone-200 dark:border-stone-800 ring-2 ring-stone-900/10 dark:ring-white/10' : ''
+                    } ${FOCUS_RING}`}
+                    title="Account & System Preferences"
                   >
-                    <span className="w-7 h-7 rounded-full bg-stone-900 dark:bg-emerald-700 text-white flex items-center justify-center text-xs font-semibold">
+                    <span className="w-7 h-7 rounded-full bg-stone-900 dark:bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shadow-2xs">
                       {username[0].toUpperCase()}
                     </span>
-                    <span className="text-sm font-medium max-w-[140px] truncate text-stone-800 dark:text-stone-200">
+                    <span className="text-xs font-semibold max-w-[140px] truncate text-stone-800 dark:text-stone-200">
                       {username}
                     </span>
                     <ChevronDown
                       className={`w-3.5 h-3.5 text-stone-400 dark:text-stone-500 transition-transform duration-200 ease-out ${
-                        isUserMenuOpen ? 'rotate-180' : 'rotate-0'
+                        isUserMenuOpen ? 'rotate-180 text-stone-700 dark:text-stone-300' : 'rotate-0'
                       }`}
                     />
                   </button>
@@ -307,44 +317,133 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {isUserMenuOpen && (
                     <div
                       role="menu"
-                      className="absolute right-0 mt-2 w-56 bg-white dark:bg-stone-900 rounded-xl shadow-lg ring-1 ring-stone-200 dark:ring-stone-800 py-1.5 animate-nav-dropdown border border-transparent dark:border-stone-800"
+                      className="absolute right-0 mt-2 w-72 bg-white dark:bg-stone-900 rounded-2xl shadow-xl ring-1 ring-stone-200/90 dark:ring-stone-800 p-3 animate-nav-dropdown border border-stone-100 dark:border-stone-800 select-none z-50 divide-y divide-stone-100 dark:divide-stone-800"
                     >
-                      <p className="px-3.5 pt-1 pb-2 text-xs text-stone-500 dark:text-stone-400 truncate">
-                        {officialUser.email}
-                      </p>
-
-                      <div className="px-3.5 py-2 border-y border-stone-100 dark:border-stone-800 flex items-center justify-between">
-                        <span className="text-xs font-medium text-stone-600 dark:text-stone-400">Language</span>
-                        {langToggle}
+                      {/* Officer Identity Header */}
+                      <div className="pb-3 px-1">
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-9 h-9 rounded-full bg-stone-900 dark:bg-emerald-600 text-white flex items-center justify-center text-sm font-bold shadow-2xs">
+                            {username[0].toUpperCase()}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-stone-900 dark:text-stone-100 truncate">
+                              {username}
+                            </p>
+                            <p className="text-xs text-stone-500 dark:text-stone-400 truncate">
+                              {officialUser.email}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
+                          <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          <span>{t.accountOfficerRole || 'PG-ENRO Officer'}</span>
+                        </div>
                       </div>
 
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          onLogout();
-                        }}
-                        className={`mt-1 w-full flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800/80 hover:text-rose-700 dark:hover:text-rose-400 transition-colors cursor-pointer ${FOCUS_RING}`}
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>{t.signOutBtn}</span>
-                      </button>
+                      {/* Display / Theme Selection */}
+                      <div className="py-2.5 px-1 space-y-1.5">
+                        <div className="flex items-center justify-between text-xs font-semibold text-stone-600 dark:text-stone-400">
+                          <span>{t.displayLabel || 'Display'}</span>
+                          <span className="text-[10px] font-mono text-stone-400 dark:text-stone-500 capitalize">
+                            {theme === 'dark' ? 'Dark' : 'Light'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5 p-1 bg-stone-100 dark:bg-stone-850 rounded-xl" role="group" aria-label="Theme">
+                          <button
+                            type="button"
+                            onClick={() => theme !== 'light' && toggleTheme()}
+                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              theme === 'light'
+                                ? 'bg-white text-stone-950 shadow-xs ring-1 ring-stone-200/60 font-bold'
+                                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                            }`}
+                          >
+                            <Sun className={`w-3.5 h-3.5 ${theme === 'light' ? 'text-amber-500' : 'text-stone-400'}`} />
+                            <span>Light</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => theme !== 'dark' && toggleTheme()}
+                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              theme === 'dark'
+                                ? 'bg-stone-800 text-white shadow-xs ring-1 ring-stone-700 font-bold'
+                                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                            }`}
+                          >
+                            <Moon className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-emerald-400' : 'text-stone-400'}`} />
+                            <span>Dark</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Language Selection */}
+                      <div className="py-2.5 px-1 space-y-1.5">
+                        <div className="flex items-center justify-between text-xs font-semibold text-stone-600 dark:text-stone-400">
+                          <span>{t.languageLabel || 'Language'}</span>
+                          <span className="text-[10px] font-mono text-stone-400 dark:text-stone-500 uppercase">
+                            {lang}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5 p-1 bg-stone-100 dark:bg-stone-850 rounded-xl" role="group" aria-label="Language">
+                          <button
+                            type="button"
+                            onClick={() => setLang('fil')}
+                            aria-pressed={lang === 'fil'}
+                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              lang === 'fil'
+                                ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-white shadow-xs ring-1 ring-stone-200/60 dark:ring-stone-700 font-bold'
+                                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                            }`}
+                          >
+                            <span>Filipino</span>
+                            <span className="text-[9px] text-stone-400 dark:text-stone-500 font-mono">FIL</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setLang('en')}
+                            aria-pressed={lang === 'en'}
+                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              lang === 'en'
+                                ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-white shadow-xs ring-1 ring-stone-200/60 dark:ring-stone-700 font-bold'
+                                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                            }`}
+                          >
+                            <span>English</span>
+                            <span className="text-[9px] text-stone-400 dark:text-stone-500 font-mono">EN</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Sign Out Action */}
+                      <div className="pt-2 px-1">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onLogout();
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-700 dark:hover:text-rose-400 transition-colors cursor-pointer group ${FOCUS_RING}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <LogOut className="w-4 h-4 text-stone-400 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors" />
+                            <span>{t.signOutBtn}</span>
+                          </div>
+                          <span className="text-[10px] text-stone-400 font-mono group-hover:text-rose-500">ESC</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
               ) : (
-                <>
-                  {langToggle}
-                  <button
-                    type="button"
-                    onClick={onOpenLogin}
-                    className={`flex items-center gap-1.5 text-sm font-medium text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 active:scale-95 transition-all cursor-pointer rounded-md px-1 py-1 ${FOCUS_RING}`}
-                  >
-                    <Lock className="w-4 h-4" />
-                    <span>{t.officerLoginBtn}</span>
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={onOpenLogin}
+                  className={`flex items-center gap-1.5 text-sm font-medium text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 active:scale-95 transition-all cursor-pointer rounded-md px-1 py-1 ${FOCUS_RING}`}
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>{t.officerLoginBtn}</span>
+                </button>
               )}
             </div>
 

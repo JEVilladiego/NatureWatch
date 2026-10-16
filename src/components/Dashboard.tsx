@@ -190,18 +190,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 14.5800, lng: 121.2800 });
   const [mapZoom, setMapZoom] = useState<number>(11);
   const [mapLayerMode, setMapLayerMode] = useState<MapLayerMode>('boundaries');
-  const [basemapMode, setBasemapMode] = useState<BasemapMode>(() => (theme === 'dark' ? 'dark' : 'street'));
+  const [basemapMode, setBasemapMode] = useState<BasemapMode>('street');
   const [isMaskActive, setIsMaskActive] = useState<boolean>(true);
   const [fitProvinceKey, setFitProvinceKey] = useState<number>(0);
-
-  // Automatically sync map basemap with dark/light mode so no separate clicks are needed
-  useEffect(() => {
-    if (theme === 'dark') {
-      setBasemapMode('dark');
-    } else {
-      setBasemapMode('street');
-    }
-  }, [theme]);
 
   // Aggregated incident counts per municipality for real-time choropleth shading
   const choroplethCounts = useMemo(() => {
@@ -909,61 +900,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
-      {/* Top Command Banner & View Mode Switcher (rendered only in Workbench mode) */}
-      {viewMode === 'workbench' && (
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-stone-200 dark:border-stone-800">
-          <div>
-            <h1 className="font-bold text-2xl sm:text-3xl text-stone-950 dark:text-stone-100 tracking-tight leading-tight">
-              PG-ENRO Rizal Command Dashboard
-            </h1>
-            <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 font-medium">
-              Provincial Government of Rizal • Incident Triage & Human-in-the-Loop Operations
-            </p>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Tactical View Switcher Segmented Control */}
-            <div className="bg-stone-100 dark:bg-stone-900 p-1 rounded-xl border border-stone-200 dark:border-stone-800 flex items-center gap-1 shadow-2xs">
-              <button
-                type="button"
-                onClick={() => handleViewModeChange('workbench')}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer bg-stone-900 dark:bg-emerald-600 text-white shadow-xs"
-              >
-                <Layout className="w-3.5 h-3.5" />
-                <span>{lang === 'fil' ? 'Workbench' : 'Workbench'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleViewModeChange('full_map')}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-200/60 dark:hover:bg-stone-800"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-                <span>{lang === 'fil' ? 'Buong Mapa' : 'Full Map'}</span>
-              </button>
-            </div>
-
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 dark:bg-stone-900 dark:border dark:border-stone-800 text-white text-xs font-semibold rounded-lg">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              {lang === 'fil' ? 'Buhay na Telemetriya' : 'Live Telemetry'}
-            </span>
-
-            {/* Quick Theme Toggle in Command Banner */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="p-1.5 rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-50 dark:hover:bg-stone-800 active:scale-95 shadow-2xs transition cursor-pointer flex items-center justify-center"
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-4 h-4 text-amber-400" />
-              ) : (
-                <Moon className="w-4 h-4 text-stone-600" />
-              )}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================= */}
       {/* VIEW MODE 1: OPTION 1 (SPLIT-SCREEN TACTICAL WORKBENCH)   */}
@@ -1939,26 +1876,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* 2. FLOATING TOP-LEFT NAVIGATION PILL                     */}
           {/* ========================================================= */}
           <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-40 flex items-center gap-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-md rounded-xl p-1.5 pointer-events-auto animate-nav-pill transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
-            {/* NatureWatch GIS brand mark */}
-            <div className="flex items-center gap-1.5 px-2 py-0.5">
-              <div className="w-6 h-6 rounded-md bg-tagapo-800 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
-                NW
-              </div>
-              <span className="font-bold text-xs tracking-tight text-stone-900 dark:text-stone-100 hidden sm:inline">
-                LikasMap <span className="text-stone-700 dark:text-stone-400 font-mono text-[10px] font-bold">GIS</span>
+            {/* NatureWatch brand mark matching Navbar */}
+            <button
+              type="button"
+              onClick={() => {
+                if (onNavigateTab) onNavigateTab('workbench');
+                else handleViewModeChange('workbench');
+              }}
+              className="flex items-center gap-2 select-none px-1.5 py-0.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer text-left"
+              title="NatureWatch"
+            >
+              <span className="w-6 h-6 rounded-lg bg-tagapo-800 dark:bg-emerald-600 text-white flex items-center justify-center shadow-2xs">
+                <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2.2} />
               </span>
-            </div>
+              <span className="font-bold text-xs tracking-tight text-stone-950 dark:text-stone-100 hidden sm:inline">
+                NatureWatch
+              </span>
+              <span className="hidden md:flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
+                <span className="h-3.5 w-px bg-stone-300 dark:bg-stone-800" aria-hidden="true" />
+                <span className="font-semibold text-[11px] text-stone-600 dark:text-stone-300">{t.operationsLabel}</span>
+              </span>
+            </button>
 
             <div className="h-4 w-px bg-stone-200 dark:bg-stone-800 hidden sm:block" />
 
-            {/* Tab Navigation Pill Group */}
+            {/* Tab Navigation Pill Group matching Navbar */}
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 className="px-2.5 py-1 rounded-md text-xs font-semibold bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs cursor-default flex items-center gap-1.5 transition-all duration-150"
               >
                 <MapIcon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{lang === 'fil' ? 'Mapa' : 'Map'}</span>
+                <span className="hidden sm:inline">{t.officerNavMap}</span>
               </button>
 
               <button
@@ -1968,89 +1917,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   else handleViewModeChange('workbench');
                 }}
                 className="px-2.5 py-1 rounded-md text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
-                title="Switch to split-screen Workbench"
+                title={t.officerNavWorkbench}
               >
                 <Layout className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
-                <span className="hidden sm:inline">{lang === 'fil' ? 'Workbench' : 'Workbench'}</span>
+                <span className="hidden sm:inline">{t.officerNavWorkbench}</span>
               </button>
 
               {onNavigateTab && (
                 <button
                   type="button"
                   onClick={() => onNavigateTab('status')}
-                  className="px-2.5 py-1 rounded-md text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition-all duration-150 cursor-pointer hidden md:flex items-center gap-1.5"
-                  title="Track Status"
+                  className="px-2.5 py-1 rounded-md text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition-all duration-150 cursor-pointer hidden sm:flex items-center gap-1.5"
+                  title={t.officerNavStatus}
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
-                  <span>{lang === 'fil' ? 'Suriin ang Status' : 'Track Status'}</span>
+                  <Search className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
+                  <span className="hidden sm:inline">{t.officerNavStatus}</span>
                 </button>
               )}
             </div>
-
-            {/* Language Switcher (Segmented FIL · EN matching Navbar) */}
-            {setLang && (
-              <>
-                <div className="h-4 w-px bg-stone-200 dark:bg-stone-800" />
-                <div className="flex items-center text-xs font-semibold bg-stone-100 dark:bg-stone-850 p-0.5 rounded-lg border border-transparent dark:border-stone-800" role="group" aria-label="Language">
-                  <button
-                    type="button"
-                    onClick={() => setLang('fil')}
-                    aria-pressed={lang === 'fil'}
-                    className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
-                      lang === 'fil'
-                        ? 'text-stone-900 dark:text-stone-100 font-bold bg-white dark:bg-stone-750 shadow-2xs'
-                        : 'text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
-                    }`}
-                  >
-                    FIL
-                  </button>
-                  <span className="text-stone-300 dark:text-stone-700 px-0.5" aria-hidden="true">·</span>
-                  <button
-                    type="button"
-                    onClick={() => setLang('en')}
-                    aria-pressed={lang === 'en'}
-                    className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
-                      lang === 'en'
-                        ? 'text-stone-900 dark:text-stone-100 font-bold bg-white dark:bg-stone-750 shadow-2xs'
-                        : 'text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
-                    }`}
-                  >
-                    EN
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Theme Toggle in Full Map Mode */}
-            <div className="h-4 w-px bg-stone-200 dark:bg-stone-800" />
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="p-1.5 rounded-lg text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-90 transition-all duration-150 cursor-pointer flex items-center justify-center"
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-              ) : (
-                <Moon className="w-3.5 h-3.5 text-stone-600" />
-              )}
-            </button>
-
-            {/* Officer Logout */}
-            {onLogout && (
-              <>
-                <div className="h-4 w-px bg-stone-200 dark:bg-stone-800" />
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-90 rounded-lg transition-all duration-150 cursor-pointer"
-                  title="Sign out of Officer Portal"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
-              </>
-            )}
           </div>
 
           {/* ========================================================= */}
@@ -2353,33 +2237,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 /* SHEET MODE 2: CASE INSPECTOR & DECISION CONSOLE         */
                 /* ------------------------------------------------------- */
                 <div key={`dossier-mode-${selectedReport.id}`} className="flex flex-col h-full overflow-hidden animate-sheet-morph">
-                  {/* Header with Back to Queue button */}
+                  {/* Header with Icon Back button & Reference Code */}
                   <div className="px-3.5 py-2.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedReport(null)}
-                      className="flex items-center gap-1.5 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 px-2 py-1 rounded-md transition cursor-pointer"
-                      title={activeClusterFilter ? 'Return to Cluster Queue' : 'Return to Incident Queue'}
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300" />
-                      <span>{activeClusterFilter ? 'Cluster Queue' : t.backToQueueBtn || 'Queue'}</span>
-                    </button>
-
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedReport(null)}
+                        className="p-1.5 rounded-lg text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition cursor-pointer flex items-center justify-center shrink-0"
+                        title={activeClusterFilter ? 'Return to Cluster Queue' : 'Return to Incident Queue'}
+                        aria-label="Back to Queue"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                      <span className="font-mono font-bold text-xs tracking-wider text-stone-950 dark:text-stone-100 truncate">
                         {selectedReport.referenceCode}
                       </span>
-                      {selectedReport.status !== 'spam' && (
-                        <button
-                          type="button"
-                          onClick={handleMarkAsSpam}
-                          className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-stone-500 dark:text-stone-400 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-stone-200 dark:border-stone-800 transition cursor-pointer flex items-center gap-1"
-                          title="Quarantine report to Spam Queue"
-                        >
-                          <AlertTriangle className="w-3 h-3 text-stone-400 dark:text-stone-500" />
-                          <span>Flag as Spam</span>
-                        </button>
-                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 inline-flex items-center gap-1.5 capitalize">
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
@@ -2397,8 +2272,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <button
                         type="button"
                         onClick={() => setIsSheetOpen(false)}
-                        className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-md transition cursor-pointer"
+                        className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
                         title="Collapse panel"
+                        aria-label="Collapse panel"
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
                       </button>
@@ -2611,6 +2487,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <span>Gemini AI Triage</span>
                         </div>
                         <div className="flex items-center gap-1.5">
+                          {selectedReport.status !== 'spam' && (selectedReport.aiTriage?.isSpam || (selectedReport.aiTriage?.confidence && selectedReport.aiTriage.confidence < 0.45)) && (
+                            <button
+                              type="button"
+                              onClick={handleMarkAsSpam}
+                              className="px-2 py-0.5 rounded text-[10px] font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900 transition cursor-pointer flex items-center gap-1"
+                              title="Flag report as troll/spam and quarantine"
+                            >
+                              <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                              <span>Flag as Spam</span>
+                            </button>
+                          )}
                           {selectedReport.aiTriage?.confidence && (
                             <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
                               {Math.round(selectedReport.aiTriage.confidence * 100)}% Conf
@@ -2675,9 +2562,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                     {/* Officer Decision Console */}
                     <div className="bg-stone-50/70 dark:bg-stone-950/60 p-3.5 rounded-lg border border-stone-200 dark:border-stone-800 space-y-3">
-                      <span className="font-semibold text-xs text-stone-700 dark:text-stone-300 block">
-                        Officer Decision Console
-                      </span>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-xs text-stone-700 dark:text-stone-300 block">
+                          Officer Decision Console
+                        </span>
+                        {selectedReport.status !== 'spam' && (
+                          <button
+                            type="button"
+                            onClick={handleMarkAsSpam}
+                            className="px-2 py-0.5 rounded-md text-[11px] font-semibold text-stone-500 dark:text-stone-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-stone-200 dark:border-stone-800 transition cursor-pointer flex items-center gap-1"
+                            title="Quarantine report to Spam Queue"
+                          >
+                            <AlertTriangle className="w-3 h-3 text-stone-400 dark:text-stone-500" />
+                            <span>Flag as Spam</span>
+                          </button>
+                        )}
+                      </div>
 
                       {/* Operational Status Selector */}
                       <div>
@@ -2844,18 +2744,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     {/* Street Card */}
                     <button
                       type="button"
-                      onClick={() => setBasemapMode(theme === 'dark' ? 'dark' : 'street')}
+                      onClick={() => setBasemapMode('street')}
                       className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition cursor-pointer text-center ${
-                        basemapMode === 'street' || basemapMode === 'dark'
+                        basemapMode === 'street'
                           ? 'bg-stone-900 text-white border-stone-900 shadow-xs dark:bg-emerald-600 dark:border-emerald-500'
                           : 'bg-stone-50 hover:bg-stone-100/80 text-stone-700 border-stone-200/80 dark:bg-stone-800/60 dark:hover:bg-stone-800 dark:text-stone-300 dark:border-stone-700'
                       }`}
-                      title={theme === 'dark' ? "Carto Dark Matter tactical road cartography" : "Standard road network & LGU cartography"}
+                      title="Standard road network & LGU cartography"
                     >
-                      <MapIcon className={`w-4 h-4 mb-1 ${basemapMode === 'street' || basemapMode === 'dark' ? 'text-white' : 'text-stone-600 dark:text-stone-400'}`} />
+                      <MapIcon className={`w-4 h-4 mb-1 ${basemapMode === 'street' ? 'text-white' : 'text-stone-600 dark:text-stone-400'}`} />
                       <span className="text-xs font-semibold leading-tight">Street</span>
-                      <span className={`text-[8px] mt-0.5 leading-none ${basemapMode === 'street' || basemapMode === 'dark' ? 'text-stone-300 dark:text-emerald-100' : 'text-stone-400 dark:text-stone-500'}`}>
-                        {theme === 'dark' ? 'Dark' : 'Roads'}
+                      <span className={`text-[8px] mt-0.5 leading-none ${basemapMode === 'street' ? 'text-stone-300 dark:text-emerald-100' : 'text-stone-400 dark:text-stone-500'}`}>
+                        Roads
                       </span>
                     </button>
 
@@ -3067,7 +2967,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <Layers className="w-4 h-4 text-stone-700 dark:text-stone-300" />
               <span className="text-xs font-semibold text-stone-900 dark:text-stone-100">Layers</span>
               <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium capitalize pl-1.5 border-l border-stone-200 dark:border-stone-800">
-                {basemapMode === 'dark' ? 'Street' : basemapMode}
+                {basemapMode}
               </span>
               <ChevronUp className={`w-3.5 h-3.5 text-stone-400 dark:text-stone-500 transition-transform ${isLayersPanelOpen ? 'rotate-180' : ''}`} />
             </button>

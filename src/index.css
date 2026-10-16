@@ -119,14 +119,6 @@
   transition: fill 0.3s ease, fill-opacity 0.3s ease;
 }
 
-.dark .non-rizal-jurisdiction-mask {
-  mix-blend-mode: normal !important;
-  fill: #141517 !important;
-  fill-opacity: 0.76 !important;
-  stroke: #22c55e !important;
-  stroke-opacity: 0.9 !important;
-}
-
 /* Tactical Cartography: Gentle calming of raw tile saturation */
 .leaflet-tile-pane {
   filter: saturate(0.92) contrast(1.02);

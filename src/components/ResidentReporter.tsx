@@ -115,19 +115,10 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   } | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [basemapMode, setBasemapMode] = useState<BasemapMode>(() => (theme === 'dark' ? 'dark' : 'street'));
+  const [basemapMode, setBasemapMode] = useState<BasemapMode>('street');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-
-  // Automatically sync map basemap with dark/light mode so no separate clicks are needed
-  useEffect(() => {
-    if (theme === 'dark') {
-      setBasemapMode('dark');
-    } else {
-      setBasemapMode('street');
-    }
-  }, [theme]);
 
   // Auto-acquire GPS on mount
   useEffect(() => {
@@ -862,14 +853,14 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-900 p-0.5 rounded-md text-[11px] font-semibold border border-transparent dark:border-stone-800">
                   <button
                     type="button"
-                    onClick={() => setBasemapMode(theme === 'dark' ? 'dark' : 'street')}
+                    onClick={() => setBasemapMode('street')}
                     className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                      basemapMode === 'street' || basemapMode === 'dark'
+                      basemapMode === 'street'
                         ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
                         : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
                     }`}
                   >
-                    {theme === 'dark' ? 'Dark' : 'Street'}
+                    Street
                   </button>
                   <button
                     type="button"
@@ -881,6 +872,17 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                     }`}
                   >
                     Satellite
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBasemapMode('terrain')}
+                    className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                      basemapMode === 'terrain'
+                        ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
+                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Terrain
                   </button>
                 </div>
               </div>
@@ -1010,14 +1012,14 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   <div className="flex items-center gap-0.5 bg-stone-100 dark:bg-stone-900 p-0.5 rounded-md text-[11px] font-semibold border border-transparent dark:border-stone-800">
                     <button
                       type="button"
-                      onClick={() => setBasemapMode(theme === 'dark' ? 'dark' : 'street')}
+                      onClick={() => setBasemapMode('street')}
                       className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                        basemapMode === 'street' || basemapMode === 'dark'
+                        basemapMode === 'street'
                           ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
                           : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
                       }`}
                     >
-                      {theme === 'dark' ? 'Dark' : 'Street'}
+                      Street
                     </button>
                     <button
                       type="button"
@@ -1029,6 +1031,17 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                       }`}
                     >
                       Satellite
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBasemapMode('terrain')}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                        basemapMode === 'terrain'
+                          ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
+                          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Terrain
                     </button>
                   </div>
                   <span className="text-[11px] text-stone-400 dark:text-stone-500 font-mono">
