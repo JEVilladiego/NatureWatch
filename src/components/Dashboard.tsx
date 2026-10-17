@@ -763,6 +763,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [protectedZoneSearchTerm, setProtectedZoneSearchTerm] = useState<string>('');
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
 
+  // Workbench filter popover state
+  const [openFilterPopover, setOpenFilterPopover] = useState<'municipality' | 'severity' | 'category' | 'status' | null>(null);
+  const workbenchFilterBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (workbenchFilterBarRef.current && !workbenchFilterBarRef.current.contains(e.target as Node)) {
+        setOpenFilterPopover(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Tab 5: Live Weather & Air Quality State
   const [selectedWeatherLguId, setSelectedWeatherLguId] = useState<string>('rizal-center');
   const [atmosphericData, setAtmosphericData] = useState<FullAtmosphericData | null>(null);
@@ -2979,7 +2993,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const activeMetadata = CATEGORIES[activeCategory as IncidentCategory] || CATEGORIES.other;
 
   return (
-    <div className={viewMode === 'full_map' ? 'w-full h-full relative overflow-hidden flex-1' : 'mx-auto space-y-4 max-w-7xl px-4 sm:px-6 lg:px-8 py-2 sm:py-4'}>
+    <div className={viewMode === 'full_map' ? 'w-full h-full relative overflow-hidden flex-1' : 'w-full max-w-[1720px] mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-3 space-y-3'}>
       {/* Optional Alert Notification Toast */}
       {(loadError || actionError) && (
         <div role="alert" className={`p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center justify-between gap-2 shadow-xs ${viewMode === 'full_map' ? 'absolute top-16 left-1/2 -translate-x-1/2 z-40 max-w-md w-full' : ''}`}>
@@ -3029,430 +3043,644 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* VIEW MODE 1: OPTION 1 (SPLIT-SCREEN TACTICAL WORKBENCH)   */}
       {/* ========================================================= */}
       {viewMode === 'workbench' && (
-        <div className="space-y-4">
-          {/* Unified Operations Telemetry Strip */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-stone-200 dark:divide-stone-800 border border-stone-200 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-900/40 rounded-xl overflow-hidden shadow-2xs">
-            <div className="p-3.5 sm:p-4 bg-white/60 dark:bg-stone-900/60">
-              <div className="text-xs font-semibold text-stone-500 dark:text-stone-400">
-                {t.statsOpen}
+        <div className="flex flex-col gap-3 h-auto lg:h-[calc(100vh-5.5rem)] lg:min-h-[700px]">
+          {/* Unified Compact Command Bar */}
+          <div
+            ref={workbenchFilterBarRef}
+            className="bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 rounded-xl px-3 py-2 shadow-2xs flex flex-wrap items-center justify-between gap-2.5 shrink-0"
+          >
+            {/* Left: Compact KPI Pill Counters */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 text-xs font-medium border border-stone-200/50 dark:border-stone-750">
+                <span className="text-[11px] text-stone-500 dark:text-stone-400">{t.statsOpen}</span>
+                <span className="font-mono font-bold text-stone-950 dark:text-stone-100">{stats.openCount}</span>
               </div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="font-mono text-2xl sm:text-3xl font-bold text-stone-950 dark:text-stone-100">
-                  {stats.openCount}
-                </span>
-                <span className="text-[11px] text-stone-400 dark:text-stone-500 font-medium">active cases</span>
-              </div>
-            </div>
 
-            <div className="p-3.5 sm:p-4 bg-rose-50/40 dark:bg-rose-950/20">
-              <div className="text-xs font-semibold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
-                {t.statsUrgent}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200/70 dark:border-rose-900/60 text-xs font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
+                <span className="text-[11px] text-rose-600 dark:text-rose-400">{t.statsUrgent}</span>
+                <span className="font-mono font-bold text-rose-700 dark:text-rose-300">{stats.urgentCount}</span>
               </div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="font-mono text-2xl sm:text-3xl font-bold text-rose-700 dark:text-rose-400">
-                  {stats.urgentCount}
-                </span>
-                <span className="text-[11px] text-rose-600 dark:text-rose-500 font-medium">severity 4-5</span>
-              </div>
-            </div>
 
-            <div className="p-3.5 sm:p-4 bg-white/60 dark:bg-stone-900/60">
-              <div className="text-xs font-semibold text-stone-500 dark:text-stone-400">
-                {t.statsResolved}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 text-xs font-medium border border-stone-200/50 dark:border-stone-750">
+                <span className="text-[11px] text-stone-500 dark:text-stone-400">{t.statsResolved}</span>
+                <span className="font-mono font-bold text-stone-900 dark:text-stone-200">{stats.resolvedCount}</span>
               </div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="font-mono text-2xl sm:text-3xl font-bold text-stone-900 dark:text-stone-100">
-                  {stats.resolvedCount}
-                </span>
-                <span className="text-[11px] text-stone-400 dark:text-stone-500 font-medium">closed cases</span>
+
+              <div className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-stone-50 dark:bg-stone-850 text-stone-500 dark:text-stone-400 text-xs font-medium border border-stone-200/50 dark:border-stone-800">
+                <span className="text-[11px] text-stone-400 dark:text-stone-500">SLA</span>
+                <span className="font-mono font-bold text-stone-700 dark:text-stone-300">18.4h</span>
               </div>
             </div>
 
-            <div className="p-3.5 sm:p-4 bg-white/60 dark:bg-stone-900/60">
-              <div className="text-xs font-semibold text-stone-500 dark:text-stone-400">
-                {t.statsAvgTime}
-              </div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="font-mono text-2xl sm:text-3xl font-bold text-stone-900 dark:text-stone-100">
-                  18.4 hrs
-                </span>
-                <span className="text-[11px] text-stone-400 dark:text-stone-500 font-medium">provincial SLA</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Integrated Tactical Command Toolbar */}
-          <div className="p-2.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xs flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="w-4 h-4 text-stone-400 dark:text-stone-500 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search reference code, description, or barangay..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 placeholder:text-stone-400 dark:placeholder:text-stone-600"
-              />
-            </div>
-
-            {/* Municipality Filter */}
-            <select
-              value={municipalityFilter}
-              onChange={(e) => {
-                const mun = e.target.value;
-                setMunicipalityFilter(mun);
-                if (mun !== 'all' && MUNICIPALITY_COORDINATES[mun]) {
-                  setMapCenter(MUNICIPALITY_COORDINATES[mun]);
-                  setMapZoom(13);
-                }
-              }}
-              className="text-xs font-semibold px-2.5 py-1.5 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 rounded-lg focus:outline-none max-w-[170px] truncate"
-            >
-              <option value="all">{t.allMunicipalitiesFilter}</option>
-              {RIZAL_MUNICIPALITIES.map((mun) => (
-                <option key={mun} value={mun}>
-                  {mun}
-                </option>
-              ))}
-            </select>
-
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="text-xs font-semibold px-2.5 py-1.5 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 rounded-lg focus:outline-none"
-            >
-              <option value="all">{lang === 'fil' ? 'Lahat ng Katayuan' : 'All Statuses'}</option>
-              <option value="pending">{lang === 'fil' ? 'Nakabinbin (Pending)' : 'Pending'}</option>
-              <option value="in_progress">{lang === 'fil' ? 'Inaaksyunan (In Progress)' : 'In Progress'}</option>
-              <option value="resolved">{lang === 'fil' ? 'Naresolba (Resolved)' : 'Resolved'}</option>
-              <option value="spam">{lang === 'fil' ? 'Spam / Naka-quarantine' : 'Spam / Quarantined'}</option>
-            </select>
-
-            {/* Category Filter */}
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="text-xs font-semibold px-2.5 py-1.5 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 rounded-lg focus:outline-none max-w-[170px] truncate"
-            >
-              <option value="all">{lang === 'fil' ? 'Lahat ng Kategorya' : 'All Categories'}</option>
-              {Object.entries(CATEGORIES).map(([key, cat]) => (
-                <option key={key} value={key}>
-                  {lang === 'fil' ? cat.labelFil : cat.labelEn}
-                </option>
-              ))}
-            </select>
-
-            {/* Severity Filter */}
-            <select
-              value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value)}
-              className="text-xs font-semibold px-2.5 py-1.5 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 rounded-lg focus:outline-none"
-            >
-              <option value="all">{lang === 'fil' ? 'Lahat ng Panganib' : 'All Severities'}</option>
-              <option value="urgent">{lang === 'fil' ? 'Kagyat (4-5)' : 'Urgent Hazards (4-5)'}</option>
-              <option value="1">1 - {lang === 'fil' ? 'Maliit' : 'Minor'}</option>
-              <option value="2">2 - {lang === 'fil' ? 'Mababa' : 'Low'}</option>
-              <option value="3">3 - {lang === 'fil' ? 'Katamtaman' : 'Moderate'}</option>
-              <option value="4">4 - {lang === 'fil' ? 'Mataas' : 'High'}</option>
-              <option value="5">5 - {lang === 'fil' ? 'Kritikal' : 'Critical'}</option>
-            </select>
-
-            {(municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
-              <button
-                onClick={() => {
-                  setMunicipalityFilter('all');
-                  setStatusFilter('all');
-                  setCategoryFilter('all');
-                  setSeverityFilter('all');
-                  setSearchTerm('');
-                  setMapCenter({ lat: 14.5800, lng: 121.2800 });
-                  setMapZoom(11);
-                }}
-                className="font-display text-xs font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300 px-2 py-1 cursor-pointer"
-              >
-                Reset
-              </button>
-            )}
-
-            {/* Sync NASA FIRMS Satellites Button */}
-            <button
-              type="button"
-              onClick={handleSyncSatellites}
-              disabled={isSyncingSatellites}
-              title="Sync NASA FIRMS VIIRS satellite thermal anomaly hotspots for Rizal Province"
-              className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-300/80 dark:border-amber-800 disabled:opacity-40 text-amber-800 dark:text-amber-300 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ml-auto"
-            >
-              <Satellite className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{isSyncingSatellites ? 'Syncing...' : 'Sync Satellites'}</span>
-            </button>
-
-            {/* Re-run AI Triage Button */}
-            <button
-              type="button"
-              onClick={handleRetryTriage}
-              disabled={isRetryingTriage || !selectedReport}
-              title={selectedReport ? "Re-run AI triage on selected incident" : "Select an incident to re-run triage"}
-              className="px-2.5 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 disabled:opacity-40 disabled:hover:bg-stone-100 dark:disabled:hover:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-lg text-xs font-display font-bold uppercase tracking-wider flex items-center gap-1 transition cursor-pointer"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{isRetryingTriage ? 'Triaging...' : 'AI Triage'}</span>
-            </button>
-          </div>
-
-          {/* Split-Screen Tactical Workbench Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            {/* Left Column (7 cols): Map Stage with In-Map HUD & Queue Stream */}
-            <div className="lg:col-span-7 space-y-4">
-              {/* Map Canvas with Integrated HUD */}
-              <div className="relative border border-stone-300 dark:border-stone-800 rounded-xl overflow-hidden shadow-xs bg-stone-100 dark:bg-stone-950">
-                {/* Top-Right Shortcut: Maximize to Full Map */}
-                <button
-                  type="button"
-                  onClick={() => handleViewModeChange('full_map')}
-                  title="Expand to Full Map Canvas"
-                  className="absolute top-2.5 right-2.5 z-20 px-2.5 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md bg-white/95 dark:bg-stone-900/95 hover:bg-stone-50 dark:hover:bg-stone-850 active:bg-stone-100 dark:active:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-200/90 dark:border-stone-800 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 dark:ring-white/5 transition cursor-pointer flex items-center gap-1.5"
-                >
-                  <Maximize2 className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300" />
-                  <span className="hidden sm:inline">Full Map</span>
-                </button>
-
-                {/* Bottom-right Severity Indication Legend */}
-                <div className="absolute bottom-9 right-2.5 z-20 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] font-display font-bold uppercase tracking-wide border border-stone-200/90 dark:border-stone-800 shadow-[0_4px_16px_rgba(15,23,42,0.08),_0_1px_3px_rgba(15,23,42,0.05)] ring-1 ring-black/5 dark:ring-white/5 flex items-center gap-2.5 text-stone-700 dark:text-stone-300 pointer-events-none select-none">
-                  <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-400">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    1-2 Minor
-                  </span>
-                  <span className="flex items-center gap-1 text-amber-800 dark:text-amber-400">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    3 Mod
-                  </span>
-                  <span className="flex items-center gap-1 text-rose-800 dark:text-rose-400">
-                    <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
-                    4-5 Urgent
-                  </span>
-                  <span className="hidden sm:inline-block text-stone-300 dark:text-stone-700">|</span>
-                  <span className="hidden sm:inline-block text-stone-500 dark:text-stone-400 font-medium normal-case">
-                    num = count
-                  </span>
-                </div>
-
-                {/* Map Component: Plain map with markers */}
-                <LeafletMap
-                  mode="dashboard"
-                  center={mapCenter}
-                  zoom={mapZoom}
-                  fitProvinceKey={fitProvinceKey}
-                  reports={mapVisibleReports}
-                  selectedReportId={selectedReport?.id}
-                  layerMode="standard"
-                  basemap={basemapMode}
-                  activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
-                  onMunicipalityClick={(mun) => handleQuickJump(mun)}
-                  onClusterClick={(group) => handleClusterClick(group)}
-                  choroplethCounts={choroplethCounts}
-                  maskNonRizal={false}
-                  showMgbQuarries={showMgbQuarries}
-                  selectedQuarryId={selectedQuarryId}
-                  onSelectQuarry={(qId) => handleSelectQuarry(qId)}
-                  quarryFilter={{
-                    type: quarryTypeFilter,
-                    municipality: quarryMunicipalityFilter,
-                    search: quarrySearchTerm,
-                  }}
-                  onSelectReport={(r) => {
-                    setSelectedReport(r);
-                    const coords = resolveReportCoordinates(r);
-                    setMapCenter(coords);
-                    setMapZoom(14);
-                  }}
-                  className="h-[440px] sm:h-[480px] w-full"
+            {/* Right: Search, Popover Filter Chips, and Quick Actions */}
+            <div className="flex items-center gap-1.5 flex-wrap ml-auto">
+              {/* Search Bar */}
+              <div className="relative w-44 sm:w-56 lg:w-60">
+                <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-2" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search code, place..."
+                  className="w-full pl-8 pr-7 py-1 text-xs bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 placeholder:text-stone-400 dark:placeholder:text-stone-600 transition"
                 />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2 top-2 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 cursor-pointer"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
               </div>
 
-              {/* Incident Queue Stream */}
-              <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800 shadow-2xs overflow-hidden">
-                <div className="px-4 py-2.5 bg-stone-50 dark:bg-stone-950/80 border-b border-stone-200 dark:border-stone-800 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setQueueTab('active')}
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
-                        queueTab === 'active'
-                          ? 'bg-stone-900 dark:bg-stone-800 text-white shadow-2xs'
-                          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-200/60 dark:hover:bg-stone-800'
-                      }`}
-                    >
-                      <span>{lang === 'fil' ? 'Aktibo' : 'Active'}</span>
-                      <span className="font-mono text-[10px] opacity-80">({activeReportsCount})</span>
-                    </button>
+              {/* Popover Filter Chips */}
+              <div className="flex items-center gap-1">
+                {/* Municipality Popover */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setOpenFilterPopover(openFilterPopover === 'municipality' ? null : 'municipality')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${
+                      municipalityFilter !== 'all'
+                        ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100 font-semibold'
+                        : 'bg-stone-50 dark:bg-stone-950 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-850'
+                    }`}
+                  >
+                    <MapPin className="w-3 h-3 shrink-0 opacity-70" />
+                    <span className="max-w-[90px] truncate">
+                      {municipalityFilter === 'all' ? (lang === 'fil' ? 'Bayan' : 'Municipality') : municipalityFilter}
+                    </span>
+                    <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${openFilterPopover === 'municipality' ? 'rotate-180' : ''}`} />
+                  </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setQueueTab('spam')}
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
-                        queueTab === 'spam'
-                          ? 'bg-rose-900 text-white shadow-2xs dark:bg-rose-950 dark:border dark:border-rose-800'
-                          : 'text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'
-                      }`}
-                    >
-                      <AlertTriangle className="w-3.5 h-3.5" />
-                      <span>{lang === 'fil' ? 'Spam' : 'Spam'}</span>
-                      {spamReportsCount > 0 && (
-                        <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                          queueTab === 'spam' ? 'bg-rose-800 text-rose-100' : 'bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300'
-                        }`}>
-                          {spamReportsCount}
-                        </span>
-                      )}
-                    </button>
-                  </div>
-
-                  <span className="text-xs font-mono font-semibold text-stone-500 dark:text-stone-400">
-                    {filteredReports.length} {filteredReports.length === 1 ? 'incident' : 'incidents'}
-                  </span>
-                </div>
-
-                <div className="divide-y divide-stone-100 dark:divide-stone-850 max-h-[380px] overflow-y-auto">
-                  {filteredReports.length === 0 ? (
-                    <div className="p-8 text-center text-xs text-stone-500 dark:text-stone-400">
-                      No incident reports match your current filters.
-                    </div>
-                  ) : (
-                    filteredReports.map((report) => {
-                      const isSelected = selectedReport?.id === report.id;
-                      const sev = report.final?.severity || report.aiTriage?.severity || 3;
-                      const cat = report.final?.category || report.aiTriage?.category || 'other';
-                      const catMeta = CATEGORIES[cat as IncidentCategory] || CATEGORIES.other;
-
-                      return (
-                        <div
-                          key={report.id}
+                  {openFilterPopover === 'municipality' && (
+                    <div className="absolute right-0 top-full mt-1.5 z-40 w-52 max-h-64 overflow-y-auto bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-lg p-1 space-y-0.5">
+                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+                        {t.allMunicipalitiesFilter}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMunicipalityFilter('all');
+                          setMapCenter({ lat: 14.5800, lng: 121.2800 });
+                          setMapZoom(11);
+                          setOpenFilterPopover(null);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
+                          municipalityFilter === 'all'
+                            ? 'bg-stone-100 dark:bg-stone-800 text-stone-950 dark:text-white font-semibold'
+                            : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850'
+                        }`}
+                      >
+                        <span>{t.allMunicipalitiesFilter}</span>
+                        {municipalityFilter === 'all' && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                      </button>
+                      {RIZAL_MUNICIPALITIES.map((mun) => (
+                        <button
+                          key={mun}
+                          type="button"
                           onClick={() => {
-                            setSelectedReport(report);
-                            const coords = resolveReportCoordinates(report);
-                            setMapCenter(coords);
-                            setMapZoom(14);
+                            setMunicipalityFilter(mun);
+                            if (MUNICIPALITY_COORDINATES[mun]) {
+                              setMapCenter(MUNICIPALITY_COORDINATES[mun]);
+                              setMapZoom(13);
+                            }
+                            setOpenFilterPopover(null);
                           }}
-                          className={`p-3.5 hover:bg-stone-50 dark:hover:bg-stone-850/60 cursor-pointer transition flex items-start justify-between gap-3 ${
-                            isSelected ? 'bg-stone-100 dark:bg-stone-800/80 ring-1 ring-stone-900/10 dark:ring-stone-700' : ''
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
+                            municipalityFilter === mun
+                              ? 'bg-stone-100 dark:bg-stone-800 text-stone-950 dark:text-white font-semibold'
+                              : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850'
                           }`}
                         >
-                          <div className="space-y-1 flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
-                                {report.referenceCode}
-                              </span>
-                              <span
-                                className={`text-[10px] font-mono px-1.5 py-0.2 rounded border ${catMeta.badgeColor}`}
-                              >
-                                {lang === 'fil' ? catMeta.labelFil : catMeta.labelEn}
-                              </span>
-                              {report.duplicateClusterId && (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center gap-0.5">
-                                  <Layers className="w-2.5 h-2.5" />
-                                  Cluster
-                                </span>
-                              )}
-                            </div>
+                          <span>{mun}</span>
+                          {municipalityFilter === mun && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-                            <p className="text-xs text-stone-600 dark:text-stone-300 line-clamp-1">
-                              {report.aiTriage?.summary || report.rawInput.description}
-                            </p>
+                {/* Severity Popover */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setOpenFilterPopover(openFilterPopover === 'severity' ? null : 'severity')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${
+                      severityFilter !== 'all'
+                        ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100 font-semibold'
+                        : 'bg-stone-50 dark:bg-stone-950 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-850'
+                    }`}
+                  >
+                    <span>
+                      {severityFilter === 'all'
+                        ? (lang === 'fil' ? 'Panganib' : 'Severity')
+                        : severityFilter === 'urgent'
+                        ? 'Urgent (4-5)'
+                        : `Sev ${severityFilter}`}
+                    </span>
+                    <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${openFilterPopover === 'severity' ? 'rotate-180' : ''}`} />
+                  </button>
 
-                            <div className="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500 font-mono">
-                              <span>{[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}</span>
-                              <span>•</span>
-                              <span>{new Date(report.createdAt).toLocaleDateString()}</span>
-                            </div>
-                          </div>
+                  {openFilterPopover === 'severity' && (
+                    <div className="absolute right-0 top-full mt-1.5 z-40 w-48 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-lg p-1 space-y-0.5">
+                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+                        {lang === 'fil' ? 'Antas ng Panganib' : 'Hazard Severity'}
+                      </div>
+                      {[
+                        { id: 'all', label: lang === 'fil' ? 'Lahat ng Panganib' : 'All Severities' },
+                        { id: 'urgent', label: lang === 'fil' ? 'Kagyat (4-5)' : 'Urgent Hazards (4-5)' },
+                        { id: '1', label: `1 - ${lang === 'fil' ? 'Maliit' : 'Minor'}` },
+                        { id: '2', label: `2 - ${lang === 'fil' ? 'Mababa' : 'Low'}` },
+                        { id: '3', label: `3 - ${lang === 'fil' ? 'Katamtaman' : 'Moderate'}` },
+                        { id: '4', label: `4 - ${lang === 'fil' ? 'Mataas' : 'High'}` },
+                        { id: '5', label: `5 - ${lang === 'fil' ? 'Kritikal' : 'Critical'}` },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setSeverityFilter(item.id);
+                            setOpenFilterPopover(null);
+                          }}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
+                            severityFilter === item.id
+                              ? 'bg-stone-100 dark:bg-stone-800 text-stone-950 dark:text-white font-semibold'
+                              : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850'
+                          }`}
+                        >
+                          <span>{item.label}</span>
+                          {severityFilter === item.id && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-                          <div className="flex flex-col items-end gap-1.5 shrink-0">
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
-                                sev >= 4
-                                  ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900'
-                                  : sev === 3
-                                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900'
-                                  : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
-                              }`}
-                            >
-                              SEV {sev}
+                {/* Category Popover */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setOpenFilterPopover(openFilterPopover === 'category' ? null : 'category')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${
+                      categoryFilter !== 'all'
+                        ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100 font-semibold'
+                        : 'bg-stone-50 dark:bg-stone-950 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-850'
+                    }`}
+                  >
+                    <span className="max-w-[85px] truncate">
+                      {categoryFilter === 'all'
+                        ? (lang === 'fil' ? 'Kategorya' : 'Category')
+                        : (lang === 'fil' ? CATEGORIES[categoryFilter as IncidentCategory]?.labelFil : CATEGORIES[categoryFilter as IncidentCategory]?.labelEn) || categoryFilter}
+                    </span>
+                    <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${openFilterPopover === 'category' ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {openFilterPopover === 'category' && (
+                    <div className="absolute right-0 top-full mt-1.5 z-40 w-52 max-h-64 overflow-y-auto bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-lg p-1 space-y-0.5">
+                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+                        {lang === 'fil' ? 'Lahat ng Kategorya' : 'All Categories'}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCategoryFilter('all');
+                          setOpenFilterPopover(null);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
+                          categoryFilter === 'all'
+                            ? 'bg-stone-100 dark:bg-stone-800 text-stone-950 dark:text-white font-semibold'
+                            : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850'
+                        }`}
+                      >
+                        <span>{lang === 'fil' ? 'Lahat ng Kategorya' : 'All Categories'}</span>
+                        {categoryFilter === 'all' && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                      </button>
+                      {Object.entries(CATEGORIES).map(([key, cat]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => {
+                            setCategoryFilter(key);
+                            setOpenFilterPopover(null);
+                          }}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
+                            categoryFilter === key
+                              ? 'bg-stone-100 dark:bg-stone-800 text-stone-950 dark:text-white font-semibold'
+                              : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850'
+                          }`}
+                        >
+                          <span>{lang === 'fil' ? cat.labelFil : cat.labelEn}</span>
+                          {categoryFilter === key && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Status Popover */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setOpenFilterPopover(openFilterPopover === 'status' ? null : 'status')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${
+                      statusFilter !== 'all'
+                        ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100 font-semibold'
+                        : 'bg-stone-50 dark:bg-stone-950 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-850'
+                    }`}
+                  >
+                    <span className="max-w-[80px] truncate capitalize">
+                      {statusFilter === 'all'
+                        ? (lang === 'fil' ? 'Katayuan' : 'Status')
+                        : statusFilter.replace('_', ' ')}
+                    </span>
+                    <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${openFilterPopover === 'status' ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {openFilterPopover === 'status' && (
+                    <div className="absolute right-0 top-full mt-1.5 z-40 w-48 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-lg p-1 space-y-0.5">
+                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+                        {lang === 'fil' ? 'Katayuan ng Kaso' : 'Case Status'}
+                      </div>
+                      {[
+                        { id: 'all', label: lang === 'fil' ? 'Lahat ng Katayuan' : 'All Statuses' },
+                        { id: 'pending', label: lang === 'fil' ? 'Nakabinbin (Pending)' : 'Pending' },
+                        { id: 'in_progress', label: lang === 'fil' ? 'Inaaksyunan (In Progress)' : 'In Progress' },
+                        { id: 'resolved', label: lang === 'fil' ? 'Naresolba (Resolved)' : 'Resolved' },
+                        { id: 'spam', label: lang === 'fil' ? 'Spam / Naka-quarantine' : 'Spam / Quarantined' },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter(item.id as any);
+                            setOpenFilterPopover(null);
+                          }}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
+                            statusFilter === item.id
+                              ? 'bg-stone-100 dark:bg-stone-800 text-stone-950 dark:text-white font-semibold'
+                              : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850'
+                          }`}
+                        >
+                          <span>{item.label}</span>
+                          {statusFilter === item.id && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Reset Filters */}
+                {(municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMunicipalityFilter('all');
+                      setStatusFilter('all');
+                      setCategoryFilter('all');
+                      setSeverityFilter('all');
+                      setSearchTerm('');
+                      setMapCenter({ lat: 14.5800, lng: 121.2800 });
+                      setMapZoom(11);
+                      setOpenFilterPopover(null);
+                    }}
+                    className="text-xs font-semibold text-rose-700 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300 px-2 py-1 cursor-pointer flex items-center gap-1 transition"
+                    title="Reset all filters"
+                  >
+                    <X className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Separator */}
+              <div className="h-4 w-px bg-stone-200 dark:bg-stone-800 mx-0.5 hidden sm:block" />
+
+              {/* Sync NASA FIRMS Satellites Button */}
+              <button
+                type="button"
+                onClick={handleSyncSatellites}
+                disabled={isSyncingSatellites}
+                title="Sync NASA FIRMS VIIRS satellite thermal anomaly hotspots for Rizal Province"
+                className="px-2.5 py-1 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 border border-stone-200 dark:border-stone-700 disabled:opacity-40 text-stone-700 dark:text-stone-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <Satellite className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{isSyncingSatellites ? 'Syncing...' : 'Sync Satellites'}</span>
+              </button>
+
+              {/* Re-run AI Triage Button */}
+              <button
+                type="button"
+                onClick={handleRetryTriage}
+                disabled={isRetryingTriage || !selectedReport}
+                title={selectedReport ? "Re-run AI triage on selected incident" : "Select an incident to re-run triage"}
+                className="px-2.5 py-1 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 border border-stone-200 dark:border-stone-700 disabled:opacity-40 text-stone-700 dark:text-stone-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{isRetryingTriage ? 'Triaging...' : 'AI Triage'}</span>
+              </button>
+
+              {/* Maximize to Full Map Button */}
+              <button
+                type="button"
+                onClick={() => handleViewModeChange('full_map')}
+                title="Expand to Full Map Canvas"
+                className="px-2.5 py-1 bg-stone-900 hover:bg-black dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Full Map</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 3-Pane Tactical Workstation Console */}
+          <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0 relative overflow-hidden">
+            {/* PANE 1: Left Incident Queue & Stream (~350px-380px) */}
+            <div className="w-full lg:w-[350px] xl:w-[380px] shrink-0 flex flex-col bg-white dark:bg-stone-900 rounded-xl border border-stone-200/90 dark:border-stone-800 shadow-2xs overflow-hidden h-[360px] lg:h-full">
+              {/* Queue Header: Tabs & Count */}
+              <div className="px-3.5 py-2 bg-stone-50/80 dark:bg-stone-950/80 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-2 shrink-0">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setQueueTab('active')}
+                    className={`text-xs font-semibold px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                      queueTab === 'active'
+                        ? 'bg-stone-900 text-white shadow-2xs dark:bg-stone-100 dark:text-stone-900'
+                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-200/60 dark:hover:bg-stone-800'
+                    }`}
+                  >
+                    <span>{lang === 'fil' ? 'Aktibo' : 'Active'}</span>
+                    <span className="font-mono text-[10px] opacity-80">({activeReportsCount})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setQueueTab('spam')}
+                    className={`text-xs font-semibold px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                      queueTab === 'spam'
+                        ? 'bg-rose-900 text-white shadow-2xs dark:bg-rose-950 dark:border dark:border-rose-800'
+                        : 'text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+                    }`}
+                  >
+                    <AlertTriangle className="w-3 h-3" />
+                    <span>{lang === 'fil' ? 'Spam' : 'Spam'}</span>
+                    {spamReportsCount > 0 && (
+                      <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                        queueTab === 'spam' ? 'bg-rose-800 text-rose-100' : 'bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300'
+                      }`}>
+                        {spamReportsCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                <span className="text-[11px] font-mono font-medium text-stone-500 dark:text-stone-400">
+                  {filteredReports.length} {filteredReports.length === 1 ? 'incident' : 'incidents'}
+                </span>
+              </div>
+
+              {/* Queue List Stream */}
+              <div className="divide-y divide-stone-100 dark:divide-stone-850 flex-1 overflow-y-auto">
+                {filteredReports.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-stone-500 dark:text-stone-400">
+                    No incident reports match your current filters.
+                  </div>
+                ) : (
+                  filteredReports.map((report) => {
+                    const isSelected = selectedReport?.id === report.id;
+                    const sev = report.final?.severity || report.aiTriage?.severity || 3;
+                    const cat = report.final?.category || report.aiTriage?.category || 'other';
+                    const catMeta = CATEGORIES[cat as IncidentCategory] || CATEGORIES.other;
+
+                    return (
+                      <div
+                        key={report.id}
+                        onClick={() => {
+                          setSelectedReport(report);
+                          const coords = resolveReportCoordinates(report);
+                          setMapCenter(coords);
+                          setMapZoom(14);
+                        }}
+                        className={`p-3 hover:bg-stone-50 dark:hover:bg-stone-850/60 cursor-pointer transition flex items-start justify-between gap-2.5 ${
+                          isSelected ? 'bg-stone-100/90 dark:bg-stone-800/80 ring-1 ring-stone-900/10 dark:ring-stone-700 font-medium' : ''
+                        }`}
+                      >
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+                              {report.referenceCode}
                             </span>
-                            {report.status === 'resolved' ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                Closed
-                              </span>
-                            ) : report.status === 'in_progress' ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 dark:text-amber-400">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                In Prog
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-rose-700 dark:text-rose-400">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                                Pending
+                            <span
+                              className={`text-[9px] font-mono px-1.5 py-0.2 rounded border ${catMeta.badgeColor}`}
+                            >
+                              {lang === 'fil' ? catMeta.labelFil : catMeta.labelEn}
+                            </span>
+                            {report.duplicateClusterId && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center gap-0.5">
+                                <Layers className="w-2.5 h-2.5" />
+                                Cluster
                               </span>
                             )}
                           </div>
+
+                          <p className="text-xs text-stone-600 dark:text-stone-300 line-clamp-1">
+                            {report.aiTriage?.summary || report.rawInput.description}
+                          </p>
+
+                          <div className="flex items-center gap-1.5 text-[11px] text-stone-400 dark:text-stone-500 font-mono">
+                            <span className="truncate max-w-[150px]">{[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}</span>
+                            <span>•</span>
+                            <span>{new Date(report.createdAt).toLocaleDateString()}</span>
+                          </div>
                         </div>
-                      );
-                    })
-                  )}
-                </div>
+
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold ${
+                              sev >= 4
+                                ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900'
+                                : sev === 3
+                                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900'
+                                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
+                            }`}
+                          >
+                            SEV {sev}
+                          </span>
+                          {report.status === 'resolved' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              Closed
+                            </span>
+                          ) : report.status === 'in_progress' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                              In Prog
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-rose-700 dark:text-rose-400">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                              Pending
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
 
-            {/* Right Column (5 cols): Incident Target Dossier & Actions */}
-            <div className="lg:col-span-5 space-y-4">
-              {selectedReport ? (
-                <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800 shadow-xs p-5 space-y-5">
-                  {/* Dossier Header */}
-                  <div className="flex items-start justify-between border-b border-stone-200 dark:border-stone-800 pb-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className={`font-display text-xs font-bold uppercase tracking-wider ${isSatReport ? 'text-rose-600 dark:text-rose-400' : 'text-stone-400 dark:text-stone-500'}`}>
-                          {isSatReport ? 'Spaceborne Telemetry Dossier' : 'Report File'}
-                        </span>
-                        <span className="font-mono font-bold text-xl text-stone-950 dark:text-stone-100">
-                          {selectedReport.referenceCode}
-                        </span>
-                      </div>
-                      <div className="text-xs text-stone-500 dark:text-stone-400 font-mono mt-0.5">
-                        {isSatReport ? 'Spaceborne VIIRS Detection ' : 'Logged '}
-                        {new Date(selectedReport.createdAt).toLocaleString()}
-                      </div>
-                    </div>
+            {/* PANE 2: Center Geospatial Map Canvas (flex-1) */}
+            <div className="flex-1 min-w-0 h-[450px] lg:h-full relative rounded-xl overflow-hidden border border-stone-200/90 dark:border-stone-800 shadow-2xs bg-stone-100 dark:bg-stone-950 flex flex-col">
+              {/* Floating Top Controls: Basemap Switcher & Full Map Button */}
+              <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5">
+                {/* Basemap Segmented Switcher */}
+                <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md p-0.5 rounded-xl border border-stone-200/90 dark:border-stone-800 shadow-xs flex items-center gap-0.5 text-[11px] font-medium">
+                  {(['street', 'satellite', 'terrain'] as const).map((bm) => (
+                    <button
+                      key={bm}
+                      type="button"
+                      onClick={() => setBasemapMode(bm)}
+                      className={`px-2 py-1 rounded-lg transition cursor-pointer capitalize ${
+                        basemapMode === bm
+                          ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 font-semibold shadow-2xs'
+                          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                      }`}
+                    >
+                      {bm === 'street' ? 'Street' : bm === 'satellite' ? 'Satellite' : 'Terrain'}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                    <div className="flex items-center gap-2">
-                      {!isSatReport && selectedReport.status !== 'spam' && (
+              {/* Top-Right Shortcut: Maximize to Full Map */}
+              <button
+                type="button"
+                onClick={() => handleViewModeChange('full_map')}
+                title="Expand to Full Map Canvas"
+                className="absolute top-2.5 right-2.5 z-20 px-2.5 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md bg-white/95 dark:bg-stone-900/95 hover:bg-stone-50 dark:hover:bg-stone-850 active:bg-stone-100 dark:active:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-200/90 dark:border-stone-800 shadow-xs transition cursor-pointer flex items-center gap-1.5"
+              >
+                <Maximize2 className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300" />
+                <span className="hidden sm:inline">Full Map</span>
+              </button>
+
+              {/* Bottom-right Severity Indication Legend */}
+              <div className="absolute bottom-3 right-2.5 z-20 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-[10px] font-display font-bold uppercase tracking-wide border border-stone-200/90 dark:border-stone-800 shadow-xs flex items-center gap-2 text-stone-700 dark:text-stone-300 pointer-events-none select-none">
+                <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  1-2 Minor
+                </span>
+                <span className="flex items-center gap-1 text-amber-800 dark:text-amber-400">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  3 Mod
+                </span>
+                <span className="flex items-center gap-1 text-rose-800 dark:text-rose-400">
+                  <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
+                  4-5 Urgent
+                </span>
+              </div>
+
+              {/* Map Component */}
+              <LeafletMap
+                mode="dashboard"
+                center={mapCenter}
+                zoom={mapZoom}
+                fitProvinceKey={fitProvinceKey}
+                reports={mapVisibleReports}
+                selectedReportId={selectedReport?.id}
+                layerMode="standard"
+                basemap={basemapMode}
+                activeMunicipality={municipalityFilter !== 'all' ? municipalityFilter : null}
+                onMunicipalityClick={(mun) => handleQuickJump(mun)}
+                onClusterClick={(group) => handleClusterClick(group)}
+                choroplethCounts={choroplethCounts}
+                maskNonRizal={false}
+                showMgbQuarries={showMgbQuarries}
+                selectedQuarryId={selectedQuarryId}
+                onSelectQuarry={(qId) => handleSelectQuarry(qId)}
+                quarryFilter={{
+                  type: quarryTypeFilter,
+                  municipality: quarryMunicipalityFilter,
+                  search: quarrySearchTerm,
+                }}
+                onSelectReport={(r) => {
+                  setSelectedReport(r);
+                  const coords = resolveReportCoordinates(r);
+                  setMapCenter(coords);
+                  setMapZoom(14);
+                }}
+                className="w-full h-full"
+              />
+            </div>
+
+            {/* PANE 3: Slide-in Incident Target Case Dossier */}
+            <AnimatePresence>
+              {selectedReport && (
+                <motion.div
+                  key={selectedReport.id}
+                  initial={{ opacity: 0, x: 24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 24 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="w-full lg:w-[400px] xl:w-[440px] shrink-0 flex flex-col bg-white dark:bg-stone-900 rounded-xl border border-stone-200/90 dark:border-stone-800 shadow-2xs overflow-hidden h-[540px] lg:h-full"
+                >
+                  <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+                    {/* Dossier Header */}
+                    <div className="flex items-start justify-between border-b border-stone-200 dark:border-stone-800 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-display text-xs font-bold uppercase tracking-wider ${isSatReport ? 'text-rose-600 dark:text-rose-400' : 'text-stone-400 dark:text-stone-500'}`}>
+                            {isSatReport ? 'Spaceborne Telemetry Dossier' : 'Report File'}
+                          </span>
+                          <span className="font-mono font-bold text-xl text-stone-950 dark:text-stone-100">
+                            {selectedReport.referenceCode}
+                          </span>
+                        </div>
+                        <div className="text-xs text-stone-500 dark:text-stone-400 font-mono mt-0.5">
+                          {isSatReport ? 'Spaceborne VIIRS Detection ' : 'Logged '}
+                          {new Date(selectedReport.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        {!isSatReport && selectedReport.status !== 'spam' && (
+                          <button
+                            type="button"
+                            onClick={handleMarkAsSpam}
+                            className="px-2 py-0.5 rounded text-[10px] font-semibold text-stone-500 dark:text-stone-400 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-stone-200 dark:border-stone-800 transition cursor-pointer flex items-center gap-1"
+                            title="Quarantine report to Spam Queue"
+                          >
+                            <AlertTriangle className="w-3 h-3 text-stone-400 dark:text-stone-500" />
+                            <span className="hidden sm:inline">Flag as Spam</span>
+                          </button>
+                        )}
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 inline-flex items-center gap-1.5 capitalize">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              selectedReport.status === 'resolved'
+                                ? 'bg-emerald-500'
+                                : selectedReport.status === 'in_progress'
+                                ? 'bg-amber-500'
+                                : selectedReport.status === 'spam'
+                                ? 'bg-rose-700'
+                                : 'bg-rose-500'
+                            }`}
+                          />
+                          {selectedReport.status.replace(/_/g, ' ')}
+                        </span>
                         <button
                           type="button"
-                          onClick={handleMarkAsSpam}
-                          className="px-2 py-0.5 rounded text-[10px] font-semibold text-stone-500 dark:text-stone-400 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-stone-200 dark:border-stone-800 transition cursor-pointer flex items-center gap-1"
-                          title="Quarantine report to Spam Queue"
+                          onClick={() => setSelectedReport(null)}
+                          className="p-1 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer ml-1"
+                          title="Close case dossier"
                         >
-                          <AlertTriangle className="w-3 h-3 text-stone-400 dark:text-stone-500" />
-                          <span>Flag as Spam</span>
+                          <X className="w-4 h-4" />
                         </button>
-                      )}
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 inline-flex items-center gap-1.5 capitalize">
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            selectedReport.status === 'resolved'
-                              ? 'bg-emerald-500'
-                              : selectedReport.status === 'in_progress'
-                              ? 'bg-amber-500'
-                              : selectedReport.status === 'spam'
-                              ? 'bg-rose-700'
-                              : 'bg-rose-500'
-                          }`}
-                        />
-                        {selectedReport.status.replace(/_/g, ' ')}
-                      </span>
+                      </div>
                     </div>
-                  </div>
 
                   {isSatReport ? (
                     renderFirmsDossierDetail(selectedReport, false)
@@ -3867,21 +4095,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </>
               )}
             </div>
-              ) : (
-                <div className="bg-stone-50 dark:bg-stone-900/40 rounded-xl border border-stone-200 dark:border-stone-800 p-12 text-center text-xs text-stone-500 dark:text-stone-400 space-y-2">
-                  <MapPin className="w-8 h-8 text-stone-400 dark:text-stone-600 mx-auto" />
-                  <div className="font-display font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 text-sm">
-                    Standby for Target Selection
-                  </div>
-                  <p className="text-stone-500 dark:text-stone-400 max-w-xs mx-auto">
-                    Select an incident pin on the geospatial map or a row in the incident queue stream to inspect telemetry and perform human-in-the-loop triage.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  </div>
+)}
 
       {/* ========================================================= */}
       {/* VIEW MODE 2: FULL MAP CANVAS (GOOGLE / APPLE MAPS GIS UI) */}
