@@ -1440,7 +1440,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               <span>PM10: ${telemetry?.airQuality?.pm10 ?? '--'} μg/m³</span>
             </div>
             <div style="font-size: 9.5px; color: #64748b; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 3px; margin-top: 3px;">
-              DENR DAO 2020-14 Status: <strong>${meta.denrStatus}</strong>
+              DENR DAO 2020-14 Benchmark: <strong>${meta.denrStatus}</strong>
             </div>
           </div>
 

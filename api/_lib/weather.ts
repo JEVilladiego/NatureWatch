@@ -64,14 +64,14 @@ export interface AirQualitySnapshot {
   pm10: number;
   carbonMonoxide: number;
   europeanAqi: number;
-  aqiLabel: 'Good' | 'Fair' | 'Moderate' | 'Poor' | 'Very Poor';
+  aqiLabel: 'Good' | 'Fair' | 'Moderate' | 'Poor' | 'Very Poor' | 'Hazardous';
   fetchedAt: string;
 }
 
 /**
  * Fetches real-time atmospheric particulate and air quality metrics from Open-Meteo Air Quality API.
  * Free, non-commercial API without requiring an API key.
- * Used to verify citizen reports of open burning, toxic smoke, and industrial emissions.
+ * Provides objective ambient atmospheric readings for incident locations.
  */
 export async function fetchAirQualityContext(lat: number, lng: number): Promise<AirQualitySnapshot | null> {
   if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
@@ -97,11 +97,13 @@ export async function fetchAirQualityContext(lat: number, lng: number): Promise<
     const co = Math.round(Number(current.carbon_monoxide || 0) * 10) / 10;
     const eaqi = Math.round(Number(current.european_aqi || 0));
 
-    let aqiLabel: 'Good' | 'Fair' | 'Moderate' | 'Poor' | 'Very Poor' = 'Good';
-    if (eaqi > 80 || pm25 > 50) aqiLabel = 'Very Poor';
-    else if (eaqi > 60 || pm25 > 35) aqiLabel = 'Poor';
-    else if (eaqi > 40 || pm25 > 20) aqiLabel = 'Moderate';
-    else if (eaqi > 20 || pm25 > 10) aqiLabel = 'Fair';
+    // Official European Environment Agency (EEA) standard EAQI index brackets:
+    let aqiLabel: 'Good' | 'Fair' | 'Moderate' | 'Poor' | 'Very Poor' | 'Hazardous' = 'Good';
+    if (eaqi > 100) aqiLabel = 'Hazardous';
+    else if (eaqi > 80) aqiLabel = 'Very Poor';
+    else if (eaqi > 60) aqiLabel = 'Poor';
+    else if (eaqi > 40) aqiLabel = 'Moderate';
+    else if (eaqi > 20) aqiLabel = 'Fair';
 
     return {
       pm25,

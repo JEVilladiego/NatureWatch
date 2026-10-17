@@ -253,7 +253,7 @@ export interface WindTrajectory {
 /**
  * Calculates meteorological wind origin and downwind dispersion trajectory.
  * Standard meteorology reports the direction FROM which wind blows.
- * An arrow indicating smoke or air movement must point TOWARD the downwind vector (bearing + 180°).
+ * An arrow indicating horizontal wind flow direction points TOWARD the downwind vector (bearing + 180°).
  * If wind speed is calm (< 1 km/h), wind direction is physically indeterminate (WMO standard).
  */
 export function getWindFlowTrajectory(fromDegrees: number, speedKmH: number = 1): WindTrajectory {
@@ -315,11 +315,13 @@ export function getAqiMeta(
     dominantPollutant = pm25Ratio >= pm10Ratio ? 'PM2.5 (Fine Particulates)' : 'PM10 (Coarse Particulates)';
   }
 
-  let denrStatus = `Within 24-hr Guideline (PM2.5: ${pm25}/35, PM10: ${p10}/150 μg/m³)`;
+  // Philippine DENR DAO 2020-14 specifies National Ambient Air Quality Guideline Values (NAAQGV) as 24-hr continuous averages.
+  // Instantaneous hourly readings provide indicative reference benchmarks without assuming 24-hr statutory exceedance or compliance.
+  let denrStatus = `Hourly snapshot within 24-hr reference value (PM2.5: ${pm25}/35, PM10: ${p10}/150 μg/m³)`;
   if (pm25 > 35 || p10 > 150) {
-    denrStatus = `Exceeds 24-hr Guideline (PM2.5: ${pm25}/35, PM10: ${p10}/150 μg/m³)`;
+    denrStatus = `Hourly snapshot exceeds 24-hr reference value (PM2.5: ${pm25}/35, PM10: ${p10}/150 μg/m³) — requires 24-hr continuous monitoring`;
   } else if (pm25 > 25 || p10 > 100) {
-    denrStatus = `Approaching 24-hr Guideline (PM2.5: ${pm25}/35, PM10: ${p10}/150 μg/m³)`;
+    denrStatus = `Hourly snapshot approaching 24-hr reference value (PM2.5: ${pm25}/35, PM10: ${p10}/150 μg/m³)`;
   }
 
   // European Air Quality Index (EAQI) standard tiers strictly derived from index value:
@@ -333,8 +335,8 @@ export function getAqiMeta(
       accentColor: '#9333ea',
       bgColor: '#f3e8ff',
       borderColor: '#d8b4fe',
-      description: `Ambient European Air Quality Index (${europeanAqi}) is in the acute advisory tier. Measured concentrations: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
-      healthSummary: 'Air quality index exceeds acute health advisory levels. All populations advised to reduce prolonged outdoor physical exertion.',
+      description: `Ambient European Air Quality Index (${europeanAqi}) is in the acute advisory tier (>100). Modeled atmospheric column: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
+      healthSummary: 'Air quality index exceeds acute health advisory levels under European CAMS standards. All populations advised to reduce prolonged outdoor physical exertion.',
       denrStatus,
       dominantPollutant,
     };
@@ -350,8 +352,8 @@ export function getAqiMeta(
       accentColor: '#e11d48',
       bgColor: '#ffe4e6',
       borderColor: '#fecdd3',
-      description: `Elevated ambient air pollution index (${europeanAqi}). Measured concentrations: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
-      healthSummary: 'Air quality significantly degraded. Sensitive individuals (respiratory or cardiac conditions) advised to avoid strenuous outdoor activity.',
+      description: `Elevated ambient air pollution index (${europeanAqi}). Modeled atmospheric column: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
+      healthSummary: 'Air quality significantly degraded under European CAMS criteria. Sensitive individuals (respiratory or cardiac conditions) advised to avoid strenuous outdoor activity.',
       denrStatus,
       dominantPollutant,
     };
@@ -367,8 +369,8 @@ export function getAqiMeta(
       accentColor: '#f97316',
       bgColor: '#ffedd5',
       borderColor: '#fed7aa',
-      description: `Moderately elevated ambient air pollution index (${europeanAqi}). Measured concentrations: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
-      healthSummary: 'Air quality moderately degraded. Sensitive groups may experience mild respiratory discomfort.',
+      description: `Moderately elevated ambient air pollution index (${europeanAqi}). Modeled atmospheric column: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
+      healthSummary: 'Air quality moderately degraded under European CAMS criteria. Sensitive groups may experience mild respiratory discomfort.',
       denrStatus,
       dominantPollutant,
     };
@@ -384,8 +386,8 @@ export function getAqiMeta(
       accentColor: '#f59e0b',
       bgColor: '#fef3c7',
       borderColor: '#fde68a',
-      description: `Moderate ambient air quality (${europeanAqi}). Measured concentrations: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
-      healthSummary: 'Air quality acceptable for normal outdoor activity.',
+      description: `Moderate ambient air quality (${europeanAqi}). Modeled atmospheric column: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
+      healthSummary: 'Air quality acceptable for normal outdoor activity under European CAMS criteria.',
       denrStatus,
       dominantPollutant,
     };
@@ -401,8 +403,8 @@ export function getAqiMeta(
       accentColor: '#0d9488',
       bgColor: '#ccfbf1',
       borderColor: '#99f6e4',
-      description: `Fair ambient atmospheric column (${europeanAqi}). Measured concentrations: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
-      healthSummary: 'Air quality is fair and within normal provincial baseline.',
+      description: `Fair ambient atmospheric column (${europeanAqi}). Modeled atmospheric column: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
+      healthSummary: 'Air quality is fair under European CAMS criteria; acceptable for general population.',
       denrStatus,
       dominantPollutant,
     };
@@ -417,8 +419,8 @@ export function getAqiMeta(
     accentColor: '#059669',
     bgColor: '#d1fae5',
     borderColor: '#a7f3d0',
-    description: `Clean ambient atmospheric column (${europeanAqi}). Measured concentrations: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
-    healthSummary: 'Air quality is optimal. No health impacts expected.',
+    description: `Clean ambient atmospheric column (${europeanAqi}). Modeled atmospheric column: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
+    healthSummary: 'Air quality is optimal under European CAMS criteria. Minimal to no health risk from ambient air.',
     denrStatus,
     dominantPollutant,
   };
@@ -466,7 +468,7 @@ export function calculatePagasaHeatIndex(temperatureC: number, relativeHumidity:
 
 export interface EmpiricalMeteorologicalIndices {
   heatIndex: {
-    category: 'Normal' | 'Caution' | 'Extreme Caution' | 'Danger' | 'Extreme Danger';
+    category: 'Below Heat Index Threshold (<27°C)' | 'Caution (27–32°C)' | 'Extreme Caution (33–41°C)' | 'Danger (42–51°C)' | 'Extreme Danger (≥52°C)';
     value: number; // in °C
     pagasaGuideline: string;
     dataLimitation: string;
@@ -475,7 +477,7 @@ export interface EmpiricalMeteorologicalIndices {
     badgeBorder: string;
   };
   rainfallIntensity: {
-    category: 'Dry / Nil' | 'Light Rain' | 'Moderate Rain' | 'Heavy Rain (Yellow Alert)' | 'Intense Rain (Orange Alert)' | 'Torrential Rain (Red Alert)';
+    category: 'Dry / Nil (0.0 mm)' | 'Light Rain (< 2.5 mm/h)' | 'Moderate Rain (2.5 – 7.5 mm/h)' | 'Heavy Rain (7.5 – 15.0 mm/h)' | 'Intense Rain (15.0 – 30.0 mm/h)' | 'Torrential Rain (≥ 30.0 mm/h)';
     rate: number; // in mm
     classification: string;
     dataLimitation: string;
@@ -484,7 +486,7 @@ export interface EmpiricalMeteorologicalIndices {
     badgeBorder: string;
   };
   windKineticForce: {
-    category: 'Calm / Light Air' | 'Light / Gentle Breeze' | 'Moderate Breeze' | 'Fresh Breeze' | 'Strong Breeze' | 'High Wind / Gale';
+    category: 'Calm / Light Air (< 6 km/h)' | 'Light / Gentle Breeze (6 – 19 km/h)' | 'Moderate Breeze (20 – 28 km/h)' | 'Fresh Breeze (29 – 38 km/h)' | 'Strong Breeze (39 – 49 km/h)' | 'High Wind / Gale (≥ 50 km/h)';
     speed: number; // in km/h
     gusts: number | null; // in km/h
     beaufortDescription: string;
@@ -511,32 +513,32 @@ export function computeEmpiricalWeatherIndices(
 ): EmpiricalMeteorologicalIndices {
   // 1. Official DOST-PAGASA Heat Index (Rothfusz equation)
   const hi = calculatePagasaHeatIndex(weather.temperature, weather.relativeHumidity);
-  let heatCategory: EmpiricalMeteorologicalIndices['heatIndex']['category'] = 'Normal';
-  let pagasaGuideline = 'PAGASA: Normal physiological thermal range. Minimal outdoor stress.';
-  let heatBadgeBg = 'bg-emerald-50 dark:bg-emerald-950/60';
-  let heatBadgeText = 'text-emerald-700 dark:text-emerald-300';
-  let heatBadgeBorder = 'border-emerald-200 dark:border-emerald-800';
+  let heatCategory: EmpiricalMeteorologicalIndices['heatIndex']['category'] = 'Below Heat Index Threshold (<27°C)';
+  let pagasaGuideline = `DOST-PAGASA Heat Index calculation threshold is 27°C (80°F). Current ambient temperature (${weather.temperature}°C) is below thermal stress threshold.`;
+  let heatBadgeBg = 'bg-stone-50 dark:bg-stone-800/80';
+  let heatBadgeText = 'text-stone-600 dark:text-stone-300';
+  let heatBadgeBorder = 'border-stone-200 dark:border-stone-700';
 
   if (hi >= 52) {
-    heatCategory = 'Extreme Danger';
+    heatCategory = 'Extreme Danger (≥52°C)';
     pagasaGuideline = 'PAGASA: Heat stroke is imminent. Cessation of non-emergency outdoor exposure advised.';
     heatBadgeBg = 'bg-purple-50 dark:bg-purple-950/60';
     heatBadgeText = 'text-purple-700 dark:text-purple-300';
     heatBadgeBorder = 'border-purple-200 dark:border-purple-800';
   } else if (hi >= 42) {
-    heatCategory = 'Danger';
+    heatCategory = 'Danger (42–51°C)';
     pagasaGuideline = 'PAGASA: Heat cramps and exhaustion likely; heat stroke probable with continued physical activity.';
     heatBadgeBg = 'bg-rose-50 dark:bg-rose-950/60';
     heatBadgeText = 'text-rose-700 dark:text-rose-300';
     heatBadgeBorder = 'border-rose-200 dark:border-rose-800';
   } else if (hi >= 33) {
-    heatCategory = 'Extreme Caution';
+    heatCategory = 'Extreme Caution (33–41°C)';
     pagasaGuideline = 'PAGASA: Heat cramps and exhaustion possible with prolonged exposure or physical exertion.';
     heatBadgeBg = 'bg-amber-50 dark:bg-amber-950/60';
     heatBadgeText = 'text-amber-700 dark:text-amber-300';
     heatBadgeBorder = 'border-amber-200 dark:border-amber-800';
   } else if (hi >= 27) {
-    heatCategory = 'Caution';
+    heatCategory = 'Caution (27–32°C)';
     pagasaGuideline = 'PAGASA: Fatigue possible with prolonged exposure and activity.';
     heatBadgeBg = 'bg-yellow-50 dark:bg-yellow-950/60';
     heatBadgeText = 'text-yellow-700 dark:text-yellow-300';
@@ -548,39 +550,39 @@ export function computeEmpiricalWeatherIndices(
     typeof weather.precipitation === 'number' && !isNaN(weather.precipitation) ? weather.precipitation : 0,
     typeof weather.rain === 'number' && !isNaN(weather.rain) ? weather.rain : 0
   );
-  let rainCategory: EmpiricalMeteorologicalIndices['rainfallIntensity']['category'] = 'Dry / Nil';
-  let rainClassification = '0.0 mm recorded. No active atmospheric rainfall detected.';
+  let rainCategory: EmpiricalMeteorologicalIndices['rainfallIntensity']['category'] = 'Dry / Nil (0.0 mm)';
+  let rainClassification = '0.0 mm recorded in current observation interval. No active precipitation detected by numerical weather model.';
   let rainBadgeBg = 'bg-stone-50 dark:bg-stone-800/80';
   let rainBadgeText = 'text-stone-600 dark:text-stone-300';
   let rainBadgeBorder = 'border-stone-200 dark:border-stone-700';
 
   if (effectiveRain >= 30.0) {
-    rainCategory = 'Torrential Rain (Red Alert)';
-    rainClassification = `Exceeds PAGASA Red Warning threshold (≥ 30.0 mm/h). Recorded: ${effectiveRain} mm.`;
+    rainCategory = 'Torrential Rain (≥ 30.0 mm/h)';
+    rainClassification = `Recorded: ${effectiveRain} mm. Matches PAGASA "Torrential" intensity rate bracket (≥ 30.0 mm/h). Note: Numerical model telemetry; not an official PAGASA Red Warning declaration.`;
     rainBadgeBg = 'bg-rose-50 dark:bg-rose-950/60';
     rainBadgeText = 'text-rose-700 dark:text-rose-300';
     rainBadgeBorder = 'border-rose-200 dark:border-rose-800';
   } else if (effectiveRain >= 15.0) {
-    rainCategory = 'Intense Rain (Orange Alert)';
-    rainClassification = `Exceeds PAGASA Orange Warning threshold (15.0 – 29.9 mm/h). Recorded: ${effectiveRain} mm.`;
+    rainCategory = 'Intense Rain (15.0 – 30.0 mm/h)';
+    rainClassification = `Recorded: ${effectiveRain} mm. Matches PAGASA "Intense" intensity rate bracket (15.0 – 29.9 mm/h). Note: Numerical model telemetry; not an official PAGASA Orange Warning declaration.`;
     rainBadgeBg = 'bg-orange-50 dark:bg-orange-950/60';
     rainBadgeText = 'text-orange-700 dark:text-orange-300';
     rainBadgeBorder = 'border-orange-200 dark:border-orange-800';
   } else if (effectiveRain >= 7.5) {
-    rainCategory = 'Heavy Rain (Yellow Alert)';
-    rainClassification = `Exceeds PAGASA Yellow Warning threshold (7.5 – 14.9 mm/h). Recorded: ${effectiveRain} mm.`;
+    rainCategory = 'Heavy Rain (7.5 – 15.0 mm/h)';
+    rainClassification = `Recorded: ${effectiveRain} mm. Matches PAGASA "Heavy" intensity rate bracket (7.5 – 14.9 mm/h). Note: Numerical model telemetry; not an official PAGASA Yellow Warning declaration.`;
     rainBadgeBg = 'bg-amber-50 dark:bg-amber-950/60';
     rainBadgeText = 'text-amber-700 dark:text-amber-300';
     rainBadgeBorder = 'border-amber-200 dark:border-amber-800';
   } else if (effectiveRain >= 2.5) {
-    rainCategory = 'Moderate Rain';
-    rainClassification = `Moderate rainfall recorded (${effectiveRain} mm). Below official advisory thresholds.`;
+    rainCategory = 'Moderate Rain (2.5 – 7.5 mm/h)';
+    rainClassification = `Recorded: ${effectiveRain} mm. Matches PAGASA "Moderate" intensity rate bracket (2.5 – 7.4 mm/h). Below severe advisory thresholds.`;
     rainBadgeBg = 'bg-blue-50 dark:bg-blue-950/60';
     rainBadgeText = 'text-blue-700 dark:text-blue-300';
     rainBadgeBorder = 'border-blue-200 dark:border-blue-800';
   } else if (effectiveRain > 0) {
-    rainCategory = 'Light Rain';
-    rainClassification = `Light precipitation recorded (${effectiveRain} mm). Normal wetting rate.`;
+    rainCategory = 'Light Rain (< 2.5 mm/h)';
+    rainClassification = `Recorded: ${effectiveRain} mm. Matches PAGASA "Light" intensity rate bracket (< 2.5 mm/h). Standard wetting rate.`;
     rainBadgeBg = 'bg-sky-50 dark:bg-sky-950/60';
     rainBadgeText = 'text-sky-700 dark:text-sky-300';
     rainBadgeBorder = 'border-sky-200 dark:border-sky-800';
@@ -588,40 +590,40 @@ export function computeEmpiricalWeatherIndices(
 
   // 3. WMO Beaufort Wind Force
   const ws = typeof weather.windSpeed === 'number' && !isNaN(weather.windSpeed) ? weather.windSpeed : 0;
-  let windCategory: EmpiricalMeteorologicalIndices['windKineticForce']['category'] = 'Calm / Light Air';
+  let windCategory: EmpiricalMeteorologicalIndices['windKineticForce']['category'] = 'Calm / Light Air (< 6 km/h)';
   let beaufortDesc = ws < 1
-    ? 'WMO Beaufort 0 (Calm): Smoke rises vertically; prevailing wind direction is physically indeterminate.'
-    : 'WMO Beaufort 1 (Light Air): Direction shown by smoke drift; wind vanes unaffected (1–5 km/h).';
+    ? 'WMO Beaufort 0 (Calm): Air is still (< 1 km/h); horizontal wind direction is physically indeterminate.'
+    : 'WMO Beaufort 1 (Light Air): Slight air drift (1–5 km/h); wind vanes unmoved.';
   let windBadgeBg = 'bg-stone-50 dark:bg-stone-800/80';
   let windBadgeText = 'text-stone-600 dark:text-stone-300';
   let windBadgeBorder = 'border-stone-200 dark:border-stone-700';
 
   if (ws >= 50) {
-    windCategory = 'High Wind / Gale';
+    windCategory = 'High Wind / Gale (≥ 50 km/h)';
     beaufortDesc = 'WMO Beaufort 7+: Whole trees in motion; walking resistance felt against wind.';
     windBadgeBg = 'bg-rose-50 dark:bg-rose-950/60';
     windBadgeText = 'text-rose-700 dark:text-rose-300';
     windBadgeBorder = 'border-rose-200 dark:border-rose-800';
   } else if (ws >= 39) {
-    windCategory = 'Strong Breeze';
+    windCategory = 'Strong Breeze (39 – 49 km/h)';
     beaufortDesc = 'WMO Beaufort 6: Large tree branches in motion; umbrellas used with difficulty.';
     windBadgeBg = 'bg-orange-50 dark:bg-orange-950/60';
     windBadgeText = 'text-orange-700 dark:text-orange-300';
     windBadgeBorder = 'border-orange-200 dark:border-orange-800';
   } else if (ws >= 29) {
-    windCategory = 'Fresh Breeze';
+    windCategory = 'Fresh Breeze (29 – 38 km/h)';
     beaufortDesc = 'WMO Beaufort 5: Small trees in leaf begin to sway; crested wavelets on lakes.';
     windBadgeBg = 'bg-amber-50 dark:bg-amber-950/60';
     windBadgeText = 'text-amber-700 dark:text-amber-300';
     windBadgeBorder = 'border-amber-200 dark:border-amber-800';
   } else if (ws >= 20) {
-    windCategory = 'Moderate Breeze';
+    windCategory = 'Moderate Breeze (20 – 28 km/h)';
     beaufortDesc = 'WMO Beaufort 4: Dust and loose paper raised; small branches moved.';
     windBadgeBg = 'bg-teal-50 dark:bg-teal-950/60';
     windBadgeText = 'text-teal-700 dark:text-teal-300';
     windBadgeBorder = 'border-teal-200 dark:border-teal-800';
   } else if (ws >= 6) {
-    windCategory = 'Light / Gentle Breeze';
+    windCategory = 'Light / Gentle Breeze (6 – 19 km/h)';
     beaufortDesc = 'WMO Beaufort 2–3: Wind felt on face; leaves rustle; vanes moved by wind.';
     windBadgeBg = 'bg-emerald-50 dark:bg-emerald-950/60';
     windBadgeText = 'text-emerald-700 dark:text-emerald-300';
@@ -652,15 +654,15 @@ export function computeEmpiricalWeatherIndices(
       speed: ws,
       gusts: weather.windGusts,
       beaufortDescription: beaufortDesc,
-      dataLimitation: 'Horizontal kinetic wind velocity measured at 10m height. Ground-level particulate transport depends on micro-topography, surface roughness, and canopy obstruction.',
+      dataLimitation: 'Horizontal kinetic wind velocity modeled at 10m height. Ground-level particulate transport depends on micro-topography, surface roughness, and canopy obstruction.',
       badgeBg: windBadgeBg,
       badgeText: windBadgeText,
       badgeBorder: windBadgeBorder,
     },
     dataSufficiency: {
-      observationScope: 'Current Timestamp Observation (Open-Meteo & European CAMS model)',
-      forecastStatus: 'Current telemetry only. Multi-hour or multi-day forecasts not calculated without numerical prognostic model integration.',
-      groundEventLimitation: 'Data Boundary: Ambient weather readings cannot conclude ground events (active wildfires, quarry dust emissions, or landslide collapse). Telemetry provides atmospheric context only.',
+      observationScope: 'Current Timestamp Observation (Open-Meteo weather model & European CAMS atmospheric model)',
+      forecastStatus: 'Current telemetry only. Multi-hour or multi-day forecasts not displayed without prognostic numerical model integration.',
+      groundEventLimitation: 'Data Boundary: Ambient weather readings cannot conclude ground events (active fires, quarry dust emissions, or slope collapse). Telemetry provides atmospheric context only.',
     },
   };
 }

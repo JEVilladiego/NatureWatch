@@ -38,12 +38,13 @@ RIZAL PROVINCE GEOGRAPHIC CONTEXT:
 - Coastal and island communities along Laguna de Bay (Angono, Binangonan, Cardona, Morong, Baras, Tanay, Pililla, Jalajala, and Talim Island): Heavy plastic waste clogging shores, fish kill risks, toxic chemical runoff into the lake.
 - Densely populated urban centers (Antipolo, Cainta, Taytay, San Mateo): Open burning (siga) of plastics/leaves, commercial solid waste accumulation, and industrial noise pollution.
 
-METEOROLOGICAL CONTEXT EVALUATION:
-When real-time meteorological telemetry is provided:
-- High wind speeds (>20 km/h) or strong gusts exponentially escalate open burning (siga) and brushfire spread risks to adjacent residential structures or forest cover; elevate severity accordingly.
-- Heavy precipitation or rain escalates clogged drainage, flood threats, and chemical/sewage runoff into rivers and Laguna de Bay.
-- Dry, hot, windy conditions exacerbate quarry dust emissions and hillside erosion hazards.
-- Note any critical meteorological factors in your reasoning.
+FACTUAL METEOROLOGICAL & ATMOSPHERIC CONTEXT DIRECTIVES:
+When real-time meteorological or air quality telemetry is provided:
+- Treat meteorological telemetry strictly as objective, ambient atmospheric context (temperature, relative humidity, horizontal wind velocity, precipitation, and regional AQI).
+- STRICT SCIENTIFIC BOUNDARY: Do NOT assume, invent, or extrapolate unobserved ground events based solely on weather numbers (e.g., do NOT assume an unverified fire exists, do NOT assume a hillside has collapsed, and do NOT extrapolate hypothetical catastrophes).
+- FACTUAL CORRELATION ONLY: You may only reference meteorological factors when they directly provide objective physical context to verified evidence in the report (e.g., if a resident reports an active open burn, you may note current ambient wind speed; if a clogged canal is reported, you may note if rain is currently recorded).
+- Never attribute regional ambient particulate readings (PM2.5/PM10) to an unverified local source without photographic/ground evidence.
+- State only factual observations without speculative extrapolation in your summary and internal reasoning.
 
 CATEGORIES (Single Source of Truth):
 - solid_waste: Illegal dumping, uncollected trash, trash clogging canals/esteros/rivers or floating on lakeshore.
@@ -118,7 +119,7 @@ Location Weather Conditions (via Open-Meteo):
 - Relative Humidity: ${weather.humidity}%
 - Wind Speed: ${weather.windSpeed} km/h${weather.windGusts ? ` (Gusts up to ${weather.windGusts} km/h)` : ''}
 - Precipitation: ${weather.precipitation} mm
-Consider whether these current conditions amplify or mitigate the reported environmental hazard.
+Guidelines: Treat these as factual ambient atmospheric readings only. Do not invent or assume unobserved ground hazards based on these numbers alone.
 </realtime_meteorological_context>`;
   }
 
@@ -130,7 +131,7 @@ Atmospheric Particulate & Chemical Telemetry (via Open-Meteo Air Quality):
 - PM10: ${airQuality.pm10} μg/m³
 - Carbon Monoxide: ${airQuality.carbonMonoxide} μg/m³
 - European Air Quality Index (AQI): ${airQuality.europeanAqi} (${airQuality.aqiLabel})
-Consider these particulate readings when evaluating open burning, toxic smoke, or industrial pollution.
+Guidelines: Ambient air quality represents regional CAMS atmospheric model data. Do not assume or attribute regional ambient particulate levels to an unverified local source without photographic/ground evidence.
 </realtime_air_quality_context>`;
   }
 

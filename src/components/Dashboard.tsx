@@ -1504,9 +1504,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         <div className="flex items-center justify-between text-[10px] text-stone-600 dark:text-stone-300 pt-0.5">
-          <span>DENR DAO 2020-14: <strong className="font-semibold text-stone-800 dark:text-stone-200">{meta.denrStatus}</strong></span>
+          <span>DENR DAO 2020-14 Benchmark: <strong className="font-semibold text-stone-800 dark:text-stone-200">{meta.denrStatus}</strong></span>
           <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-stone-200/60 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
-            Dominant: {meta.dominantPollutant ?? 'PM2.5'}
+            Primary Particulate: {meta.dominantPollutant ?? 'PM2.5'}
           </span>
         </div>
 
@@ -4337,7 +4337,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                         <div>
                           <p className="text-xs font-semibold text-stone-800 dark:text-stone-200">
-                            Connecting to Open-Meteo Satellite Feed...
+                            Connecting to Open-Meteo Telemetry Feed...
                           </p>
                           <p className="text-[10px] text-stone-400 mt-0.5">
                             Reading live meteorological and atmospheric CAMS models for Rizal
@@ -4518,7 +4518,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                       AQI {atmosphericData.airQuality.europeanAqi} • {aqiMeta.label}
                                     </span>
                                     <span className="text-[9px] font-mono text-stone-500 dark:text-stone-400">
-                                      Dominant: {aqiMeta.dominantPollutant ?? 'PM2.5'}
+                                      Primary Particulate: {aqiMeta.dominantPollutant ?? 'PM2.5'}
                                     </span>
                                   </div>
                                 </div>
@@ -4556,7 +4556,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                                 <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60 space-y-1">
                                   <div className="flex items-center justify-between text-[11px]">
-                                    <span className="text-stone-600 dark:text-stone-400">DENR DAO 2020-14 (Clean Air Act) Status:</span>
+                                    <span className="text-stone-600 dark:text-stone-400">DENR DAO 2020-14 (Clean Air Act) Benchmark:</span>
                                     <strong className="font-semibold text-stone-900 dark:text-stone-100">{aqiMeta.denrStatus}</strong>
                                   </div>
                                   <p className="text-[10.5px] text-stone-500 dark:text-stone-400 leading-snug">
@@ -4615,7 +4615,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     <div className="flex items-center justify-between">
                                       <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
                                         <CloudRain className="w-3.5 h-3.5 text-blue-500" />
-                                        <span>Precipitation (PAGASA Warning Brackets)</span>
+                                        <span>Precipitation Rate (PAGASA Intensity Scale)</span>
                                       </span>
                                       <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded uppercase border ${indices.rainfallIntensity.badgeBg} ${indices.rainfallIntensity.badgeText} ${indices.rainfallIntensity.badgeBorder}`}>
                                         {indices.rainfallIntensity.category}
