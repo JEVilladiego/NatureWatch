@@ -25,7 +25,7 @@ export interface LiveAirQualityConditions {
   europeanAqi: number;
   usAqi: number;
   aqiLabel: 'Good' | 'Fair' | 'Moderate' | 'Poor' | 'Very Poor' | 'Hazardous';
-  dominantPollutant?: 'PM2.5 (Fine Particulates)' | 'PM10 (Coarse Particulates)' | 'None (Baseline)';
+  dominantPollutant?: 'PM2.5 (Fine Particulates)' | 'PM10 (Coarse Particulates)' | 'None (Low Particulates)' | 'None (Baseline)';
   pm2_5: number; // μg/m³
   pm10: number; // μg/m³
   carbonMonoxide: number | null; // μg/m³
@@ -59,13 +59,13 @@ export interface RizalLguPreset {
 export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   {
     id: 'rizal-center',
-    name: 'Rizal Province (Central Baseline)',
+    name: 'Rizal Province (Centroid Coordinates)',
     shortName: 'All Rizal',
     tag: 'Centroid',
     lat: 14.5800,
     lng: 121.2800,
     elevation: '185m ASL',
-    ecologicalRole: 'Macro-climatic baseline for the foothills of Sierra Madre Mountain Range.',
+    ecologicalRole: 'Geographic centroid coordinates for Rizal Province in the foothills of Sierra Madre Mountain Range.',
   },
   {
     id: 'antipolo',
@@ -297,7 +297,7 @@ export interface AqiMetaResult {
   description: string;
   healthSummary: string;
   denrStatus: string;
-  dominantPollutant: 'PM2.5 (Fine Particulates)' | 'PM10 (Coarse Particulates)' | 'None (Baseline)';
+  dominantPollutant: 'PM2.5 (Fine Particulates)' | 'PM10 (Coarse Particulates)' | 'None (Low Particulates)' | 'None (Baseline)';
 }
 
 // EAQI Label and Color helper aligned with European CAMS & Philippine EMB Clean Air Act standards
@@ -310,7 +310,7 @@ export function getAqiMeta(
   const pm25Ratio = pm25 / 35; // DAO 2020-14 24-hr threshold: 35 ug/m3
   const pm10Ratio = p10 / 150; // DAO 2020-14 24-hr threshold: 150 ug/m3
 
-  let dominantPollutant: 'PM2.5 (Fine Particulates)' | 'PM10 (Coarse Particulates)' | 'None (Baseline)' = 'None (Baseline)';
+  let dominantPollutant: 'PM2.5 (Fine Particulates)' | 'PM10 (Coarse Particulates)' | 'None (Low Particulates)' = 'None (Low Particulates)';
   if (pm25Ratio > 0.25 || pm10Ratio > 0.25) {
     dominantPollutant = pm25Ratio >= pm10Ratio ? 'PM2.5 (Fine Particulates)' : 'PM10 (Coarse Particulates)';
   }

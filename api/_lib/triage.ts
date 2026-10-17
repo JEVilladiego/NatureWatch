@@ -117,7 +117,7 @@ ${description.slice(0, 500) || 'No description provided'}
 Location Weather Conditions (via Open-Meteo):
 - Temperature: ${weather.temperature}°C
 - Relative Humidity: ${weather.humidity}%
-- Wind Speed: ${weather.windSpeed} km/h${weather.windGusts ? ` (Gusts up to ${weather.windGusts} km/h)` : ''}
+- Wind Speed: ${weather.windSpeed} km/h${weather.windDirectionCompass ? ` (from ${weather.windDirectionCompass})` : ''}${weather.windGusts ? ` (Gusts up to ${weather.windGusts} km/h)` : ''}
 - Precipitation: ${weather.precipitation} mm
 Guidelines: Treat these as factual ambient atmospheric readings only. Do not invent or assume unobserved ground hazards based on these numbers alone.
 </realtime_meteorological_context>`;

@@ -1304,7 +1304,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium block leading-tight">{t.weatherWind}</span>
             <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100 truncate block">
               {windTraj?.isCalm
-                ? '0 km/h (Calm)'
+                ? (activeWeather.windSpeed < 1 ? '< 1 km/h (Calm)' : `${activeWeather.windSpeed} km/h (Calm)`)
                 : `${activeWeather.windSpeed} km/h ${activeWeather.windDirectionCompass ? activeWeather.windDirectionCompass : ''}`}
             </span>
           </div>
@@ -1454,7 +1454,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex items-center gap-1.5">
                 <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span className="text-[11px] font-bold tracking-wide uppercase text-stone-600 dark:text-stone-400">
-                  Measuring Live Air Quality...
+                  Reading Atmospheric Telemetry...
                 </span>
               </div>
               <span className="text-[9px] font-mono text-stone-400">Open-Meteo CAMS</span>

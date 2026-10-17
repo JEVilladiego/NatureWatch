@@ -9,6 +9,8 @@ export interface WeatherSnapshot {
   precipitation: number; // mm
   windSpeed: number; // km/h
   windGusts?: number | null; // km/h
+  windDirection?: number | null; // degrees (0-360)
+  windDirectionCompass?: string | null; // 16-point compass
   fetchedAt: string;
 }
 
@@ -26,7 +28,7 @@ export async function fetchWeatherContext(lat: number, lng: number): Promise<Wea
   const timeoutId = setTimeout(() => controller.abort(), 2500);
 
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_gusts_10m&timezone=Asia%2FManila`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Asia%2FManila`;
     const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) {
       console.warn(`[Open-Meteo] HTTP ${res.status}: ${res.statusText}`);
@@ -35,6 +37,12 @@ export async function fetchWeatherContext(lat: number, lng: number): Promise<Wea
     const data = await res.json();
     const current = data?.current;
     if (!current) return null;
+
+    const windDir = typeof current.wind_direction_10m === 'number' ? Math.round(Number(current.wind_direction_10m)) : null;
+    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    const windDirectionCompass = windDir !== null
+      ? directions[Math.round((((windDir % 360) + 360) % 360) / 22.5) % 16]
+      : null;
 
     return {
       temperature: Math.round(Number(current.temperature_2m) * 10) / 10,
@@ -45,6 +53,8 @@ export async function fetchWeatherContext(lat: number, lng: number): Promise<Wea
         typeof current.wind_gusts_10m === 'number'
           ? Math.round(Number(current.wind_gusts_10m) * 10) / 10
           : null,
+      windDirection: windDir,
+      windDirectionCompass,
       fetchedAt: new Date().toISOString(),
     };
   } catch (err: any) {
