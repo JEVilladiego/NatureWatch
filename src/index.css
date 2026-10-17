@@ -121,27 +121,92 @@
   border: none !important;
 }
 .custom-weather-popup .leaflet-popup-content-wrapper {
-  background: rgba(255, 255, 255, 0.98) !important;
-  backdrop-filter: blur(12px) !important;
+  background: #ffffff !important;
   border-radius: 12px !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #e7e5e4 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
   padding: 0 !important;
 }
 .dark .custom-weather-popup .leaflet-popup-content-wrapper {
-  background: rgba(24, 24, 27, 0.96) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: #1c1d22 !important;
+  border: 1px solid #2b2e37 !important;
 }
 .custom-weather-popup .leaflet-popup-content {
   margin: 12px 14px !important;
   line-height: 1.4 !important;
 }
 .custom-weather-popup .leaflet-popup-tip {
-  background: rgba(255, 255, 255, 0.98) !important;
+  background: #ffffff !important;
 }
 .dark .custom-weather-popup .leaflet-popup-tip {
-  background: rgba(24, 24, 27, 0.96) !important;
+  background: #1c1d22 !important;
 }
+
+/* Minimalist Weather Condition Icon Markers */
+.weather-icon-marker {
+  background: transparent !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.weather-icon-marker:hover {
+  z-index: 2500 !important;
+}
+.weather-icon-marker:hover .weather-icon-bubble {
+  transform: scale(1.22);
+}
+.clean-weather-tooltip {
+  background: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35) !important;
+  padding: 5px 9px !important;
+  pointer-events: none !important;
+}
+.clean-weather-tooltip::before {
+  border-top-color: #0f172a !important;
+}
+
+.dark .weather-icon-bubble[data-condition="sun"] {
+  background: rgba(45, 30, 10, 0.95) !important;
+  border-color: rgba(245, 158, 11, 0.6) !important;
+  color: #fbbf24 !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+}
+.dark .weather-icon-bubble[data-condition="cloud-sun"] {
+  background: rgba(12, 35, 55, 0.95) !important;
+  border-color: rgba(56, 189, 248, 0.6) !important;
+  color: #38bdf8 !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+}
+.dark .weather-icon-bubble[data-condition="cloud-rain"] {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-color: rgba(96, 165, 250, 0.6) !important;
+  color: #60a5fa !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+}
+.dark .weather-icon-bubble[data-condition="cloud-lightning"] {
+  background: rgba(46, 16, 101, 0.95) !important;
+  border-color: rgba(167, 139, 250, 0.6) !important;
+  color: #a78bfa !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+}
+.dark .weather-icon-bubble[data-condition="cloud-fog"] {
+  background: rgba(19, 78, 74, 0.95) !important;
+  border-color: rgba(45, 212, 191, 0.6) !important;
+  color: #2dd4bf !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+}
+.dark .weather-icon-bubble[data-condition="cloud"] {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(148, 163, 184, 0.6) !important;
+  color: #94a3b8 !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+}
+
 
 
 /* Non-Rizal Out-of-Jurisdiction Mask: Warm Brownish-Stone Cartographic Treatment */
@@ -627,22 +692,22 @@
   opacity: 1;
   transform: translateX(-50%) scale(1.05);
   border-color: #f43f5e;
-  box-shadow: 0 3px 10px rgba(244, 63, 94, 0.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* Custom FIRMS Popup */
 .firms-custom-popup .leaflet-popup-content-wrapper {
   background: #ffffff;
   border-radius: 12px;
-  border: 1px solid #fee2e2;
-  box-shadow: 0 10px 25px -5px rgba(225, 29, 72, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e7e5e4;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
   padding: 6px;
 }
 
 .dark .firms-custom-popup .leaflet-popup-content-wrapper {
   background: #1c1d22;
-  border: 1px solid #881337;
-  box-shadow: 0 10px 25px -5px rgba(225, 29, 72, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  border: 1px solid #2b2e37;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
   color: #e2e8f0;
 }
 

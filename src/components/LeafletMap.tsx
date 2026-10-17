@@ -18,9 +18,7 @@ import {
 import {
   RIZAL_LGU_PRESETS,
   FullAtmosphericData,
-  getAqiMeta,
   getWeatherInterpretation,
-  getWindFlowTrajectory,
 } from '../lib/weatherService';
 import { fetchLatestRadarFrame, RadarFrameInfo, TRANSPARENT_FALLBACK_TILE } from '../lib/radarService';
 import {
@@ -1896,30 +1894,60 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     if (!showWeatherMarkers) return;
 
-    const getIconSvg = (type: string) => {
+    const getWeatherConditionVisual = (type: string) => {
+      const neutralShadow = '0 2px 5px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06)';
       if (type === 'sun') {
-        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`;
+        return {
+          icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
+          color: '#d97706',
+          bg: '#fffbeb',
+          border: 'rgba(245, 158, 11, 0.55)',
+          shadow: neutralShadow,
+        };
       }
       if (type === 'cloud-sun') {
-        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>`;
+        return {
+          icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>`,
+          color: '#0284c7',
+          bg: '#f0f9ff',
+          border: 'rgba(56, 189, 248, 0.55)',
+          shadow: neutralShadow,
+        };
       }
       if (type === 'cloud-rain') {
-        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg>`;
+        return {
+          icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg>`,
+          color: '#2563eb',
+          bg: '#eff6ff',
+          border: 'rgba(96, 165, 250, 0.55)',
+          shadow: neutralShadow,
+        };
       }
       if (type === 'cloud-lightning') {
-        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"/><path d="m13 12-3 5h4l-3 5"/></svg>`;
+        return {
+          icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"/><path d="m13 12-3 5h4l-3 5"/></svg>`,
+          color: '#7c3aed',
+          bg: '#f5f3ff',
+          border: 'rgba(167, 139, 250, 0.55)',
+          shadow: neutralShadow,
+        };
       }
       if (type === 'cloud-fog') {
-        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 17H7"/><path d="M17 21H9"/></svg>`;
+        return {
+          icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 17H7"/><path d="M17 21H9"/></svg>`,
+          color: '#0d9488',
+          bg: '#f0fdfa',
+          border: 'rgba(45, 212, 191, 0.55)',
+          shadow: neutralShadow,
+        };
       }
-      return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`;
-    };
-
-    const getWindSvg = (rotationDeg: number | null) => {
-      if (rotationDeg === null) {
-        return `<svg width="8" height="8" style="display: inline-block; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>`;
-      }
-      return `<svg width="10" height="10" style="transform: rotate(${rotationDeg}deg); transform-origin: center; display: inline-block; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg>`;
+      return {
+        icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`,
+        color: '#64748b',
+        bg: '#f8fafc',
+        border: 'rgba(148, 163, 184, 0.55)',
+        shadow: neutralShadow,
+      };
     };
 
     RIZAL_LGU_PRESETS.filter((p) => p.id !== 'rizal-center').forEach((preset) => {
@@ -1927,80 +1955,35 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       const hasData = !!telemetry;
 
       const temp = hasData ? Math.round(telemetry.weather.temperature) : '--';
-      const windSpeed = hasData ? Math.round(telemetry.weather.windSpeed) : 0;
-      const windDir = hasData ? telemetry.weather.windDirection : 0;
-      const aqi = hasData ? telemetry.airQuality.europeanAqi : 0;
-      const interp = hasData ? getWeatherInterpretation(telemetry.weather.weatherCode) : { label: 'Syncing', iconType: 'cloud' as const };
-      const iconSvg = getIconSvg(interp.iconType);
+      const interp = hasData
+        ? getWeatherInterpretation(telemetry.weather.weatherCode)
+        : { label: 'Syncing...', iconType: 'cloud' as const };
       
-      const traj = getWindFlowTrajectory(windDir, windSpeed);
-      const windSvg = getWindSvg(traj.rotationForArrow);
-
-      const meta = hasData ? getAqiMeta(aqi, telemetry.airQuality.pm2_5, telemetry.airQuality.pm10) : {
-        label: 'Monitoring',
-        category: 'Good' as const,
-        accentColor: '#059669',
-        bgColor: '#ecfdf5',
-        borderColor: '#a7f3d0',
-        denrStatus: 'Monitoring',
-        dominantPollutant: 'None (Baseline)' as const,
-        healthSummary: 'Awaiting local atmospheric telemetry.'
-      };
-
-      const aqiBg = meta.bgColor;
-      const aqiColor = meta.accentColor;
-      const aqiBorder = meta.borderColor;
+      const visual = getWeatherConditionVisual(interp.iconType);
 
       const iconHtml = `
-        <div style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: auto;">
-          <div class="group cursor-pointer select-none" style="
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            background: rgba(255, 255, 255, 0.94);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(229, 231, 235, 0.95);
-            border-radius: 9999px;
-            padding: 3px 7px 3px 6px;
-            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.08);
-            transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease;
-            white-space: nowrap;
-          ">
-            <span style="color: #059669; display: flex; align-items: center; flex-shrink: 0;">${iconSvg}</span>
-            <span style="font-size: 11px; font-weight: 700; color: #1c1917; font-family: system-ui, -apple-system, sans-serif;">${preset.shortName}</span>
-            <span style="font-size: 11px; font-weight: 700; color: #44403c; font-family: ui-monospace, monospace;">${temp}°</span>
-            
-            <span style="
-              display: inline-flex;
-              align-items: center;
-              gap: 3px;
-              font-size: 9.5px;
-              font-weight: 700;
-              padding: 1px 5px;
-              border-radius: 9999px;
-              background: ${aqiBg};
-              color: ${aqiColor};
-              border: 1px solid ${aqiBorder};
-              font-family: ui-monospace, monospace;
-            ">
-              <span style="width: 4px; height: 4px; border-radius: 50%; background: ${aqiColor};"></span>
-              AQI ${hasData ? aqi : '..'}
-            </span>
-
-            <span style="display: flex; align-items: center; gap: 2px; color: #78716c; font-size: 9.5px; font-family: ui-monospace, monospace;" title="${traj.isCalm ? traj.summary : `${traj.summary} at ${windSpeed} km/h`}">
-              ${windSvg}
-              <span>${windSpeed}</span>
-            </span>
-          </div>
+        <div class="weather-icon-bubble" data-condition="${interp.iconType}" style="
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: ${visual.bg};
+          border: 1.5px solid ${visual.border};
+          color: ${visual.color};
+          box-shadow: ${visual.shadow};
+          cursor: pointer;
+        ">
+          ${visual.icon}
         </div>
       `;
 
       const markerIcon = L.divIcon({
-        className: 'custom-weather-pin',
+        className: 'weather-icon-marker',
         html: iconHtml,
-        iconSize: [0, 0],
-        iconAnchor: [0, 0],
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
       });
 
       const marker = L.marker([preset.lat, preset.lng], {
@@ -2009,91 +1992,22 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         zIndexOffset: 1500,
       }).addTo(map);
 
-      // Enriched Popup Content
-      const popupHtml = `
-        <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; min-width: 230px; max-width: 270px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <strong style="font-size: 13px; color: #1c1917;">${preset.name}</strong>
-            <span style="font-size: 9.5px; font-family: monospace; color: #78716c; background: #f5f5f4; padding: 1px 5px; border-radius: 4px;">${preset.elevation}</span>
+      const tooltipHtml = `
+        <div style="font-family: system-ui, -apple-system, sans-serif; text-align: center; pointer-events: none; min-width: 105px;">
+          <div style="font-size: 11.5px; font-weight: 700; color: #f8fafc; letter-spacing: -0.01em;">${preset.name}</div>
+          <div style="font-size: 10px; color: #94a3b8; margin-top: 1.5px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+            <span style="color: #38bdf8; font-weight: 700; font-family: ui-monospace, monospace;">${temp}°C</span>
+            <span style="opacity: 0.6;">•</span>
+            <span style="color: #e2e8f0; font-weight: 500;">${interp.label}</span>
           </div>
-          <div style="font-size: 11px; color: #57534e; margin-bottom: 6px;">
-            ${interp.label} • Temp ${temp}°C ${telemetry?.weather?.relativeHumidity ? `(${telemetry.weather.relativeHumidity}% RH)` : ''}
-          </div>
-
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 8px; margin-bottom: 6px; font-size: 10.5px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-              <span style="color: #64748b; font-weight: 500;">Wind Vector:</span>
-              <strong style="color: #1e293b;">${windSpeed} km/h ${telemetry?.weather?.windGusts ? `(Gusts: ${telemetry.weather.windGusts} km/h)` : ''}</strong>
-            </div>
-            <div style="color: #475569; font-size: 10px; font-family: monospace;">
-              ${traj.isCalm
-                ? 'Calm (&lt; 1 km/h) &mdash; No prevailing wind direction'
-                : `Origin: ${traj.fromCompass} (${traj.fromBearing}&deg;) &rarr; Blowing: ${traj.toCompass} (${traj.toBearing}&deg;)`}
-            </div>
-          </div>
-          
-          <div style="background: ${aqiBg}; border: 1px solid ${aqiBorder}; border-radius: 8px; padding: 6px 8px; margin-bottom: 8px; font-size: 11px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
-              <span style="color: #475569; font-weight: 600;">Air Quality (CAMS EAQI)</span>
-              <strong style="color: ${aqiColor};">${aqi} (${meta.label})</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #334155; font-family: monospace; margin-bottom: 2px;">
-              <span>PM2.5: ${telemetry?.airQuality?.pm2_5 ?? '--'} μg/m³</span>
-              <span>PM10: ${telemetry?.airQuality?.pm10 ?? '--'} μg/m³</span>
-            </div>
-            <div style="font-size: 9.5px; color: #64748b; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 3px; margin-top: 3px;">
-              DENR DAO 2020-14 Benchmark: <strong>${meta.denrStatus}</strong>
-            </div>
-          </div>
-
-          <div style="font-size: 10.5px; color: #44403c; border-top: 1px solid #f5f5f4; padding-top: 6px; margin-bottom: 8px;">
-            <strong>Ecological Role:</strong> ${preset.ecologicalRole}
-          </div>
-
-          <button class="nw-open-lgu-weather-btn" data-preset-id="${preset.id}" style="
-            width: 100%;
-            padding: 6px 10px;
-            background: #1c1917;
-            color: #ffffff;
-            border: none;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            text-align: center;
-            transition: background 0.15s;
-          ">
-            Open Atmospheric Telemetry &rarr;
-          </button>
         </div>
       `;
 
-      marker.bindPopup(popupHtml, {
-        closeButton: false,
-        className: 'custom-weather-popup',
-        offset: [0, -10],
-      });
-
-      marker.on('popupopen', (e) => {
-        const popupNode = e.popup.getElement();
-        if (!popupNode) return;
-        const btn = popupNode.querySelector<HTMLButtonElement>('.nw-open-lgu-weather-btn');
-        if (btn) {
-          btn.onclick = (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            marker.closePopup();
-            if (onWeatherMarkerClick) {
-              onWeatherMarkerClick(preset.id);
-            }
-          };
-          btn.onmouseenter = () => {
-            btn.style.backgroundColor = '#000000';
-          };
-          btn.onmouseleave = () => {
-            btn.style.backgroundColor = '#1c1917';
-          };
-        }
+      marker.bindTooltip(tooltipHtml, {
+        direction: 'top',
+        offset: [0, -18],
+        className: 'clean-weather-tooltip',
+        opacity: 1,
       });
 
       marker.on('click', () => {
