@@ -8,6 +8,6 @@
   ],
   "crons": [
     { "path": "/api/cron-triage", "schedule": "0 18 * * *" },
-    { "path": "/api/cron-firms", "schedule": "0 */6 * * *" }
+    { "path": "/api/cron-firms", "schedule": "0 6 * * *" }
   ]
 }
