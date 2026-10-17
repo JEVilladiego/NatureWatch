@@ -96,6 +96,8 @@ interface LeafletMapProps {
   onSelectProtectedZone?: (zoneId: string) => void;
   onMapBackgroundClick?: () => void;
   showMgbQuarries?: boolean;
+  selectedQuarryId?: string | null;
+  onSelectQuarry?: (quarryId: string) => void;
   quarryFilter?: {
     type: 'all' | 'mpsa' | 'mpp' | 'cancelled';
     municipality: string;
@@ -105,6 +107,7 @@ interface LeafletMapProps {
   showWeatherMarkers?: boolean;
   weatherTelemetry?: Record<string, FullAtmosphericData>;
   onWeatherMarkerClick?: (presetId: string) => void;
+  showFirmsMarkers?: boolean;
 }
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
@@ -130,11 +133,14 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   onSelectProtectedZone,
   onMapBackgroundClick,
   showMgbQuarries = false,
+  selectedQuarryId = null,
+  onSelectQuarry,
   quarryFilter,
   showRainRadar = false,
   showWeatherMarkers = false,
   weatherTelemetry = {},
   onWeatherMarkerClick,
+  showFirmsMarkers = true,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -589,64 +595,24 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     };
   }, [mode, onMapBackgroundClick]);
 
-  // Helper function to build rich tactical tooltip for MGB concessions
-  const buildQuarryTooltip = (props: any, isMpp: boolean, isCancelled: boolean, isExploration: boolean) => {
-    const name = props.tenementName || props.name || props.operator || 'Permitted Concession';
-    const permit = props.permitNumber || 'MGB Tenement';
-    const operator = props.operator || 'Authorized Concessionaire';
-    const holder = props.holder && props.holder !== operator ? props.holder : null;
-    const commodity = props.commodity || 'Aggregates / Sand & Gravel';
-    const municipality = props.municipality || 'Rizal';
-    const area = props.areaHectares ? props.areaHectares : (props.exactAreaHa ? `${props.exactAreaHa.toFixed(4)} ha` : '');
-
-    let statusBadge = `
-      <span style="font-size: 8px; font-family: monospace; background: rgba(217,119,6,0.2); border: 1px solid rgba(217,119,6,0.4); padding: 1px 5px; border-radius: 3px; color: #fde68a; font-weight: 800;">
-        OPERATING MPSA
-      </span>
-    `;
-    if (isCancelled) {
-      statusBadge = `
-        <span style="font-size: 8px; font-family: monospace; background: rgba(220,38,38,0.3); border: 1px solid rgba(220,38,38,0.6); padding: 1px 5px; border-radius: 3px; color: #fca5a5; font-weight: 800;">
-          CANCELLED BY DENR
-        </span>
-      `;
-    } else if (isMpp) {
-      statusBadge = `
-        <span style="font-size: 8px; font-family: monospace; background: rgba(79,70,229,0.3); border: 1px solid rgba(129,140,248,0.5); padding: 1px 5px; border-radius: 3px; color: #c7d2fe; font-weight: 800;">
-          MINERAL PROCESSING (MPP)
-        </span>
-      `;
-    } else if (isExploration) {
-      statusBadge = `
-        <span style="font-size: 8px; font-family: monospace; background: rgba(2,132,199,0.25); border: 1px solid rgba(56,189,248,0.5); padding: 1px 5px; border-radius: 3px; color: #bae6fd; font-weight: 800;">
-          EXPLORATION / DMPF
-        </span>
-      `;
-    }
-
+  // Helper function to build clean, lightweight hover label for MGB concessions
+  const buildQuarryHoverLabel = (props: any, isMpp: boolean, isCancelled: boolean) => {
+    const name = props.shortName || props.tenementName || props.name || props.operator;
+    const typeLabel = isMpp ? 'MPP Plant' : isCancelled ? 'Cancelled MPSA' : 'MPSA Concession';
+    const tagColor = isMpp ? '#818cf8' : isCancelled ? '#ef4444' : '#f59e0b';
     return `
-      <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 220px; max-width: 290px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px;">
-          <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: ${isMpp ? '#818cf8' : isCancelled ? '#ef4444' : '#d97706'};">
-            ${isMpp ? 'MGB MINERAL PROCESSING' : 'MGB EXTRACTION CADASTRE'}
-          </span>
-          ${statusBadge}
-        </div>
-        <div style="font-weight: 700; font-size: 11.5px; color: #f8fafc; line-height: 1.3;">
+      <div style="font-family: system-ui, -apple-system, sans-serif; pointer-events: none; min-width: 130px; max-width: 220px;">
+        <div style="font-size: 11px; font-weight: 700; color: #f8fafc; letter-spacing: -0.01em; line-height: 1.3;">
           ${name}
         </div>
-        <div style="font-size: 10px; color: #cbd5e1; margin-top: 3px;">
-          <strong>Operator:</strong> ${operator}
+        <div style="font-size: 9.5px; color: #94a3b8; margin-top: 2px; display: flex; align-items: center; gap: 4px;">
+          <span style="color: ${tagColor}; font-weight: 700; font-family: ui-monospace, monospace;">${typeLabel}</span>
+          <span style="opacity: 0.5;">•</span>
+          <span>${props.municipality || 'Rizal'}</span>
         </div>
-        ${holder ? `<div style="font-size: 9.5px; color: #94a3b8;"><strong>Holder:</strong> ${holder}</div>` : ''}
-        <div style="font-size: 9.5px; color: #94a3b8; margin-top: 2px;">
-          ${props.barangay ? `${props.barangay}, ` : ''}${municipality} ${area ? `• <strong>${area}</strong>` : ''}
+        <div style="font-size: 8.5px; color: #64748b; font-style: italic; margin-top: 2.5px;">
+          Click to inspect concession dossier &rarr;
         </div>
-        <div style="font-size: 9px; font-family: monospace; color: ${isMpp ? '#a5b4fc' : isCancelled ? '#fca5a5' : '#f59e0b'}; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 3px;">
-          Permit: ${permit} • ${commodity}
-        </div>
-        ${props.termDates ? `<div style="font-size: 8.5px; color: #94a3b8; font-family: monospace; margin-top: 2px;">${props.termDates}</div>` : ''}
-        ${props.mgbRegistrySource ? `<div style="font-size: 8px; color: #64748b; font-family: monospace; margin-top: 2px;">Source: ${props.mgbRegistrySource}</div>` : ''}
       </div>
     `;
   };
@@ -731,6 +697,17 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           const props = feature?.properties || {};
           const isCancelled = props.status === 'Cancelled';
           const isExploration = props.status === 'Exploration';
+          const isSelected = Boolean(selectedQuarryId && (props.id === selectedQuarryId || feature.id === selectedQuarryId || props.permitNumber === selectedQuarryId));
+
+          if (isSelected) {
+            return {
+              color: '#ffffff',
+              weight: 3.5,
+              fillColor: isCancelled ? '#ef4444' : isExploration ? '#38bdf8' : '#f59e0b',
+              fillOpacity: 0.45,
+              dashArray: undefined,
+            };
+          }
 
           if (isCancelled) {
             return {
@@ -761,14 +738,15 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         onEachFeature: (feature: any, featureLayer: L.Layer) => {
           const props = feature?.properties || {};
           const isCancelled = props.status === 'Cancelled';
-          const isExploration = props.status === 'Exploration';
+          const isSelected = Boolean(selectedQuarryId && (props.id === selectedQuarryId || feature.id === selectedQuarryId || props.permitNumber === selectedQuarryId));
 
           featureLayer.bindTooltip(
-            buildQuarryTooltip(props, false, isCancelled, isExploration),
+            buildQuarryHoverLabel(props, false, isCancelled),
             {
               sticky: true,
               direction: 'auto',
-              className: 'tactical-map-tooltip',
+              className: 'clean-weather-tooltip',
+              offset: [0, -10],
             }
           );
 
@@ -776,24 +754,37 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           pathLayer.on('mouseover', () => {
             pathLayer.setStyle({
               weight: 3.5,
-              fillOpacity: isCancelled ? 0.32 : 0.35,
-              color: isCancelled ? '#991b1b' : '#b45309',
+              fillOpacity: isCancelled ? 0.35 : 0.40,
+              color: isCancelled ? '#991b1b' : isSelected ? '#ffffff' : '#b45309',
             });
           });
           pathLayer.on('mouseout', () => {
-            pathLayer.setStyle({
-              weight: isCancelled ? 2.5 : 2,
-              fillOpacity: isCancelled ? 0.22 : 0.16,
-              color: isCancelled ? '#dc2626' : '#d97706',
-            });
+            if (isSelected) {
+              pathLayer.setStyle({
+                color: '#ffffff',
+                weight: 3.5,
+                fillOpacity: 0.45,
+              });
+            } else {
+              pathLayer.setStyle({
+                weight: isCancelled ? 2.5 : 2,
+                fillOpacity: isCancelled ? 0.22 : 0.16,
+                color: isCancelled ? '#dc2626' : '#d97706',
+              });
+            }
           });
-          pathLayer.on('click', () => {
+          pathLayer.on('click', (e: L.LeafletMouseEvent) => {
+            L.DomEvent.stopPropagation(e);
             try {
               const bounds = (pathLayer as any).getBounds?.();
               if (bounds && map) {
-                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: true });
               }
-            } catch (e) {}
+            } catch (err) {}
+            const qId = props.id || feature.id || props.permitNumber;
+            if (qId && onSelectQuarry) {
+              onSelectQuarry(String(qId));
+            }
           });
         },
       });
@@ -1000,15 +991,21 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             zIndexOffset: 1400,
           });
 
-          pinMarker.bindTooltip(buildQuarryTooltip(props, true, false, false), {
+          pinMarker.bindTooltip(buildQuarryHoverLabel(props, true, false), {
             sticky: true,
             direction: 'auto',
-            className: 'tactical-map-tooltip',
+            className: 'clean-weather-tooltip',
+            offset: [0, -10],
           });
 
-          pinMarker.on('click', () => {
+          pinMarker.on('click', (e: L.LeafletMouseEvent) => {
+            L.DomEvent.stopPropagation(e);
             const origCoords = (feat.geometry as any).coordinates;
             map.flyTo([origCoords[1], origCoords[0]], 16, { animate: true });
+            const qId = props.id || feat.id || props.permitNumber;
+            if (qId && onSelectQuarry) {
+              onSelectQuarry(String(qId));
+            }
           });
 
           pinMarker.addTo(layerGroup);
@@ -1021,13 +1018,14 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         const props = feat.properties;
         const coords = (feat.geometry as any).coordinates;
         const latlng: [number, number] = [coords[1], coords[0]];
+        const isSelected = Boolean(selectedQuarryId && (props.id === selectedQuarryId || feat.id === selectedQuarryId || props.permitNumber === selectedQuarryId));
 
         // Semantic LOD: Compact 26px glyph at low/medium zoom, full pill at site zoom (zoom >= 15)
         const showFullPill = currentZoom >= 15;
 
         const glyphHtml = `
           <div style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: auto;">
-            <div class="nw-mpp-glyph" title="${props.shortName || props.operator}">
+            <div class="nw-mpp-glyph" style="${isSelected ? 'border: 2px solid #ffffff !important; box-shadow: 0 0 16px rgba(99, 102, 241, 0.95) !important; transform: scale(1.2);' : ''}" title="${props.shortName || props.operator}">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
                 <path d="M17 18h1"></path>
@@ -1040,7 +1038,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
         const pillHtml = `
           <div style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: auto;">
-            <div class="nw-mpp-pill" title="${props.name || props.operator}">
+            <div class="nw-mpp-pill" style="${isSelected ? 'border: 2px solid #ffffff !important; box-shadow: 0 0 16px rgba(99, 102, 241, 0.95), 0 4px 12px rgba(0,0,0,0.5) !important; transform: scale(1.12);' : ''}" title="${props.name || props.operator}">
               <span style="color: #a5b4fc; display: flex; align-items: center; flex-shrink: 0;">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
@@ -1068,17 +1066,23 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           zIndexOffset: 1200,
         });
 
-        marker.bindTooltip(buildQuarryTooltip(props, true, false, false), {
+        marker.bindTooltip(buildQuarryHoverLabel(props, true, false), {
           sticky: true,
           direction: 'auto',
-          className: 'tactical-map-tooltip',
+          className: 'clean-weather-tooltip',
+          offset: [0, -10],
         });
 
-        marker.on('click', () => {
+        marker.on('click', (e: L.LeafletMouseEvent) => {
+          L.DomEvent.stopPropagation(e);
           if (isMulti && currentZoom >= 14 && !isSpiderfied) {
             setSpiderfiedClusterKey(cluster.id);
           } else {
             map.flyTo(latlng, 16, { animate: true });
+          }
+          const qId = props.id || feat.id || props.permitNumber;
+          if (qId && onSelectQuarry) {
+            onSelectQuarry(String(qId));
           }
         });
 
@@ -1092,7 +1096,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         mgbQuarriesLayerRef.current = null;
       }
     };
-  }, [showMgbQuarries, layerMode, mgbQuarriesData, quarryFilter, currentZoom, spiderfiedClusterKey]);
+  }, [showMgbQuarries, layerMode, mgbQuarriesData, quarryFilter, currentZoom, spiderfiedClusterKey, selectedQuarryId, onSelectQuarry]);
 
   // Update Center & Zoom
   useEffect(() => {
@@ -1693,7 +1697,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     // =========================================================
     // 2. RENDER NASA FIRMS VIIRS 375m GRID SQUARES (FOOTPRINT)
     // =========================================================
-    satReports.forEach((satReport) => {
+    if (showFirmsMarkers) {
+      satReports.forEach((satReport) => {
       const coords = resolveReportCoordinates(satReport);
       const isSelected = satReport.id === selectedReportId;
       const bounds = getFirms375mBounds(coords.lat, coords.lng);
@@ -1822,6 +1827,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         if (onSelectReport) onSelectReport(satReport);
       });
     });
+    }
 
     return () => {
       dashboardMarkersRef.current.forEach((m) => m.remove());
@@ -1829,7 +1835,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       firmsLayersRef.current.forEach((l) => l.remove());
       firmsLayersRef.current = [];
     };
-  }, [mode, reports, selectedReportId, onSelectReport, onClusterClick]);
+  }, [mode, reports, selectedReportId, onSelectReport, onClusterClick, showFirmsMarkers]);
 
   // 1. Live Doppler Precipitation Radar Layer (RainViewer Open-Source API)
   useEffect(() => {

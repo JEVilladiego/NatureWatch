@@ -746,6 +746,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [activeProtectedZoneFilter, setActiveProtectedZoneFilter] = useState<string | null>(null);
   const [isProhibitionsExpanded, setIsProhibitionsExpanded] = useState<boolean>(true);
   const [showMgbQuarries, setShowMgbQuarries] = useState<boolean>(false);
+  const [selectedQuarryId, setSelectedQuarryId] = useState<string | null>(null);
+  const [isQuarryEnforcementExpanded, setIsQuarryEnforcementExpanded] = useState<boolean>(true);
   const [isSyncingSatellites, setIsSyncingSatellites] = useState<boolean>(false);
   const [syncSatelliteToast, setSyncSatelliteToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isFirmsReplayMode, setIsFirmsReplayMode] = useState<boolean>(false);
@@ -900,6 +902,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (tab !== 'protected_zones') {
       setSelectedProtectedZoneId(null);
     }
+    if (tab !== 'quarries') {
+      setSelectedQuarryId(null);
+    }
     if (tab === 'protected_zones') {
       setShowMgbQuarries(false);
       setShowWeatherMarkers(false);
@@ -922,6 +927,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleCloseDrawer = () => {
     setIsSheetOpen(false);
     setSelectedProtectedZoneId(null);
+    setSelectedQuarryId(null);
     setShowWeatherMarkers(false);
     if (activeLeftDrawerTab === 'quarries') {
       setShowMgbQuarries(false);
@@ -1103,6 +1109,44 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (!selectedProtectedZoneId) return null;
     return RIZAL_PROTECTED_ZONES_CATALOG.find((z) => z.id === selectedProtectedZoneId) || null;
   }, [selectedProtectedZoneId]);
+
+  // Selected quarry concession / processing plant data lookup
+  const selectedQuarry = useMemo(() => {
+    if (!selectedQuarryId) return null;
+    return (
+      mgbQuarriesFeatures.find(
+        (f) =>
+          f.properties?.id === selectedQuarryId ||
+          f.id === selectedQuarryId ||
+          f.properties?.permitNumber === selectedQuarryId
+      ) || null
+    );
+  }, [selectedQuarryId, mgbQuarriesFeatures]);
+
+  const handleSelectQuarry = (quarryId: string) => {
+    setSelectedQuarryId(quarryId);
+    setActiveLeftDrawerTab('quarries');
+    setShowMgbQuarries(true);
+    setMapLayerMode('quarries');
+    setSelectedReport(null);
+    setSelectedProtectedZoneId(null);
+    if (window.innerWidth < 640) {
+      setIsSheetOpen(false);
+    } else {
+      setIsSheetOpen(true);
+    }
+    const feat = mgbQuarriesFeatures.find(
+      (f) =>
+        f.properties?.id === quarryId ||
+        f.id === quarryId ||
+        f.properties?.permitNumber === quarryId
+    );
+    if (feat) {
+      const center = getQuarryCenter(feat);
+      setMapCenter(center);
+      setMapZoom(feat.properties?.permitType === 'MPP' ? 16 : 15);
+    }
+  };
 
   // Augmented reports incorporating Historical Replay / Simulation VIIRS anomalies
   const allReports = useMemo(() => {
@@ -3104,6 +3148,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   choroplethCounts={choroplethCounts}
                   maskNonRizal={false}
                   showMgbQuarries={showMgbQuarries}
+                  selectedQuarryId={selectedQuarryId}
+                  onSelectQuarry={(qId) => handleSelectQuarry(qId)}
                   quarryFilter={{
                     type: quarryTypeFilter,
                     municipality: quarryMunicipalityFilter,
@@ -3756,6 +3802,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               choroplethCounts={choroplethCounts}
               maskNonRizal={isMaskActive}
               showMgbQuarries={showMgbQuarries}
+              selectedQuarryId={selectedQuarryId}
+              onSelectQuarry={(qId) => handleSelectQuarry(qId)}
               quarryFilter={{
                 type: quarryTypeFilter,
                 municipality: quarryMunicipalityFilter,
@@ -3765,6 +3813,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               showWeatherMarkers={showWeatherMarkers}
               weatherTelemetry={allLguWeather}
               onWeatherMarkerClick={handleWeatherMarkerClick}
+              showFirmsMarkers={isSheetOpen && (activeLeftDrawerTab === 'firms' || isSatReport)}
               selectedProtectedZoneId={selectedProtectedZoneId}
               onSelectProtectedZone={(zoneId) => {
                 setSelectedProtectedZoneId(zoneId);
@@ -3777,6 +3826,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 if (selectedProtectedZoneId) {
                   setSelectedProtectedZoneId(null);
                 }
+                if (selectedQuarryId) {
+                  setSelectedQuarryId(null);
+                }
               }}
               onSelectReport={(r) => {
                 const isSat = r.source === 'satellite_firms' || r.id.startsWith('SAT-') || r.id.startsWith('firms_sim_') || !!r.satelliteHotspot;
@@ -3784,6 +3836,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   setActiveLeftDrawerTab('firms');
                 }
                 setSelectedProtectedZoneId(null);
+                setSelectedQuarryId(null);
                 setSelectedReport(r);
                 setIsSheetOpen(true);
                 const coords = resolveReportCoordinates(r);
@@ -3960,6 +4013,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             key={item.id}
                             onMouseDown={() => {
                               setSelectedProtectedZoneId(null);
+                              setSelectedQuarryId(item.id);
                               const f = item.payload;
                               setShowMgbQuarries(true);
                               setMapLayerMode('quarries');
@@ -4090,7 +4144,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       handleToggleDrawerTab('queue');
                     }}
                     className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
-                      isSheetOpen && (activeLeftDrawerTab === 'queue' || selectedReport)
+                      isSheetOpen && ((activeLeftDrawerTab === 'queue' && !selectedReport) || (selectedReport && !isSatReport))
                         ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-xs'
                         : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-750 hover:bg-stone-50 dark:hover:bg-stone-800 shadow-2xs'
                     }`}
@@ -4109,7 +4163,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       handleToggleDrawerTab('firms');
                     }}
                     className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
-                      isSheetOpen && !selectedReport && activeLeftDrawerTab === 'firms'
+                      isSheetOpen && ((activeLeftDrawerTab === 'firms' && !selectedReport) || isSatReport)
                         ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-xs'
                         : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-750 hover:bg-stone-50 dark:hover:bg-stone-800 shadow-2xs'
                     }`}
@@ -5213,17 +5267,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         const isMpp = p.permitType === 'MPP';
                         const isCancelled = p.status === 'Cancelled';
                         const isExploration = p.status === 'Exploration';
+                        const isSelected = Boolean(selectedQuarryId && (p.id === selectedQuarryId || feat.id === selectedQuarryId || p.permitNumber === selectedQuarryId));
 
                         return (
                           <div
                             key={feat.id || p.id}
                             onClick={() => {
-                              setMapCenter(center);
-                              setMapZoom(isMpp ? 15 : 14);
-                              if (window.innerWidth < 640) setIsSheetOpen(false);
+                              handleSelectQuarry(String(feat.id || p.id || p.permitNumber));
                             }}
-                            className={`p-3 transition-colors cursor-pointer text-left space-y-1.5 group ${
-                              isCancelled
+                            className={`p-3 transition-all cursor-pointer text-left space-y-1.5 group ${
+                              isSelected
+                                ? 'bg-amber-50/90 dark:bg-amber-950/50 border-l-[3.5px] border-l-amber-500 shadow-sm'
+                                : isCancelled
                                 ? 'bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/30'
                                 : 'bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-850/80'
                             }`}
@@ -6553,6 +6608,328 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
           )}
+
+          {/* ========================================================= */}
+          {/* 3.6 RIGHT SLIDE-OVER MGB QUARRY DOSSIER & AUDIT HUD      */}
+          {/* ========================================================= */}
+          {selectedQuarry && isSheetOpen && activeLeftDrawerTab === 'quarries' && !selectedReport && (() => {
+            const qp = selectedQuarry.properties;
+            const isMpp = qp.permitType === 'MPP';
+            const isCancelled = qp.status === 'Cancelled';
+            const isExploration = qp.status === 'Exploration';
+            const qCenter = getQuarryCenter(selectedQuarry);
+            const qMun = (qp.municipality || '').toLowerCase();
+
+            // Correlate local environmental incidents and satellite thermal anomalies
+            const nearbyReports = allReports.filter((r) => {
+              if (r.status === 'spam' || r.status === 'resolved') return false;
+              const rCoords = resolveReportCoordinates(r);
+              const munMatch = r.location?.municipality && qMun.includes(r.location.municipality.toLowerCase());
+              if (munMatch) return true;
+              if (rCoords && typeof rCoords.lat === 'number' && typeof rCoords.lng === 'number') {
+                const dLat = rCoords.lat - qCenter.lat;
+                const dLng = rCoords.lng - qCenter.lng;
+                const distKm = Math.sqrt(dLat * dLat + dLng * dLng) * 111;
+                return distKm <= 3.5;
+              }
+              return false;
+            });
+
+            const nearbyHotspots = nearbyReports.filter(
+              (r) => r.source === 'satellite_firms' || r.id.startsWith('SAT-') || r.id.startsWith('firms_sim_') || !!r.satelliteHotspot
+            );
+
+            const nearbyCitizenIncidents = nearbyReports.filter(
+              (r) => r.source !== 'satellite_firms' && !r.id.startsWith('SAT-') && !r.id.startsWith('firms_sim_') && !r.satelliteHotspot
+            );
+
+            return (
+              <div className="absolute top-3 right-16 sm:top-4 sm:right-18 z-30 pointer-events-auto w-[calc(100vw-88px)] sm:w-[415px] max-h-[calc(100vh-88px)] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xl rounded-xl overflow-hidden flex flex-col transition-all duration-300 min-h-0">
+                {/* Header */}
+                <div className="p-3.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 shrink-0 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md border ${
+                        isMpp
+                          ? 'bg-indigo-50 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                          : 'bg-amber-50 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                      }`}>
+                        {isMpp ? <Factory className="w-3 h-3 text-indigo-600 dark:text-indigo-400" /> : <Pickaxe className="w-3 h-3 text-amber-600 dark:text-amber-400" />}
+                        {isMpp ? 'MINERAL PROCESSING (MPP)' : 'MGB EXTRACTION CONCESSION'}
+                      </span>
+
+                      <span className={`text-[8.5px] font-mono px-1.5 py-0.5 rounded font-bold uppercase border ${
+                        isCancelled
+                          ? 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
+                          : isExploration
+                          ? 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
+                          : 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                      }`}>
+                        {qp.status}
+                      </span>
+
+                      <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400">
+                        {qp.permitType}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMapCenter(qCenter);
+                          setMapZoom(isMpp ? 16 : 15);
+                        }}
+                        className="p-1.5 text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                        title="Center map on concession"
+                      >
+                        <Crosshair className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedQuarryId(null)}
+                        className="p-1.5 text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                        title="Close dossier"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className={`font-display font-bold text-sm sm:text-base leading-tight ${isCancelled ? 'text-rose-900 dark:text-rose-200 line-through' : 'text-stone-900 dark:text-white'}`}>
+                      {qp.name}
+                    </h3>
+                    <div className="flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400 mt-1">
+                      <MapPin className="w-3 h-3 shrink-0 text-stone-400" />
+                      <span className="truncate">{qp.barangay ? `${qp.barangay}, ` : ''}{qp.municipality}, Rizal</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scrollable Content Body */}
+                <div className="overflow-y-auto p-3.5 space-y-3 custom-scrollbar flex-1 min-h-0 overscroll-contain">
+                  {/* 1. Vital Statistics Grid */}
+                  <div className="grid grid-cols-3 gap-2 bg-stone-50 dark:bg-stone-850 border border-stone-200/80 dark:border-stone-800 rounded-lg p-2.5 text-center">
+                    <div>
+                      <span className="text-[9px] font-bold tracking-wider uppercase text-stone-400 dark:text-stone-500 block">
+                        Concession Area
+                      </span>
+                      <span className="text-xs font-bold text-stone-900 dark:text-stone-100 mt-0.5 block truncate font-mono">
+                        {qp.areaHectares || (qp.exactAreaHa ? `${qp.exactAreaHa} ha` : '--')}
+                      </span>
+                    </div>
+                    <div className="border-x border-stone-200/80 dark:border-stone-800 px-1">
+                      <span className="text-[9px] font-bold tracking-wider uppercase text-stone-400 dark:text-stone-500 block">
+                        Permit Instrument
+                      </span>
+                      <span className="text-xs font-bold text-stone-900 dark:text-stone-100 mt-0.5 block truncate font-mono">
+                        {qp.permitType}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold tracking-wider uppercase text-stone-400 dark:text-stone-500 block">
+                        Target Commodity
+                      </span>
+                      <span className="text-xs font-bold text-stone-900 dark:text-stone-100 mt-0.5 block truncate">
+                        {qp.commodity || 'Aggregates'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 2. Concession Tenure & Permitting Registry */}
+                  <div className="p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/60 space-y-2">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 flex items-center justify-between">
+                      <span>MGB IV-A Tenement Registry</span>
+                      <span className="font-mono text-[9px] text-stone-400">{qp.regulatoryAuthority || 'MGB IV-A'}</span>
+                    </div>
+
+                    <div className="space-y-1.5 text-xs text-stone-700 dark:text-stone-300">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-stone-400 text-[11px] shrink-0">Operator:</span>
+                        <strong className="text-right text-stone-900 dark:text-stone-100 text-[11.5px]">{qp.operator}</strong>
+                      </div>
+
+                      {qp.holder && qp.holder !== qp.operator && (
+                        <div className="flex items-start justify-between gap-2 pt-1 border-t border-stone-200/60 dark:border-stone-800">
+                          <span className="text-stone-400 text-[11px] shrink-0">Permit Holder:</span>
+                          <span className="text-right font-medium text-[11px]">{qp.holder}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-start justify-between gap-2 pt-1 border-t border-stone-200/60 dark:border-stone-800">
+                        <span className="text-stone-400 text-[11px] shrink-0">Permit Number:</span>
+                        <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-[11px]">{qp.permitNumber}</span>
+                      </div>
+
+                      {qp.termDates && (
+                        <div className="flex items-start justify-between gap-2 pt-1 border-t border-stone-200/60 dark:border-stone-800">
+                          <span className="text-stone-400 text-[11px] shrink-0">Validity / Term:</span>
+                          <span className="font-mono text-stone-600 dark:text-stone-400 text-[10.5px] text-right">{qp.termDates}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 3. Spaceborne & Environmental Threat Correlation HUD */}
+                  <div className={`p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/60 space-y-2.5 ${
+                    nearbyHotspots.length > 0 || nearbyCitizenIncidents.length > 0
+                      ? 'border-l-[3px] border-l-rose-600'
+                      : 'border-l-[3px] border-l-emerald-600'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        {nearbyHotspots.length > 0 || nearbyCitizenIncidents.length > 0 ? (
+                          <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        )}
+                        <span className="text-xs font-bold text-stone-900 dark:text-stone-100">
+                          {nearbyHotspots.length > 0
+                            ? 'Thermal Hotspot in Immediate Sector'
+                            : nearbyCitizenIncidents.length > 0
+                            ? `${nearbyCitizenIncidents.length} Active Local Incident ${nearbyCitizenIncidents.length === 1 ? 'Report' : 'Reports'}`
+                            : 'Environmental Baseline Nominal'}
+                        </span>
+                      </div>
+
+                      {nearbyHotspots.length > 0 && (
+                        <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-bold border border-rose-300 dark:border-rose-800 shrink-0 animate-pulse">
+                          NASA VIIRS Alert
+                        </span>
+                      )}
+                    </div>
+
+                    {nearbyHotspots.length > 0 && (
+                      <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-[11px] space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-rose-700 dark:text-rose-300 font-semibold text-[11px]">
+                          <Flame className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          <span>VIIRS Satellite Thermal Signature (375m)</span>
+                        </div>
+                        <p className="text-[10px] text-stone-600 dark:text-stone-400 leading-snug">
+                          NASA spaceborne sensors detected high-temperature radiant output situated directly within or adjacent to this concession sector. Prioritized for municipal field validation.
+                        </p>
+                      </div>
+                    )}
+
+                    {nearbyCitizenIncidents.length > 0 ? (
+                      <div className="space-y-1.5 pt-1.5 border-t border-stone-200 dark:border-stone-800">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="font-semibold uppercase tracking-wider text-stone-700 dark:text-stone-300">
+                            Sector Incidents ({nearbyCitizenIncidents.length})
+                          </span>
+                          <span className="text-stone-400 dark:text-stone-500 font-medium">Click to inspect</span>
+                        </div>
+                        <div className="space-y-1.5 max-h-44 overflow-y-auto no-scrollbar overscroll-contain pr-0.5">
+                          {nearbyCitizenIncidents.map((rep) => {
+                            const c = rep.final?.category || rep.aiTriage?.category;
+                            const catLabel = (CATEGORIES as any)[c || '']?.labelEn || c || 'Incident';
+                            const sev = rep.final?.severity || rep.aiTriage?.severity || 0;
+                            return (
+                              <button
+                                key={rep.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedReport(rep);
+                                  setIsSheetOpen(true);
+                                  const coords = resolveReportCoordinates(rep);
+                                  setMapCenter(coords);
+                                  setMapZoom(15);
+                                }}
+                                className="w-full text-left p-2 rounded-xl bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 border border-stone-200 dark:border-stone-800 shadow-2xs transition-all cursor-pointer group flex items-center justify-between gap-2.5 active:scale-[0.99]"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900 dark:text-stone-100 group-hover:text-stone-700 dark:group-hover:text-stone-300 transition-colors">
+                                    <span className="font-mono text-[10px] text-stone-400 dark:text-stone-500 font-semibold">{rep.referenceCode}</span>
+                                    <span className="text-stone-300 dark:text-stone-600">•</span>
+                                    <span className="truncate">{catLabel}</span>
+                                  </div>
+                                  <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate mt-0.5 flex items-center gap-1">
+                                    <MapPin className="w-2.5 h-2.5 shrink-0 text-stone-400" />
+                                    <span className="truncate">{rep.location.barangay ? `${rep.location.barangay}, ` : ''}{rep.location.municipality}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                                    sev >= 4
+                                      ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                      : 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
+                                  }`}>
+                                    Sev {sev}
+                                  </span>
+                                  <ChevronRight className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-300 group-hover:translate-x-0.5 transition-all" />
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      nearbyHotspots.length === 0 && (
+                        <div className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">
+                          Zero active citizen violation reports or illegal quarrying alerts are recorded in this concession polygon.
+                        </div>
+                      )
+                    )}
+                  </div>
+
+                  {/* 4. Statutory Mandate & Environmental Protection */}
+                  <div className="border border-stone-200/90 dark:border-stone-800 rounded-xl overflow-hidden bg-stone-50/50 dark:bg-stone-950/40">
+                    <button
+                      type="button"
+                      onClick={() => setIsQuarryEnforcementExpanded(!isQuarryEnforcementExpanded)}
+                      className="w-full p-3 flex items-center justify-between text-left hover:bg-stone-100/60 dark:hover:bg-stone-850/60 transition cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Scale className="w-4 h-4 text-stone-700 dark:text-stone-300 shrink-0" />
+                        <span className="text-xs font-bold text-stone-900 dark:text-stone-100">
+                          Statutory Governance & Compliance
+                        </span>
+                      </div>
+                      <ChevronDown className={`w-3.5 h-3.5 text-stone-400 dark:text-stone-500 transition-transform ${isQuarryEnforcementExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isQuarryEnforcementExpanded && (
+                      <div className="p-3 pt-0 space-y-2 border-t border-stone-200/60 dark:border-stone-800/80">
+                        <div className="pt-2 text-[11px] text-stone-700 dark:text-stone-300 leading-relaxed">
+                          {isCancelled ? (
+                            <div className="p-2.5 rounded-lg bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60 space-y-1">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 block">
+                                Enforcement Mandate (Cancelled Tenement):
+                              </span>
+                              <p className="text-[11px] text-stone-700 dark:text-stone-300 leading-relaxed font-sans">
+                                This mining concession was ordered CANCELLED by the Department of Environment and Natural Resources (DENR Region IV-A). Any continued mineral extraction, earth-moving, or hauling from this claim constitutes illegal quarrying liable under Section 103 of RA 7942.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5">
+                              <p>
+                                Regulated under <strong>Republic Act No. 7942</strong> (Philippine Mining Act of 1995) and DENR Administrative Order No. 2010-21.
+                              </p>
+                              <ul className="space-y-1 text-[10.5px] text-stone-600 dark:text-stone-400">
+                                <li className="flex items-start gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                                  <span>Mandatory Environmental Protection and Enhancement Program (EPEP) compliance.</span>
+                                </li>
+                                <li className="flex items-start gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                                  <span>Final Mine Rehabilitation and Decommissioning Plan (FMRDP) funded commitments.</span>
+                                </li>
+                                <li className="flex items-start gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                                  <span>Provincial/Municipal buffer compliance and river corridor sediment traps.</span>
+                                </li>
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ========================================================= */}
           {/* 4. APPLE MAPS STYLE TOP-RIGHT FLOATING CAPSULE & LAYERS   */}
