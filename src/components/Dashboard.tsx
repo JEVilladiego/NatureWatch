@@ -3359,18 +3359,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {/* Separator */}
               <div className="h-4 w-px bg-stone-200 dark:bg-stone-800 mx-0.5 hidden sm:block" />
 
-              {/* Sync NASA FIRMS Satellites Button */}
-              <button
-                type="button"
-                onClick={handleSyncSatellites}
-                disabled={isSyncingSatellites}
-                title="Sync NASA FIRMS VIIRS satellite thermal anomaly hotspots for Rizal Province"
-                className="px-2.5 py-1 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 border border-stone-200 dark:border-stone-700 disabled:opacity-40 text-stone-700 dark:text-stone-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
-              >
-                <Satellite className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{isSyncingSatellites ? 'Syncing...' : 'Sync Satellites'}</span>
-              </button>
-
               {/* Re-run AI Triage Button */}
               <button
                 type="button"
