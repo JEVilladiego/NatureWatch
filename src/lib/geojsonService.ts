@@ -1,5 +1,5 @@
 export interface GeoJSONGeometry {
-  type: 'Polygon' | 'MultiPolygon';
+  type: 'Polygon' | 'MultiPolygon' | 'Point';
   coordinates: any;
 }
 
@@ -70,15 +70,24 @@ export interface MgbQuarryFeatureProperties {
   shortName: string;
   tenementName?: string;
   permitNumber: string;
-  permitType: 'MPSA' | 'CSAG' | 'ISAG';
+  permitType: 'MPSA' | 'MPP' | 'CSAG' | 'ISAG';
+  holder?: string;
   operator: string;
   municipality: string;
+  barangay?: string;
   commodity: string;
-  status: string;
+  status: 'Operating' | 'Exploration' | 'Under Renewal' | 'Cancelled' | string;
   areaHectares: string;
+  exactAreaHa?: number | null;
+  termDates?: string;
+  approvalDate?: string;
+  expirationDate?: string;
+  mgbRegistrySource?: string;
   regulatoryAuthority: string;
   strokeColor: string;
   fillColor: string;
+  facilityType?: 'quarry_extraction' | 'processing_crusher';
+  notes?: string;
 }
 
 // In-memory singletons to avoid re-fetching
@@ -165,7 +174,15 @@ export async function checkMgbQuarryTenement(lat: number, lng: number): Promise<
     const data = await fetchRizalMgbQuarriesGeoJSON();
     if (!data?.features?.length) return null;
     for (const feature of data.features) {
-      if (isPointInGeometry([lng, lat], feature.geometry)) {
+      if (feature.geometry?.type === 'Point') {
+        const [pLng, pLat] = feature.geometry.coordinates;
+        const dLat = (lat - pLat) * 111000;
+        const dLng = (lng - pLng) * 111000 * Math.cos((lat * Math.PI) / 180);
+        const distMeters = Math.sqrt(dLat * dLat + dLng * dLng);
+        if (distMeters <= 350) {
+          return feature.properties;
+        }
+      } else if (isPointInGeometry([lng, lat], feature.geometry)) {
         return feature.properties;
       }
     }

@@ -3,170 +3,2449 @@
   "name": "rizal-mgb-quarries",
   "crs": {
     "type": "name",
-    "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" }
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
   },
   "features": [
     {
       "type": "Feature",
-      "id": "rodriguez-montalban-aggregates",
+      "id": "mpsa-032-95-iv-cac-angono",
       "properties": {
-        "id": "rodriguez-montalban-aggregates",
-        "name": "Montalban Commercial Aggregate Concession",
-        "shortName": "Montalban Aggregates",
-        "permitNumber": "MPSA No. 056-96-IV",
-        "permitType": "MPSA",
-        "operator": "Montalban Aggregate Producers Association",
-        "municipality": "Rodriguez (Montalban)",
-        "commodity": "Basalt, Andesite & Crushed Stone",
-        "status": "Active Authorized Concession",
-        "areaHectares": "382.40 ha",
-        "regulatoryAuthority": "DENR-MGB Region IV-A",
-        "strokeColor": "#d97706",
-        "fillColor": "#f59e0b"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [121.1420, 14.7380],
-            [121.1620, 14.7380],
-            [121.1780, 14.7550],
-            [121.1820, 14.7820],
-            [121.1660, 14.7950],
-            [121.1450, 14.7780],
-            [121.1380, 14.7520],
-            [121.1420, 14.7380]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "rodriguez-san-rafael-quarry",
-      "properties": {
-        "id": "rodriguez-san-rafael-quarry",
-        "name": "San Rafael Basalt & Aggregates Tenement",
-        "shortName": "San Rafael Aggregates",
-        "permitNumber": "MPSA No. 129-98-IV",
-        "permitType": "MPSA",
-        "operator": "Rapid City Realty & Development Corp.",
-        "municipality": "Rodriguez (Montalban)",
-        "commodity": "Basalt Rock, Armour Stone & Basecourse",
-        "status": "Active Authorized Concession",
-        "areaHectares": "245.80 ha",
-        "regulatoryAuthority": "DENR-MGB Region IV-A",
-        "strokeColor": "#d97706",
-        "fillColor": "#f59e0b"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [121.1550, 14.7180],
-            [121.1780, 14.7200],
-            [121.1920, 14.7360],
-            [121.1820, 14.7520],
-            [121.1620, 14.7450],
-            [121.1500, 14.7300],
-            [121.1550, 14.7180]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "antipolo-pantay-limestone",
-      "properties": {
-        "id": "antipolo-pantay-limestone",
-        "name": "Antipolo Pantay Commercial Limestone Tenement",
-        "shortName": "Pantay Limestone Concession",
-        "permitNumber": "MPSA No. 093-97-IV",
-        "permitType": "MPSA",
-        "operator": "Island Quarry and Aggregates Corp.",
-        "municipality": "Antipolo City",
-        "commodity": "Limestone, Industrial Aggregate",
-        "status": "Active Authorized Concession",
-        "areaHectares": "310.50 ha",
-        "regulatoryAuthority": "DENR-MGB Region IV-A",
-        "strokeColor": "#d97706",
-        "fillColor": "#f59e0b"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [121.2050, 14.6180],
-            [121.2380, 14.6200],
-            [121.2480, 14.6450],
-            [121.2280, 14.6580],
-            [121.2080, 14.6420],
-            [121.1980, 14.6280],
-            [121.2050, 14.6180]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "teresa-republic-mineral-tenement",
-      "properties": {
-        "id": "teresa-republic-mineral-tenement",
-        "name": "Teresa-Dulumbayan Cement Mineral Reservation",
-        "shortName": "Teresa Mineral Reservation",
+        "id": "mpsa-032-95-iv-cac-angono",
+        "name": "Concrete Aggregates Corp. Commercial Quarry (MPSA No. 032-95-IV)",
+        "shortName": "CAC Angono Quarry",
+        "tenementName": "Basalt 1, 2 & 3 Mining Claims",
         "permitNumber": "MPSA No. 032-95-IV",
         "permitType": "MPSA",
-        "operator": "Republic Cement & Building Materials Inc. / Teresa Marble",
-        "municipality": "Teresa",
-        "commodity": "Cement Limestone, Shale & Industrial Clay",
-        "status": "Active Authorized Concession",
-        "areaHectares": "425.00 ha",
+        "holder": "Concrete Aggregates Corp. (J.E.H. Jalandoni)",
+        "operator": "Helix Aggregates, Inc. (formerly LafargeHolcim Aggregates)",
+        "municipality": "Angono",
+        "barangay": "Brgy. San Isidro & San Roque",
+        "commodity": "Basalt and rock aggregates",
+        "status": "Operating",
+        "areaHectares": "192.0000 ha",
+        "exactAreaHa": 192,
+        "termDates": "12/29/1995 – 12/29/2045 (2nd Term renewed Mar 2021)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 1",
         "regulatoryAuthority": "DENR-MGB Region IV-A",
         "strokeColor": "#d97706",
-        "fillColor": "#f59e0b"
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Primary commercial basalt quarry in lakeside Angono foothills; renewed 25-yr term through 2045."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
-            [121.2050, 14.5620],
-            [121.2380, 14.5650],
-            [121.2480, 14.5880],
-            [121.2250, 14.5980],
-            [121.2020, 14.5820],
-            [121.2050, 14.5620]
+            [
+              121.1764,
+              14.532
+            ],
+            [
+              121.1725,
+              14.5375
+            ],
+            [
+              121.1671,
+              14.536
+            ],
+            [
+              121.1619,
+              14.5348
+            ],
+            [
+              121.1602,
+              14.5284
+            ],
+            [
+              121.1668,
+              14.527
+            ],
+            [
+              121.171,
+              14.5283
+            ],
+            [
+              121.1764,
+              14.532
+            ]
           ]
         ]
       }
     },
     {
       "type": "Feature",
-      "id": "baras-pinugay-aggregate-quarry",
+      "id": "mpsa-055-96-iv-cac-angono-8",
       "properties": {
-        "id": "baras-pinugay-aggregate-quarry",
-        "name": "Baras Pinugay Commercial Basalt Tenement",
-        "shortName": "Pinugay Basalt Quarry",
-        "permitNumber": "CSAG No. 2018-04-IV",
-        "permitType": "CSAG",
-        "operator": "Baras Aggregates & Development Corp.",
-        "municipality": "Baras",
-        "commodity": "Basalt, Roadbase & Graded Aggregate",
-        "status": "Active Authorized Concession",
-        "areaHectares": "180.20 ha",
+        "id": "mpsa-055-96-iv-cac-angono-8",
+        "name": "Concrete Aggregates Corp. Basalt 8 Claim (MPSA No. 055-96-IV)",
+        "shortName": "CAC Basalt 8 Expansion",
+        "tenementName": "Basalt 8 Mining Claim",
+        "permitNumber": "MPSA No. 055-96-IV",
+        "permitType": "MPSA",
+        "holder": "Concrete Aggregates Corp. (J.E.H. Jalandoni)",
+        "operator": "Helix Aggregates, Inc. (formerly LafargeHolcim Aggregates)",
+        "municipality": "Angono",
+        "barangay": "Brgy. San Isidro",
+        "commodity": "Aggregates and basalt",
+        "status": "Operating",
+        "areaHectares": "19.9900 ha",
+        "exactAreaHa": 19.99,
+        "termDates": "10/23/1996 – 10/23/2046 (2nd Term renewed Mar 2021)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 2",
         "regulatoryAuthority": "DENR-MGB Region IV-A",
         "strokeColor": "#d97706",
-        "fillColor": "#f59e0b"
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "DMPF approved Feb 12, 2009; adjacent to primary CAC quarry footprint."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
-            [121.2880, 14.5580],
-            [121.3180, 14.5600],
-            [121.3280, 14.5820],
-            [121.3080, 14.5900],
-            [121.2850, 14.5750],
-            [121.2880, 14.5580]
+            [
+              121.1739,
+              14.538
+            ],
+            [
+              121.1725,
+              14.5399
+            ],
+            [
+              121.1707,
+              14.5394
+            ],
+            [
+              121.1689,
+              14.539
+            ],
+            [
+              121.1683,
+              14.5368
+            ],
+            [
+              121.1706,
+              14.5363
+            ],
+            [
+              121.172,
+              14.5367
+            ],
+            [
+              121.1739,
+              14.538
+            ]
           ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-064-96-iva-rapid-city-antipolo",
+      "properties": {
+        "id": "mpsa-064-96-iva-rapid-city-antipolo",
+        "name": "Rapid City Realty & Dev't Corp. (MPSA No. 064-96-IVA)",
+        "shortName": "Rapid City Mayamot",
+        "tenementName": "Mayamot Basalt Concession",
+        "permitNumber": "MPSA No. 064-96-IVA",
+        "permitType": "MPSA",
+        "holder": "Rapid City Realty & Dev't Corp. (Veronica Iñiguez Lee)",
+        "operator": "Rapid City Realty & Dev't Corp.",
+        "municipality": "Antipolo City",
+        "barangay": "Bo. Mayamot",
+        "commodity": "Basalt, silica aggregates",
+        "status": "Operating",
+        "areaHectares": "60.0000 ha",
+        "exactAreaHa": 60,
+        "termDates": "03/07/1996 – 03/17/2021 (Commercial Operation; suspension lifted Feb 2021)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 3",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Commercial basalt operation in Mayamot, Antipolo City."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.1397,
+              14.622
+            ],
+            [
+              121.1375,
+              14.6251
+            ],
+            [
+              121.1345,
+              14.6242
+            ],
+            [
+              121.1316,
+              14.6236
+            ],
+            [
+              121.1306,
+              14.62
+            ],
+            [
+              121.1343,
+              14.6192
+            ],
+            [
+              121.1367,
+              14.6199
+            ],
+            [
+              121.1397,
+              14.622
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-070-97-iv-asencio-pinzon-rodriguez",
+      "properties": {
+        "id": "mpsa-070-97-iv-asencio-pinzon-rodriguez",
+        "name": "Asencio-Pinzon Aggregates Corp. (MPSA No. 070-97-IV)",
+        "shortName": "Asencio-Pinzon Aggregates",
+        "tenementName": "Montalban Basalt Tenement",
+        "permitNumber": "MPSA No. 070-97-IV",
+        "permitType": "MPSA",
+        "holder": "Asencio-Pinzon Aggregates Corp. (Antonio Y. Pinzon)",
+        "operator": "Asencio-Pinzon Aggregates Corp.",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Brgy. San Isidro",
+        "commodity": "Aggregates and basalt",
+        "status": "Operating",
+        "areaHectares": "130.5115 ha",
+        "exactAreaHa": 130.5115,
+        "termDates": "07/29/1997 – 07/29/2022 (1st term; suspension lifted Feb 2021)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 4",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Major commercial aggregate supplier in Rodriguez (Montalban). Official MGB area 130.5115 ha."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.159,
+              14.739
+            ],
+            [
+              121.1558,
+              14.7436
+            ],
+            [
+              121.1512,
+              14.7423
+            ],
+            [
+              121.147,
+              14.7413
+            ],
+            [
+              121.1455,
+              14.736
+            ],
+            [
+              121.151,
+              14.7349
+            ],
+            [
+              121.1545,
+              14.736
+            ],
+            [
+              121.159,
+              14.739
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-075-97-iv-rapid-city-teresa",
+      "properties": {
+        "id": "mpsa-075-97-iv-rapid-city-teresa",
+        "name": "Rapid City Realty & Dev't Corp. (MPSA No. 075-97-IV)",
+        "shortName": "Rapid City Teresa",
+        "tenementName": "Teresa Silica Deposit",
+        "permitNumber": "MPSA No. 075-97-IV",
+        "permitType": "MPSA",
+        "holder": "Rapid City Realty & Dev't Corp. (Veronica Iñiguez Lee)",
+        "operator": "Rapid City Realty & Dev't Corp.",
+        "municipality": "Teresa",
+        "commodity": "Silica",
+        "status": "Operating",
+        "areaHectares": "87.1498 ha",
+        "exactAreaHa": 87.1498,
+        "termDates": "09/24/1997 – 09/24/2022 (plus associated 6.9591 ha Basalt/Tuff parcel)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 5",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Active industrial silica concession in Teresa basin."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2236,
+              14.568
+            ],
+            [
+              121.221,
+              14.5717
+            ],
+            [
+              121.2174,
+              14.5707
+            ],
+            [
+              121.2139,
+              14.5699
+            ],
+            [
+              121.2128,
+              14.5656
+            ],
+            [
+              121.2172,
+              14.5647
+            ],
+            [
+              121.22,
+              14.5655
+            ],
+            [
+              121.2236,
+              14.568
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-088-97-iv-good-seed-antipolo",
+      "properties": {
+        "id": "mpsa-088-97-iv-good-seed-antipolo",
+        "name": "Good Seed Mining Corp. / Rapid City (MPSA No. 088-97-IV)",
+        "shortName": "Good Seed Mining Antipolo",
+        "tenementName": "Inarawan Basalt Concession",
+        "permitNumber": "MPSA No. 088-97-IV",
+        "permitType": "MPSA",
+        "holder": "Rapid City Realty & Dev't Corp. (Veronica Iñiguez Lee)",
+        "operator": "Good Seed Mining Corp. (Inarawan, Antipolo City)",
+        "municipality": "Antipolo City",
+        "barangay": "Brgy. Inarawan",
+        "commodity": "Basalt and andesite",
+        "status": "Operating",
+        "areaHectares": "64.5000 ha",
+        "exactAreaHa": 64.5,
+        "termDates": "Approved Nov 1997 (suspension lifted Feb 2021)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 6",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Basalt and andesite extraction parcel in eastern Antipolo hills."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2099,
+              14.615
+            ],
+            [
+              121.2077,
+              14.6182
+            ],
+            [
+              121.2045,
+              14.6173
+            ],
+            [
+              121.2015,
+              14.6167
+            ],
+            [
+              121.2004,
+              14.6129
+            ],
+            [
+              121.2043,
+              14.6121
+            ],
+            [
+              121.2068,
+              14.6129
+            ],
+            [
+              121.2099,
+              14.615
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-1998-antipolo-rcrdc",
+      "properties": {
+        "id": "mpsa-1998-antipolo-rcrdc",
+        "name": "Rapid City 1998 Antipolo Parcel",
+        "shortName": "Rapid City 1998 Parcel",
+        "permitNumber": "MPSA (1998 Antipolo Parcel)",
+        "permitType": "MPSA",
+        "holder": "Rapid City Realty & Dev't Corp.",
+        "operator": "Rapid City Realty & Dev't Corp.",
+        "municipality": "Antipolo City",
+        "commodity": "Basalt, andesite, silica",
+        "status": "Operating",
+        "areaHectares": "54.0216 ha",
+        "exactAreaHa": 54.0216,
+        "termDates": "06/04/1998 – 06/04/2023",
+        "mgbRegistrySource": "MAR-2019-MPSA-2A / DENR-OCT-2024-MPSA-2A Item No. 7",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Recorded in MGB statistical summaries; aggregate extraction in Antipolo."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2025,
+              14.63
+            ],
+            [
+              121.2004,
+              14.6329
+            ],
+            [
+              121.1975,
+              14.6321
+            ],
+            [
+              121.1947,
+              14.6315
+            ],
+            [
+              121.1938,
+              14.628
+            ],
+            [
+              121.1974,
+              14.6273
+            ],
+            [
+              121.1996,
+              14.628
+            ],
+            [
+              121.2025,
+              14.63
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-112-98-iv-quarry-rock-cancelled",
+      "properties": {
+        "id": "mpsa-112-98-iv-quarry-rock-cancelled",
+        "name": "Quarry Rock Group, Inc. (MPSA No. 112-98-IV) [CANCELLED]",
+        "shortName": "Quarry Rock (CANCELLED)",
+        "tenementName": "Baras-Tanay Tenement",
+        "permitNumber": "MPSA No. 112-98-IV",
+        "permitType": "MPSA",
+        "holder": "Quarry Rock Group, Inc. (Angelita I. Lee)",
+        "operator": "None (Permit Cancelled by DENR)",
+        "municipality": "Baras",
+        "barangay": "Baras and Tanay corridor",
+        "commodity": "Aggregates and filling materials",
+        "status": "Cancelled",
+        "areaHectares": "586.7100 ha",
+        "exactAreaHa": 586.71,
+        "termDates": "05/26/1998 – 05/26/2023 (ORDER OF CANCELLATION EXECUTED)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Cancelled Tenements Registry",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#dc2626",
+        "fillColor": "#ef4444",
+        "facilityType": "quarry_extraction",
+        "notes": "CANCELLED BY DENR. Encroached into protected Masungi / Upper Marikina conservation buffer. Extraction strictly prohibited."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.3096,
+              14.55
+            ],
+            [
+              121.3028,
+              14.5595
+            ],
+            [
+              121.2934,
+              14.5569
+            ],
+            [
+              121.2845,
+              14.5549
+            ],
+            [
+              121.2815,
+              14.5437
+            ],
+            [
+              121.293,
+              14.5414
+            ],
+            [
+              121.3002,
+              14.5436
+            ],
+            [
+              121.3096,
+              14.55
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-124-98-iv-teresa-marble-antipolo",
+      "properties": {
+        "id": "mpsa-124-98-iv-teresa-marble-antipolo",
+        "name": "Teresa Marble Corp. / Island Quarry (MPSA No. 124-98-IV)",
+        "shortName": "Island Quarry San Jose",
+        "tenementName": "San Jose Marbleized Limestone",
+        "permitNumber": "MPSA No. 124-98-IV",
+        "permitType": "MPSA",
+        "holder": "Teresa Marble Corporation (Annie G. Dee)",
+        "operator": "Island Quarry and Aggregates Corp. (IQAC)",
+        "municipality": "Antipolo City",
+        "barangay": "Brgy. San Jose",
+        "commodity": "Marbleized limestone",
+        "status": "Operating",
+        "areaHectares": "57.4142 ha",
+        "exactAreaHa": 57.4142,
+        "termDates": "06/17/1998 – 06/17/2023 (Assigned to IQAC; commercial operation)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 8",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Commercial marbleized limestone quarry in Brgy. San Jose, Antipolo City."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2296,
+              14.628
+            ],
+            [
+              121.2275,
+              14.631
+            ],
+            [
+              121.2245,
+              14.6302
+            ],
+            [
+              121.2217,
+              14.6295
+            ],
+            [
+              121.2207,
+              14.626
+            ],
+            [
+              121.2244,
+              14.6253
+            ],
+            [
+              121.2267,
+              14.626
+            ],
+            [
+              121.2296,
+              14.628
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-125-98-iv-solid-cement-teresa",
+      "properties": {
+        "id": "mpsa-125-98-iv-solid-cement-teresa",
+        "name": "Teresa Marble Corp. / Solid Cement (MPSA No. 125-98-IV)",
+        "shortName": "Solid Cement Limestone",
+        "tenementName": "Antipolo-Teresa Limestone Parcel",
+        "permitNumber": "MPSA No. 125-98-IV",
+        "permitType": "MPSA",
+        "holder": "Teresa Marble Corp. / Solid Cement Corporation",
+        "operator": "Island Quarry and Aggregates Corp. (IQAC)",
+        "municipality": "Antipolo City",
+        "commodity": "Limestone",
+        "status": "Operating",
+        "areaHectares": "110.6900 ha",
+        "exactAreaHa": 110.69,
+        "termDates": "06/17/1998 – 06/17/2023",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 9",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Major raw limestone source for Solid Cement (CEMEX) processing facilities."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2265,
+              14.595
+            ],
+            [
+              121.2235,
+              14.5992
+            ],
+            [
+              121.2193,
+              14.5981
+            ],
+            [
+              121.2153,
+              14.5972
+            ],
+            [
+              121.214,
+              14.5922
+            ],
+            [
+              121.2191,
+              14.5912
+            ],
+            [
+              121.2223,
+              14.5922
+            ],
+            [
+              121.2265,
+              14.595
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-126-98-iv-rapid-city-baras-tanay",
+      "properties": {
+        "id": "mpsa-126-98-iv-rapid-city-baras-tanay",
+        "name": "Rapid City Realty & Dev't Corp. (MPSA No. 126-98-IV)",
+        "shortName": "Rapid City Baras-Tanay",
+        "tenementName": "Baras-Tanay Basalt Concession",
+        "permitNumber": "MPSA No. 126-98-IV",
+        "permitType": "MPSA",
+        "holder": "Rapid City Realty & Dev't Corp.",
+        "operator": "Rapid City Realty & Dev't Corp.",
+        "municipality": "Baras",
+        "barangay": "Baras and Tanay",
+        "commodity": "Basalt and andesite",
+        "status": "Exploration",
+        "areaHectares": "399.2477 ha",
+        "exactAreaHa": 399.2477,
+        "termDates": "06/17/1998 – 06/17/2023 (Under DENR conservation review)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 10",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#0284c7",
+        "fillColor": "#38bdf8",
+        "facilityType": "quarry_extraction",
+        "notes": "Under environmental review due to proximity to Kaliwa and Masungi corridors."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2941,
+              14.542
+            ],
+            [
+              121.2885,
+              14.5499
+            ],
+            [
+              121.2807,
+              14.5477
+            ],
+            [
+              121.2733,
+              14.5461
+            ],
+            [
+              121.2708,
+              14.5368
+            ],
+            [
+              121.2803,
+              14.5348
+            ],
+            [
+              121.2864,
+              14.5367
+            ],
+            [
+              121.2941,
+              14.542
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-136-99-iv-san-rafael-rodriguez",
+      "properties": {
+        "id": "mpsa-136-99-iv-san-rafael-rodriguez",
+        "name": "San Rafael Development Corp. (MPSA No. 136-99-IV)",
+        "shortName": "San Rafael Dev Corp",
+        "tenementName": "San Rafael Basalt Concession",
+        "permitNumber": "MPSA No. 136-99-IV",
+        "permitType": "MPSA",
+        "holder": "San Rafael Development Corp. (SRDC)",
+        "operator": "San Rafael Development Corp.",
+        "municipality": "Rodriguez (Montalban)",
+        "commodity": "Basalt and rock aggregates",
+        "status": "Operating",
+        "areaHectares": "118.4500 ha",
+        "exactAreaHa": 118.45,
+        "termDates": "Approved 1999 (suspension lifted Feb 2021)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 11",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Active commercial basalt extraction in Rodriguez."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.1747,
+              14.732
+            ],
+            [
+              121.1716,
+              14.7364
+            ],
+            [
+              121.1673,
+              14.7352
+            ],
+            [
+              121.1632,
+              14.7342
+            ],
+            [
+              121.1618,
+              14.7291
+            ],
+            [
+              121.1671,
+              14.728
+            ],
+            [
+              121.1704,
+              14.7291
+            ],
+            [
+              121.1747,
+              14.732
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-138-99-iv-republic-cement-teresa",
+      "properties": {
+        "id": "mpsa-138-99-iv-republic-cement-teresa",
+        "name": "Republic Cement & Building Materials (MPSA No. 138-99-IV)",
+        "shortName": "Republic Cement Teresa Primary",
+        "tenementName": "Teresa Limestone & Silica Quarry",
+        "permitNumber": "MPSA No. 138-99-IV",
+        "permitType": "MPSA",
+        "holder": "Republic Cement & Building Materials, Inc. (formerly FR Cement)",
+        "operator": "Republic Cement & Building Materials, Inc.",
+        "municipality": "Teresa",
+        "commodity": "Limestone and silica",
+        "status": "Operating",
+        "areaHectares": "154.6876 ha",
+        "exactAreaHa": 154.6876,
+        "termDates": "09/20/1999 – 09/20/2024 (Renewed through 2049)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 12",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Major industrial raw material source supplying the Teresa cement clinker plant."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2356,
+              14.575
+            ],
+            [
+              121.2321,
+              14.58
+            ],
+            [
+              121.2272,
+              14.5786
+            ],
+            [
+              121.2225,
+              14.5775
+            ],
+            [
+              121.221,
+              14.5717
+            ],
+            [
+              121.2269,
+              14.5705
+            ],
+            [
+              121.2307,
+              14.5717
+            ],
+            [
+              121.2356,
+              14.575
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-142-99-iva-rapid-city-baras",
+      "properties": {
+        "id": "mpsa-142-99-iva-rapid-city-baras",
+        "name": "Rapid City Realty & Dev't Corp. (MPSA No. 142-99-IVA)",
+        "shortName": "Rapid City Baras Basalt",
+        "tenementName": "Baras Basalt Deposit",
+        "permitNumber": "MPSA No. 142-99-IVA",
+        "permitType": "MPSA",
+        "holder": "Rapid City Realty & Dev't Corp. (Veronica Iñiguez Lee)",
+        "operator": "Rapid City Realty & Dev't Corp.",
+        "municipality": "Baras",
+        "commodity": "Basalt",
+        "status": "Operating",
+        "areaHectares": "124.8828 ha",
+        "exactAreaHa": 124.8828,
+        "termDates": "Approved 1999 (Commercial Operation)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 13",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Basalt extraction concession in Baras."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2719,
+              14.548
+            ],
+            [
+              121.2687,
+              14.5525
+            ],
+            [
+              121.2642,
+              14.5512
+            ],
+            [
+              121.2601,
+              14.5503
+            ],
+            [
+              121.2586,
+              14.545
+            ],
+            [
+              121.264,
+              14.5439
+            ],
+            [
+              121.2675,
+              14.545
+            ],
+            [
+              121.2719,
+              14.548
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-159-00-iva-republic-cement-teresa",
+      "properties": {
+        "id": "mpsa-159-00-iva-republic-cement-teresa",
+        "name": "Republic Cement & Building Materials (MPSA No. 159-00-IVA)",
+        "shortName": "Republic Cement DMPF Parcel",
+        "tenementName": "Teresa DMPF Limestone Deposit",
+        "permitNumber": "MPSA No. 159-00-IVA",
+        "permitType": "MPSA",
+        "holder": "Republic Cement & Building Materials, Inc. (Lloyd A. Vicente / R.C. Sunico)",
+        "operator": "Republic Cement & Building Materials, Inc.",
+        "municipality": "Teresa",
+        "commodity": "Limestone",
+        "status": "Exploration",
+        "areaHectares": "36.4592 ha",
+        "exactAreaHa": 36.4592,
+        "termDates": "06/23/2000 – 06/23/2025 (Exploration / DMPF stage approved)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 14",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#0284c7",
+        "fillColor": "#38bdf8",
+        "facilityType": "quarry_extraction",
+        "notes": "Approved Declaration of Mining Project Feasibility (DMPF) limestone parcel in Teresa."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2387,
+              14.562
+            ],
+            [
+              121.237,
+              14.5644
+            ],
+            [
+              121.2346,
+              14.5637
+            ],
+            [
+              121.2323,
+              14.5632
+            ],
+            [
+              121.2316,
+              14.5604
+            ],
+            [
+              121.2345,
+              14.5598
+            ],
+            [
+              121.2363,
+              14.5604
+            ],
+            [
+              121.2387,
+              14.562
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-202-2004-iva-hardrock-antipolo",
+      "properties": {
+        "id": "mpsa-202-2004-iva-hardrock-antipolo",
+        "name": "Hardrock Aggregates, Inc. (MPSA No. 202-2004-IVA)",
+        "shortName": "Hardrock Aggregates Antipolo",
+        "tenementName": "Antipolo Basalt & Andesite Tenement",
+        "permitNumber": "MPSA No. 202-2004-IVA",
+        "permitType": "MPSA",
+        "holder": "Hardrock Aggregates, Inc. (Alonzo C. Española)",
+        "operator": "Hardrock Aggregates, Inc.",
+        "municipality": "Antipolo City",
+        "commodity": "Basalt and andesite",
+        "status": "Operating",
+        "areaHectares": "45.0000 ha",
+        "exactAreaHa": 45,
+        "termDates": "06/17/2004 – 06/17/2029",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 15",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Commercial basalt and andesite production in Antipolo City."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2421,
+              14.618
+            ],
+            [
+              121.2402,
+              14.6207
+            ],
+            [
+              121.2375,
+              14.6199
+            ],
+            [
+              121.235,
+              14.6194
+            ],
+            [
+              121.2342,
+              14.6162
+            ],
+            [
+              121.2374,
+              14.6156
+            ],
+            [
+              121.2395,
+              14.6162
+            ],
+            [
+              121.2421,
+              14.618
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-239-2007-iva-millex-rodriguez",
+      "properties": {
+        "id": "mpsa-239-2007-iva-millex-rodriguez",
+        "name": "Montalban Millex Aggregates Corp. (MPSA No. 239-2007-IVA)",
+        "shortName": "Montalban Millex Aggregates",
+        "tenementName": "Montalban Millex Concession",
+        "permitNumber": "MPSA No. 239-2007-IVA",
+        "permitType": "MPSA",
+        "holder": "Montalban Millex Aggregates Corp. (Igmidio D. Robles)",
+        "operator": "Montalban Millex Aggregates Corp.",
+        "municipality": "Rodriguez (Montalban)",
+        "commodity": "Basalt, andesite, and other aggregates",
+        "status": "Operating",
+        "areaHectares": "175.6893 ha",
+        "exactAreaHa": 175.6893,
+        "termDates": "07/12/2007 – 07/12/2032",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 16",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Extensive basalt/andesite quarrying operations in northern Montalban."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.17,
+              14.755
+            ],
+            [
+              121.1663,
+              14.7602
+            ],
+            [
+              121.1611,
+              14.7588
+            ],
+            [
+              121.1562,
+              14.7577
+            ],
+            [
+              121.1546,
+              14.7515
+            ],
+            [
+              121.1609,
+              14.7503
+            ],
+            [
+              121.1649,
+              14.7515
+            ],
+            [
+              121.17,
+              14.755
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-2008-holcim-antipolo-cancelled",
+      "properties": {
+        "id": "mpsa-2008-holcim-antipolo-cancelled",
+        "name": "Holcim Mining & Development Corp. [CANCELLED]",
+        "shortName": "Holcim Mining (CANCELLED)",
+        "permitNumber": "MPSA (2008 Antipolo Tenement)",
+        "permitType": "MPSA",
+        "holder": "Holcim Mining and Development Corp. (Renato A. Baja)",
+        "operator": "None (Permit Cancelled in 2023)",
+        "municipality": "Antipolo City",
+        "commodity": "Gold / Associated Minerals",
+        "status": "Cancelled",
+        "areaHectares": "654.1700 ha",
+        "exactAreaHa": 654.17,
+        "termDates": "Approved 2008 – Cancelled 2023",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Cancelled Tenements Registry",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#dc2626",
+        "fillColor": "#ef4444",
+        "facilityType": "quarry_extraction",
+        "notes": "CANCELLED BY DENR IN 2023. Overlapped sensitive upper watershed headwaters."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2554,
+              14.645
+            ],
+            [
+              121.2483,
+              14.6551
+            ],
+            [
+              121.2383,
+              14.6523
+            ],
+            [
+              121.2289,
+              14.6502
+            ],
+            [
+              121.2257,
+              14.6384
+            ],
+            [
+              121.2378,
+              14.6359
+            ],
+            [
+              121.2455,
+              14.6383
+            ],
+            [
+              121.2554,
+              14.645
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-345-2010-iva-parcel-1-teresa",
+      "properties": {
+        "id": "mpsa-345-2010-iva-parcel-1-teresa",
+        "name": "Rapid City Realty & Dev't Corp. Parcel 1 (MPSA No. 345-2010-IVA)",
+        "shortName": "Rapid City Consolidated P-1",
+        "tenementName": "Consolidated Mineral Reservation Parcel 1",
+        "permitNumber": "MPSA No. 345-2010-IVA (Amended I)",
+        "permitType": "MPSA",
+        "holder": "Rapid City Realty & Dev't Corp.",
+        "operator": "Rapid City Realty & Dev't Corp.",
+        "municipality": "Teresa",
+        "commodity": "Silica, Pozzolan, Basalt & Aggregates",
+        "status": "Operating",
+        "areaHectares": "1,503.2644 ha",
+        "exactAreaHa": 1503.2644,
+        "termDates": "06/09/2010 – 06/09/2035 (Amended June 27, 2016)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 17A",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Core parcel of consolidated MPSA No. 345-2010-IVA (annexed EPA-IVA-112, EP-IVA-017, EPA-IVA-136)."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2381,
+              14.582
+            ],
+            [
+              121.2274,
+              14.5971
+            ],
+            [
+              121.2124,
+              14.5929
+            ],
+            [
+              121.1984,
+              14.5897
+            ],
+            [
+              121.1936,
+              14.572
+            ],
+            [
+              121.2118,
+              14.5683
+            ],
+            [
+              121.2233,
+              14.5719
+            ],
+            [
+              121.2381,
+              14.582
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-347-2010-iva-pozzolan-morong-teresa",
+      "properties": {
+        "id": "mpsa-347-2010-iva-pozzolan-morong-teresa",
+        "name": "Pozzolan Quarry Project (MPSA No. 347-2010-IVA)",
+        "shortName": "Pozzolan Quarry Morong-Teresa",
+        "tenementName": "Maybancal & Dalig Pozzolan Deposit",
+        "permitNumber": "MPSA No. 347-2010-IVA",
+        "permitType": "MPSA",
+        "holder": "Pozzolan Quarry Project (Go; 167 Sumulong Hwy, Antipolo City)",
+        "operator": "Pozzolan Quarry Project",
+        "municipality": "Morong",
+        "barangay": "Brgy. Maybancal, Morong & Brgy. Dalig, Teresa",
+        "commodity": "Silica / Pozzolan",
+        "status": "Exploration",
+        "areaHectares": "114.5206 ha",
+        "exactAreaHa": 114.5206,
+        "termDates": "06/25/2010 – 06/25/2035 (Under Exploration Period)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 18",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#0284c7",
+        "fillColor": "#38bdf8",
+        "facilityType": "quarry_extraction",
+        "notes": "Split parcel: Parcel 1 (82.80 ha) in Morong, Parcel 2 (31.7206 ha) in Teresa."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2486,
+              14.545
+            ],
+            [
+              121.2455,
+              14.5493
+            ],
+            [
+              121.2413,
+              14.5481
+            ],
+            [
+              121.2373,
+              14.5472
+            ],
+            [
+              121.2359,
+              14.5422
+            ],
+            [
+              121.2411,
+              14.5411
+            ],
+            [
+              121.2444,
+              14.5421
+            ],
+            [
+              121.2486,
+              14.545
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-2024-ng-macabud-rodriguez",
+      "properties": {
+        "id": "mpsa-2024-ng-macabud-rodriguez",
+        "name": "Macabud Aggregates Tenement (Ng)",
+        "shortName": "Macabud Aggregates Concession",
+        "permitNumber": "MPSA (Jan 2024 Rodriguez Tenement)",
+        "permitType": "MPSA",
+        "holder": "Ng",
+        "operator": "Ng Mining Exploration & Dev't",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Brgy. Macabud",
+        "commodity": "Aggregates",
+        "status": "Operating",
+        "areaHectares": "82.7092 ha",
+        "exactAreaHa": 82.7092,
+        "termDates": "01/22/2024 – 01/22/2049",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 19",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Newly granted 25-yr commercial production agreement in Macabud, approved January 2024."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.1505,
+              14.795
+            ],
+            [
+              121.148,
+              14.7986
+            ],
+            [
+              121.1444,
+              14.7976
+            ],
+            [
+              121.141,
+              14.7969
+            ],
+            [
+              121.1399,
+              14.7926
+            ],
+            [
+              121.1442,
+              14.7917
+            ],
+            [
+              121.147,
+              14.7926
+            ],
+            [
+              121.1505,
+              14.795
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-108a-98-iva-solid-integrated-rodriguez",
+      "properties": {
+        "id": "mpsa-108a-98-iva-solid-integrated-rodriguez",
+        "name": "Solid Integrated Company, Inc. Parcel A (MPSA No. 108A-98-IVA)",
+        "shortName": "Solid Integrated Parcel A",
+        "permitNumber": "MPSA No. 108A-98-IVA",
+        "permitType": "MPSA",
+        "holder": "Solid Integrated Company, Inc.",
+        "operator": "Solid Integrated Company, Inc.",
+        "municipality": "Rodriguez (Montalban)",
+        "commodity": "Aggregates and basalt",
+        "status": "Operating",
+        "areaHectares": "94.2500 ha",
+        "exactAreaHa": 94.25,
+        "termDates": "05/18/1998 – 05/18/2023 (Under renewal)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 20",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Basalt aggregate concession in Rodriguez."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.161,
+              14.752
+            ],
+            [
+              121.1582,
+              14.7559
+            ],
+            [
+              121.1543,
+              14.7548
+            ],
+            [
+              121.1507,
+              14.754
+            ],
+            [
+              121.1495,
+              14.7494
+            ],
+            [
+              121.1542,
+              14.7485
+            ],
+            [
+              121.1571,
+              14.7494
+            ],
+            [
+              121.161,
+              14.752
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-108-98b-iv-solid-integrated-rodriguez",
+      "properties": {
+        "id": "mpsa-108-98b-iv-solid-integrated-rodriguez",
+        "name": "Solid Integrated Company, Inc. Parcel B (MPSA No. 108-98B-IV)",
+        "shortName": "Solid Integrated Parcel B",
+        "permitNumber": "MPSA No. 108-98B-IV",
+        "permitType": "MPSA",
+        "holder": "Solid Integrated Company, Inc.",
+        "operator": "Solid Integrated Company, Inc.",
+        "municipality": "Rodriguez (Montalban)",
+        "commodity": "Basalt and andesite",
+        "status": "Operating",
+        "areaHectares": "68.5000 ha",
+        "exactAreaHa": 68.5,
+        "termDates": "05/18/1998 – 05/18/2023 (Under renewal)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 21",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Basalt and andesite aggregate concession in northern Rodriguez."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.163,
+              14.76
+            ],
+            [
+              121.1607,
+              14.7633
+            ],
+            [
+              121.1574,
+              14.7624
+            ],
+            [
+              121.1544,
+              14.7617
+            ],
+            [
+              121.1533,
+              14.7578
+            ],
+            [
+              121.1573,
+              14.757
+            ],
+            [
+              121.1598,
+              14.7578
+            ],
+            [
+              121.163,
+              14.76
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-296-2009-iva-prime-rock-rodriguez",
+      "properties": {
+        "id": "mpsa-296-2009-iva-prime-rock-rodriguez",
+        "name": "Prime Rock Mining & Aggregates (MPSA No. 296-2009-IVA)",
+        "shortName": "Prime Rock Rodriguez",
+        "permitNumber": "MPSA No. 296-2009-IVA",
+        "permitType": "MPSA",
+        "holder": "Prime Rock Mining and Aggregates Corp.",
+        "operator": "Prime Rock Mining and Aggregates Corp.",
+        "municipality": "Rodriguez (Montalban)",
+        "commodity": "Basalt and rock aggregates",
+        "status": "Operating",
+        "areaHectares": "142.3000 ha",
+        "exactAreaHa": 142.3,
+        "termDates": "06/18/2009 – 06/18/2034",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 22",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Commercial basalt concession in Rodriguez."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.1793,
+              14.748
+            ],
+            [
+              121.1759,
+              14.7528
+            ],
+            [
+              121.1712,
+              14.7514
+            ],
+            [
+              121.1668,
+              14.7504
+            ],
+            [
+              121.1652,
+              14.7449
+            ],
+            [
+              121.171,
+              14.7437
+            ],
+            [
+              121.1746,
+              14.7448
+            ],
+            [
+              121.1793,
+              14.748
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-125-98-iv-amended-a-solid-cement",
+      "properties": {
+        "id": "mpsa-125-98-iv-amended-a-solid-cement",
+        "name": "Solid Cement Corp. Amended Parcel A (MPSA No. 125-98-IV Amended A)",
+        "shortName": "Solid Cement Dalig Border",
+        "permitNumber": "MPSA No. 125-98-IV Amended A",
+        "permitType": "MPSA",
+        "holder": "Solid Cement Corporation (CEMEX)",
+        "operator": "Solid Cement Corporation",
+        "municipality": "Antipolo City",
+        "barangay": "Brgy. San Jose / Dalig border",
+        "commodity": "Limestone and pozzolan",
+        "status": "Operating",
+        "areaHectares": "88.2000 ha",
+        "exactAreaHa": 88.2,
+        "termDates": "06/17/1998 – 06/17/2023 (Under renewal)",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 23",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Limestone and pozzolan raw materials for cement manufacturing."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2207,
+              14.588
+            ],
+            [
+              121.2181,
+              14.5918
+            ],
+            [
+              121.2144,
+              14.5907
+            ],
+            [
+              121.2109,
+              14.5899
+            ],
+            [
+              121.2097,
+              14.5855
+            ],
+            [
+              121.2142,
+              14.5846
+            ],
+            [
+              121.2171,
+              14.5855
+            ],
+            [
+              121.2207,
+              14.588
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "pmpsa-iv-014-iqac-antipolo",
+      "properties": {
+        "id": "pmpsa-iv-014-iqac-antipolo",
+        "name": "Island Quarry & Aggregates Corp. (PMPSA-IV-014)",
+        "shortName": "IQAC Mineral Agreement Application",
+        "permitNumber": "PMPSA-IV-014",
+        "permitType": "MPSA",
+        "holder": "Island Quarry & Aggregates Corp. (Annie G. Dee)",
+        "operator": "Island Quarry & Aggregates Corp. (IQAC)",
+        "municipality": "Antipolo City",
+        "commodity": "Marbleized limestone & aggregates",
+        "status": "Under Renewal",
+        "areaHectares": "178.0880 ha",
+        "exactAreaHa": 178.088,
+        "termDates": "Filed 04/19/1991 (Commercial Tenement Application pending renewal)",
+        "mgbRegistrySource": "MGB IV-A Mining Tenement Control Map / MRMS Report No. 002A",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Commercial mineral agreement application over marbleized limestone reserves."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2231,
+              14.62
+            ],
+            [
+              121.2194,
+              14.6253
+            ],
+            [
+              121.2141,
+              14.6238
+            ],
+            [
+              121.2092,
+              14.6227
+            ],
+            [
+              121.2075,
+              14.6165
+            ],
+            [
+              121.2139,
+              14.6152
+            ],
+            [
+              121.2179,
+              14.6165
+            ],
+            [
+              121.2231,
+              14.62
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "pmpsa-iv-232a-pacific-concrete-rodriguez",
+      "properties": {
+        "id": "pmpsa-iv-232a-pacific-concrete-rodriguez",
+        "name": "Pacific Concrete Aggregates (PMPSA-IV-232A)",
+        "shortName": "Pacific Concrete Tenement",
+        "permitNumber": "PMPSA-IV-232A",
+        "permitType": "MPSA",
+        "holder": "Pacific Concrete Aggregates",
+        "operator": "Pacific Concrete Aggregates",
+        "municipality": "Rodriguez (Montalban)",
+        "commodity": "Marbleized limestone & aggregates",
+        "status": "Under Renewal",
+        "areaHectares": "48.8679 ha",
+        "exactAreaHa": 48.8679,
+        "termDates": "Active Commercial Tenement Application",
+        "mgbRegistrySource": "MGB IV-A Mining Tenement Control Map / MRMS Report No. 002A",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Aggregate production area in Rodriguez."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.1643,
+              14.742
+            ],
+            [
+              121.1623,
+              14.7448
+            ],
+            [
+              121.1595,
+              14.744
+            ],
+            [
+              121.1569,
+              14.7434
+            ],
+            [
+              121.156,
+              14.7401
+            ],
+            [
+              121.1594,
+              14.7394
+            ],
+            [
+              121.1616,
+              14.7401
+            ],
+            [
+              121.1643,
+              14.742
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-345-2010-iva-parcel-2-morong",
+      "properties": {
+        "id": "mpsa-345-2010-iva-parcel-2-morong",
+        "name": "Rapid City Realty & Dev't Corp. Parcel 2 (MPSA No. 345-2010-IVA)",
+        "shortName": "Rapid City Morong P-2",
+        "permitNumber": "MPSA No. 345-2010-IVA (Parcel 2)",
+        "permitType": "MPSA",
+        "holder": "Rapid City Realty & Dev't Corp.",
+        "operator": "Rapid City Realty & Dev't Corp.",
+        "municipality": "Morong",
+        "commodity": "Pozzolan and basalt",
+        "status": "Operating",
+        "areaHectares": "185.4000 ha",
+        "exactAreaHa": 185.4,
+        "termDates": "06/09/2010 – 06/09/2035",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 17B",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Pozzolanic tuff extraction parcel in upland Morong."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2563,
+              14.535
+            ],
+            [
+              121.2525,
+              14.5404
+            ],
+            [
+              121.2471,
+              14.5389
+            ],
+            [
+              121.242,
+              14.5378
+            ],
+            [
+              121.2403,
+              14.5314
+            ],
+            [
+              121.2468,
+              14.5301
+            ],
+            [
+              121.251,
+              14.5314
+            ],
+            [
+              121.2563,
+              14.535
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-345-2010-iva-parcel-3-binangonan",
+      "properties": {
+        "id": "mpsa-345-2010-iva-parcel-3-binangonan",
+        "name": "Rapid City Realty & Dev't Corp. Parcel 3 (MPSA No. 345-2010-IVA)",
+        "shortName": "Rapid City Binangonan P-3",
+        "permitNumber": "MPSA No. 345-2010-IVA (Parcel 3)",
+        "permitType": "MPSA",
+        "holder": "Rapid City Realty & Dev't Corp.",
+        "operator": "Rapid City Realty & Dev't Corp.",
+        "municipality": "Binangonan",
+        "commodity": "Pozzolanic tuff and basalt",
+        "status": "Operating",
+        "areaHectares": "112.3000 ha",
+        "exactAreaHa": 112.3,
+        "termDates": "06/09/2010 – 06/09/2035",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 17C",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Basalt and pozzolan extraction in Binangonan hills."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2115,
+              14.495
+            ],
+            [
+              121.2085,
+              14.4992
+            ],
+            [
+              121.2043,
+              14.4981
+            ],
+            [
+              121.2003,
+              14.4972
+            ],
+            [
+              121.199,
+              14.4922
+            ],
+            [
+              121.2041,
+              14.4912
+            ],
+            [
+              121.2073,
+              14.4922
+            ],
+            [
+              121.2115,
+              14.495
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpsa-345-2010-iva-parcel-4-angono",
+      "properties": {
+        "id": "mpsa-345-2010-iva-parcel-4-angono",
+        "name": "Rapid City Realty & Dev't Corp. Parcel 4 (MPSA No. 345-2010-IVA)",
+        "shortName": "Rapid City Angono P-4",
+        "permitNumber": "MPSA No. 345-2010-IVA (Parcel 4)",
+        "permitType": "MPSA",
+        "holder": "Rapid City Realty & Dev't Corp.",
+        "operator": "Rapid City Realty & Dev't Corp.",
+        "municipality": "Angono",
+        "commodity": "Basalt aggregates",
+        "status": "Operating",
+        "areaHectares": "95.6000 ha",
+        "exactAreaHa": 95.6,
+        "termDates": "06/09/2010 – 06/09/2035",
+        "mgbRegistrySource": "DENR-OCT-2024-MPSA-2A Item No. 17D",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#d97706",
+        "fillColor": "#f59e0b",
+        "facilityType": "quarry_extraction",
+        "notes": "Basalt extraction parcel along Angono-Teresa ridge."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.188,
+              14.54
+            ],
+            [
+              121.1852,
+              14.5439
+            ],
+            [
+              121.1813,
+              14.5428
+            ],
+            [
+              121.1777,
+              14.542
+            ],
+            [
+              121.1765,
+              14.5374
+            ],
+            [
+              121.1812,
+              14.5365
+            ],
+            [
+              121.1841,
+              14.5374
+            ],
+            [
+              121.188,
+              14.54
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2011-005-iva-teresa",
+      "properties": {
+        "id": "mpp-2011-005-iva-teresa",
+        "name": "Teresa Processing Facility (MPP-2011-005-IVA)",
+        "shortName": "Teresa Mineral Processing",
+        "permitNumber": "MPP-2011-005-IVA",
+        "permitType": "MPP",
+        "holder": "Teresa Processing Permit Holder",
+        "operator": "Teresa Processing Permit Holder",
+        "municipality": "Teresa",
+        "commodity": "Aggregates / Non-Metallic Processing",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~2.5 ha)",
+        "exactAreaHa": null,
+        "termDates": "06/30/2011 – 06/30/2016 (Historical MGB IV-A MPP record)",
+        "mgbRegistrySource": "MGB IV-A Mineral Processing Registry",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Industrial mineral processing and aggregate crushing plant in Teresa."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.214,
+          14.565
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2017-002-iva-rodrock-rodriguez",
+      "properties": {
+        "id": "mpp-2017-002-iva-rodrock-rodriguez",
+        "name": "Rodrock and Aggregates Corp. (MPP-2017-002-IVA)",
+        "shortName": "Rodrock Crushing Plant",
+        "permitNumber": "MPP-2017-002-IVA (2nd Renewal)",
+        "permitType": "MPP",
+        "holder": "Rodrock and Aggregates Corp. (Rosita P. Linco, President)",
+        "operator": "Rodrock and Aggregates Corp.",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Sitio Tanag, Brgy. San Isidro",
+        "commodity": "Aggregates Materials Crushing",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~4.0 ha)",
+        "exactAreaHa": null,
+        "termDates": "11/23/2022 – 11/23/2027 (2nd Renewal of MPP-2010-002-IV; transferred from Oxford Mines)",
+        "mgbRegistrySource": "APR-2024-MPP-2A / MGB IV-A",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Major crushing plant in Sitio Tanag processing raw basalt into commercial aggregates."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.163,
+          14.748
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2018-001-iva-viba-rodriguez",
+      "properties": {
+        "id": "mpp-2018-001-iva-viba-rodriguez",
+        "name": "Viba Aggregates & Marketing (MPP-2018-001-IVA)",
+        "shortName": "Viba Crushing Plant",
+        "permitNumber": "MPP-2018-001-IVA",
+        "permitType": "MPP",
+        "holder": "Viba Aggregates & Marketing (Jose Ferdinand A. Bautista, GM)",
+        "operator": "Viba Aggregates & Marketing",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Brgy. San Isidro",
+        "commodity": "Aggregates Materials",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~3.2 ha)",
+        "exactAreaHa": null,
+        "termDates": "07/26/2023 – 07/25/2028 (2nd Renewal)",
+        "mgbRegistrySource": "APR-2024-MPP-2A Item No. 25",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Aggregate screening and crushing operations in San Isidro, Rodriguez."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.16,
+          14.744
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2018-003-iva-amiterra-rodriguez",
+      "properties": {
+        "id": "mpp-2018-003-iva-amiterra-rodriguez",
+        "name": "Amiterra Aggregates Corp. (MPP-2018-003-IVA)",
+        "shortName": "Amiterra Crushing Plant",
+        "permitNumber": "MPP-2018-003-IVA (1st Renewal)",
+        "permitType": "MPP",
+        "holder": "Amiterra Aggregates Corp. (Mr. Ha Ling Chua)",
+        "operator": "Amiterra Aggregates Corp.",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Sitio Duhat, Brgy. San Isidro",
+        "commodity": "Aggregates Materials Crushing",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~3.8 ha)",
+        "exactAreaHa": null,
+        "termDates": "12/21/2023 – 12/20/2028 (Originally approved Dec 18, 2018; 1st renewal approved Dec 2023)",
+        "mgbRegistrySource": "APR-2024-MPP-2A / MGB IV-A",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Heavy crushing facility located in Sitio Duhat."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.157,
+          14.741
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2019-002-iva-dream-rock-rodriguez",
+      "properties": {
+        "id": "mpp-2019-002-iva-dream-rock-rodriguez",
+        "name": "Dream Rock Resources Phils. (MPP-2019-002-IVA)",
+        "shortName": "Dream Rock Processing",
+        "permitNumber": "MPP-2019-002-IVA",
+        "permitType": "MPP",
+        "holder": "Dream Rock Resources Phils., Inc.",
+        "operator": "Dream Rock Resources Phils., Inc.",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Brgy. San Isidro",
+        "commodity": "Aggregates Materials",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~2.8 ha)",
+        "exactAreaHa": null,
+        "termDates": "Approved 2019 (Suspension lifted Feb 1, 2021)",
+        "mgbRegistrySource": "MGB IV-A Resolution / APR-2024-MPP-2A",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Commercial aggregate crushing operations in Brgy. San Isidro."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.165,
+          14.743
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2019-003-iva-superior-aggregates-rodriguez",
+      "properties": {
+        "id": "mpp-2019-003-iva-superior-aggregates-rodriguez",
+        "name": "Superior Aggregates, Inc. (MPP-2019-003-IVA)",
+        "shortName": "Superior Aggregates Plant",
+        "permitNumber": "MPP-2019-003-IVA",
+        "permitType": "MPP",
+        "holder": "Superior Aggregates, Inc. (Mr. Gerry T. Chua)",
+        "operator": "Superior Aggregates, Inc.",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Sitio Anginan, Brgy. San Isidro",
+        "commodity": "Sand, Gravel & Crushed Rock Aggregates",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~5.0 ha)",
+        "exactAreaHa": null,
+        "termDates": "1st: 05/14/2019 – 05/14/2024; Renewed: 04/02/2025 – 04/02/2030 (by MGB IV-A RD Castillo)",
+        "mgbRegistrySource": "APR-2024-MPP-2A Item No. 26",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Major crushing plant in Sitio Anginan; actively renewed by MGB IV-A through April 2, 2030."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.155,
+          14.746
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2020-001-iv-atn-holdings-macabud",
+      "properties": {
+        "id": "mpp-2020-001-iv-atn-holdings-macabud",
+        "name": "ATN Holdings, Inc. (MPP-2020-001-IV)",
+        "shortName": "ATN Holdings Macabud Plant",
+        "permitNumber": "MPP-2020-001-IV",
+        "permitType": "MPP",
+        "holder": "ATN Holdings, Inc. (Saria, VP)",
+        "operator": "ATN Holdings, Inc.",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Brgy. Macabud",
+        "commodity": "Basalt & Concrete Aggregates",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~4.5 ha)",
+        "exactAreaHa": null,
+        "termDates": "02/14/2020 – 02/14/2025 (Recorded in APR-2024-MPP-2A)",
+        "mgbRegistrySource": "APR-2024-MPP-2A",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "High-capacity crushing and ready-mix aggregate facility in northern Macabud."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.138,
+          14.792
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2021-001-iv-montalban-concrete-asphalt",
+      "properties": {
+        "id": "mpp-2021-001-iv-montalban-concrete-asphalt",
+        "name": "Montalban Concrete and Asphalt, Inc. (MPP-2021-001-IV)",
+        "shortName": "Montalban Concrete & Asphalt",
+        "permitNumber": "MPP-2021-001-IV",
+        "permitType": "MPP",
+        "holder": "Montalban Concrete and Asphalt, Inc. (Ms. Nancy Ong Hsieh, President)",
+        "operator": "Montalban Concrete and Asphalt, Inc.",
+        "municipality": "Rodriguez (Montalban)",
+        "commodity": "Aggregates Materials & Ready-Mix Asphalt",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~3.5 ha)",
+        "exactAreaHa": null,
+        "termDates": "02/05/2021 – 02/05/2026",
+        "mgbRegistrySource": "APR-2024-MPP-2A Item No. 31",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Asphalt batching and rock crushing plant in Rodriguez."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.151,
+          14.736
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2021-002-iv-solid-integrated-bagsak",
+      "properties": {
+        "id": "mpp-2021-002-iv-solid-integrated-bagsak",
+        "name": "Solid Integrated Company - Sitio Bagsak (MPP-2021-002-IV)",
+        "shortName": "Solid Integrated Bagsak Plant",
+        "permitNumber": "MPP-2021-002-IV",
+        "permitType": "MPP",
+        "holder": "Solid Integrated Company, Inc. (Teodoro C. Rodriguez, Jr., President)",
+        "operator": "Solid Integrated Company, Inc.",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Sitio Bagsak, Brgy. San Jose",
+        "commodity": "Aggregates Materials",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~3.0 ha)",
+        "exactAreaHa": null,
+        "termDates": "05/19/2021 – 05/19/2026",
+        "mgbRegistrySource": "APR-2024-MPP-2A Item No. 32",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Crushing and sorting plant in Sitio Bagsak, San Jose."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.146,
+          14.755
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2021-003-iv-dprime-rock-rodriguez",
+      "properties": {
+        "id": "mpp-2021-003-iv-dprime-rock-rodriguez",
+        "name": "D'Prime Rock Crushing Plant (MPP-2021-003-IV)",
+        "shortName": "D'Prime Rock Crushing",
+        "permitNumber": "MPP-2021-003-IV",
+        "permitType": "MPP",
+        "holder": "D'Prime Rock Crushing Plant International Corp. (Rosanna T. Bulos / Celso Marquez)",
+        "operator": "D'Prime Rock Crushing Plant International Corp.",
+        "municipality": "Rodriguez (Montalban)",
+        "commodity": "Crushed Rock Aggregates",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~2.6 ha)",
+        "exactAreaHa": null,
+        "termDates": "07/06/2021 – 07/06/2026",
+        "mgbRegistrySource": "APR-2024-MPP-2A Item No. 33",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Aggregate crushing facility serving Metro Manila infrastructure demand."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.168,
+          14.75
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2021-006-iv-solid-integrated-tanag",
+      "properties": {
+        "id": "mpp-2021-006-iv-solid-integrated-tanag",
+        "name": "Solid Integrated Company - Sitio Tanag (MPP-2021-006-IV)",
+        "shortName": "Solid Integrated Tanag Plant",
+        "permitNumber": "MPP-2021-006-IV",
+        "permitType": "MPP",
+        "holder": "Solid Integrated Company, Inc. (Teodoro C. Rodriguez, President)",
+        "operator": "Solid Integrated Company, Inc.",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Sitio Tanag, Brgy. San Isidro",
+        "commodity": "Aggregates Materials",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~3.4 ha)",
+        "exactAreaHa": null,
+        "termDates": "03/09/2021 – 03/09/2026",
+        "mgbRegistrySource": "APR-2024-MPP-2A Item No. 37",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Second processing plant of Solid Integrated Company located in Sitio Tanag."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.161,
+          14.749
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2022-001-iv-jogeo-7-rodriguez",
+      "properties": {
+        "id": "mpp-2022-001-iv-jogeo-7-rodriguez",
+        "name": "JOGEO-7 Aggregates Corp. (MPP-2022-001-IV)",
+        "shortName": "JOGEO-7 Crushing Plant",
+        "permitNumber": "MPP-2022-001-IV",
+        "permitType": "MPP",
+        "holder": "JOGEO-7 Aggregates Corp. (Angeles, President)",
+        "operator": "JOGEO-7 Aggregates Corp.",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Brgy. San Isidro",
+        "commodity": "Aggregates Materials",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~2.9 ha)",
+        "exactAreaHa": null,
+        "termDates": "02/01/2022 – 02/01/2027",
+        "mgbRegistrySource": "APR-2024-MPP-2A Item No. 38",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Crushing and distribution plant in Brgy. San Isidro."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.159,
+          14.743
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2022-003-iv-premium-resources-rodriguez",
+      "properties": {
+        "id": "mpp-2022-003-iv-premium-resources-rodriguez",
+        "name": "Premium Resources & Exploration (MPP-2022-003-IV)",
+        "shortName": "Premium Resources Plant",
+        "permitNumber": "MPP-2022-003-IV",
+        "permitType": "MPP",
+        "holder": "Premium Resources and Exploration (Mr. Francis Lloyd T. Chua)",
+        "operator": "Premium Resources and Exploration",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Brgy. San Isidro",
+        "commodity": "Aggregates Materials",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~3.1 ha)",
+        "exactAreaHa": null,
+        "termDates": "06/01/2022 – 05/31/2027",
+        "mgbRegistrySource": "APR-2024-MPP-2A Item No. 40",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Crushed rock and screening facility in San Isidro, Rodriguez."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.154,
+          14.745
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2022-005-iv-rapid-city-antipolo",
+      "properties": {
+        "id": "mpp-2022-005-iv-rapid-city-antipolo",
+        "name": "Rapid City Realty & Dev't Corp. (MPP-2022-005-IV)",
+        "shortName": "Rapid City Sumulong Plant",
+        "permitNumber": "MPP-2022-005-IV",
+        "permitType": "MPP",
+        "holder": "Rapid City Realty and Development Corp.",
+        "operator": "Rapid City Realty and Development Corp.",
+        "municipality": "Antipolo City",
+        "barangay": "167 Sumulong Hwy, Brgy. Mayamot",
+        "commodity": "Aggregates Materials Processing",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~2.2 ha)",
+        "exactAreaHa": null,
+        "termDates": "08/10/2022 – 11/25/2027",
+        "mgbRegistrySource": "APR-2024-MPP-2A Item No. 42",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Central mineral processing facility and headquarters along Sumulong Highway in Antipolo."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.131,
+          14.62
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mpp-2023-001-iv-fabway-stone-rodriguez",
+      "properties": {
+        "id": "mpp-2023-001-iv-fabway-stone-rodriguez",
+        "name": "Fabway Stone, Inc. (MPP-2023-001-IV)",
+        "shortName": "Fabway Stone Plant",
+        "permitNumber": "MPP-2023-001-IV",
+        "permitType": "MPP",
+        "holder": "Fabway Stone, Inc. (Mr. Davison Tangca)",
+        "operator": "Fabway Stone, Inc.",
+        "municipality": "Rodriguez (Montalban)",
+        "barangay": "Unit A Lukutan Maliit, Brgy. San Isidro",
+        "commodity": "Aggregates Materials",
+        "status": "Operating",
+        "areaHectares": "Plant Site (~2.5 ha)",
+        "exactAreaHa": null,
+        "termDates": "04/01/2023 – 04/01/2028",
+        "mgbRegistrySource": "APR-2024-MPP-2A Item No. 43",
+        "regulatoryAuthority": "DENR-MGB Region IV-A",
+        "strokeColor": "#4f46e5",
+        "fillColor": "#6366f1",
+        "facilityType": "processing_crusher",
+        "notes": "Modern aggregate processing facility located in Lukutan Maliit, San Isidro, Rodriguez."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.166,
+          14.746
         ]
       }
     }

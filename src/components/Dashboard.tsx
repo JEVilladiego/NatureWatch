@@ -48,6 +48,7 @@ import {
   Flame,
   Satellite,
   Pickaxe,
+  Factory,
   Activity,
   CloudSun,
   Cloud,
@@ -151,6 +152,10 @@ function isPointInPolygonRing(point: [number, number], ring: [number, number][])
 
 function getQuarryCenter(feature: GeoJSONFeature<MgbQuarryFeatureProperties>): { lat: number; lng: number } {
   try {
+    if (feature.geometry?.type === 'Point') {
+      const [lng, lat] = feature.geometry.coordinates;
+      return { lat, lng };
+    }
     const coords = feature.geometry.coordinates;
     const ring = feature.geometry.type === 'Polygon' ? coords[0] : coords[0]?.[0];
     if (ring && ring.length > 0) {
@@ -742,6 +747,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [activeLeftDrawerTab, setActiveLeftDrawerTab] = useState<'queue' | 'firms' | 'protected_zones' | 'quarries' | 'weather'>('queue');
   const [mgbQuarriesFeatures, setMgbQuarriesFeatures] = useState<GeoJSONFeature<MgbQuarryFeatureProperties>[]>([]);
   const [quarrySearchTerm, setQuarrySearchTerm] = useState<string>('');
+  const [quarryTypeFilter, setQuarryTypeFilter] = useState<'all' | 'mpsa' | 'mpp' | 'cancelled'>('all');
+  const [quarryMunicipalityFilter, setQuarryMunicipalityFilter] = useState<string>('all');
   const [protectedZoneSearchTerm, setProtectedZoneSearchTerm] = useState<string>('');
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
 
@@ -1162,17 +1169,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     const quarryResults = mgbQuarriesFeatures
       .filter((f) => {
-        const name = f.properties?.name || '';
-        const op = f.properties?.operator || '';
-        const mun = f.properties?.municipality || '';
-        return name.toLowerCase().includes(query) || op.toLowerCase().includes(query) || mun.toLowerCase().includes(query);
+        const p = f.properties;
+        const name = p?.name || '';
+        const op = p?.operator || '';
+        const holder = p?.holder || '';
+        const permit = p?.permitNumber || '';
+        const mun = p?.municipality || '';
+        const brgy = p?.barangay || '';
+        return (
+          name.toLowerCase().includes(query) ||
+          op.toLowerCase().includes(query) ||
+          holder.toLowerCase().includes(query) ||
+          permit.toLowerCase().includes(query) ||
+          mun.toLowerCase().includes(query) ||
+          brgy.toLowerCase().includes(query)
+        );
       })
       .slice(0, 3)
       .map((f, idx) => ({
         type: 'quarry' as const,
         id: `quarry-${idx}-${f.properties?.permitNumber || f.properties?.name || idx}`,
-        title: f.properties?.name || 'MGB Quarry Concession',
-        subtitle: `${f.properties?.operator || f.properties?.municipality || 'Permitted Mining Tenement'}`,
+        title: f.properties?.name || 'MGB Concession',
+        subtitle: `${f.properties?.permitNumber} • ${f.properties?.operator || f.properties?.municipality}`,
         payload: f,
       }));
 
@@ -1536,6 +1554,63 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     if (activeMgbQuarryHit) {
       const hit = activeMgbQuarryHit;
+      const isCancelled = hit.status === 'Cancelled';
+      const isMpp = hit.permitType === 'MPP';
+
+      if (isCancelled) {
+        return (
+          <div className="p-3 bg-rose-500/10 dark:bg-rose-950/40 border border-rose-500/40 dark:border-rose-800/80 rounded-xl space-y-1.5 my-2">
+            <div className="flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                <span className="text-[11px] font-bold tracking-wide uppercase text-rose-900 dark:text-rose-200 truncate">
+                  Cancelled Concession Warning
+                </span>
+              </div>
+              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-900/60 dark:text-rose-200 dark:border-rose-700 uppercase shrink-0">
+                CANCELLED BY DENR
+              </span>
+            </div>
+            <div className="text-xs font-bold text-stone-900 dark:text-stone-100">
+              {hit.tenementName || hit.name}
+            </div>
+            <div className="text-[10px] text-stone-600 dark:text-stone-300">
+              <strong>Permit:</strong> <span className="font-mono">{hit.permitNumber}</span> • <strong>Former Holder:</strong> {hit.holder || hit.operator}
+            </div>
+            <div className="text-[10px] text-rose-800 dark:text-rose-300 font-medium leading-relaxed pt-1 border-t border-rose-500/20">
+              CRITICAL NOTICE: This mineral agreement was CANCELLED by DENR order. Any ongoing commercial extraction or land stripping is unauthorized and constitutes illegal quarrying. Immediate field inspection recommended.
+            </div>
+          </div>
+        );
+      }
+
+      if (isMpp) {
+        return (
+          <div className="p-3 bg-indigo-500/10 dark:bg-indigo-950/40 border border-indigo-500/30 dark:border-indigo-800/60 rounded-xl space-y-1.5 my-2">
+            <div className="flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Factory className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <span className="text-[11px] font-bold tracking-wide uppercase text-indigo-900 dark:text-indigo-200 truncate">
+                  MGB Mineral Processing Facility
+                </span>
+              </div>
+              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 border border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800 uppercase shrink-0">
+                Authorized Plant (MPP)
+              </span>
+            </div>
+            <div className="text-xs font-bold text-stone-900 dark:text-stone-100">
+              {hit.name}
+            </div>
+            <div className="text-[10px] text-stone-600 dark:text-stone-300">
+              <strong>Permit:</strong> <span className="font-mono">{hit.permitNumber}</span> • <strong>Plant Operator:</strong> {hit.operator}
+            </div>
+            <div className="text-[10px] text-stone-500 dark:text-stone-400 leading-relaxed pt-1 border-t border-indigo-500/20">
+              Coordinates intersect an authorized Mineral Processing Plant under Section 55 of RA 7942. Note: MPPs authorize mineral crushing and screening, NOT unpermitted ground excavation beyond designated plant boundaries.
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="p-3 bg-amber-500/10 dark:bg-amber-950/40 border border-amber-500/30 dark:border-amber-800/60 rounded-xl space-y-1.5 my-2">
           <div className="flex items-center justify-between gap-1.5">
@@ -1554,9 +1629,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div className="text-[10px] text-stone-600 dark:text-stone-300">
             <strong>Permit:</strong> <span className="font-mono">{hit.permitNumber}</span> • <strong>Operator:</strong> {hit.operator}
+            {hit.holder && hit.holder !== hit.operator && (
+              <span className="block text-stone-500 dark:text-stone-400"><strong>Holder:</strong> {hit.holder}</span>
+            )}
           </div>
           <div className="text-[10px] text-stone-500 dark:text-stone-400 leading-relaxed pt-1 border-t border-amber-500/20">
-            Coordinates intersect an authorized MGB Region IV-A concession. Officers should verify whether on-ground activities exceed permitted boundaries, bench depths, or Environmental Compliance Certificate (ECC) conditions.
+            Coordinates intersect an authorized MGB Region IV-A concession ({hit.areaHectares}). Officers should verify whether on-ground activities exceed permitted boundaries, bench depths, or Environmental Compliance Certificate (ECC) conditions.
           </div>
         </div>
       );
@@ -4128,48 +4206,147 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               )}
 
-              {/* TAB 4: MGB PERMITTED QUARRIES CADASTRE */}
+              {/* TAB 4: MGB PERMITTED QUARRIES & PROCESSING CADASTRE */}
               {activeLeftDrawerTab === 'quarries' && (
                 <div key="tab-quarries" className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                  {/* Quarries Header & Search */}
-                  <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2 shrink-0">
+                  {/* Quarries Header & Statistics */}
+                  <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2.5 shrink-0">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center shrink-0">
-                          <Pickaxe className="w-4 h-4 text-stone-700 dark:text-stone-300" />
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center shrink-0">
+                          <Pickaxe className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                         </div>
-                        <div>
-                          <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight">
-                            MGB Permitted Cadastre
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight truncate">
+                            MGB Mining & Processing Cadastre
                           </h4>
-                          <span className="text-[10px] text-stone-500 dark:text-stone-400 block">
-                            Authorized Concessions (Region IV-A)
+                          <span className="text-[10px] text-stone-500 dark:text-stone-400 block truncate">
+                            DENR Region IV-A Authorized Concessions & Plants
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-semibold">
-                          {mgbQuarriesFeatures.length || 10} Active
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 font-bold border border-stone-200 dark:border-stone-700">
+                          {mgbQuarriesFeatures.length || 45} Total
                         </span>
                         <button
                           type="button"
                           onClick={handleCloseDrawer}
                           className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
-                          title="Close Quarries"
-                          aria-label="Close Quarries"
+                          title="Close Cadastre"
+                          aria-label="Close Cadastre"
                         >
                           <X className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
+                    {/* Cadastre Metric Summary Strip */}
+                    <div className="grid grid-cols-3 gap-1.5 text-center p-1.5 bg-stone-50 dark:bg-stone-950/70 rounded-lg border border-stone-200/80 dark:border-stone-800">
+                      <div className="px-1">
+                        <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">MPSAs</span>
+                        <span className="font-mono font-bold text-xs text-amber-700 dark:text-amber-300">
+                          30 (6,214 ha)
+                        </span>
+                      </div>
+                      <div className="px-1 border-x border-stone-200 dark:border-stone-800">
+                        <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">MPP Plants</span>
+                        <span className="font-mono font-bold text-xs text-indigo-700 dark:text-indigo-300">
+                          15 Units
+                        </span>
+                      </div>
+                      <div className="px-1">
+                        <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Cancelled</span>
+                        <span className="font-mono font-bold text-xs text-rose-700 dark:text-rose-400">
+                          2 Tenements
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Faceted Filter 1: Permit Category Pills */}
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setQuarryTypeFilter('all')}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer shrink-0 border ${
+                          quarryTypeFilter === 'all'
+                            ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600'
+                            : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-700 hover:bg-stone-200'
+                        }`}
+                      >
+                        All ({mgbQuarriesFeatures.length || 45})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQuarryTypeFilter('mpsa')}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer shrink-0 border ${
+                          quarryTypeFilter === 'mpsa'
+                            ? 'bg-amber-600 text-white border-amber-600'
+                            : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-700 hover:bg-stone-200'
+                        }`}
+                      >
+                        MPSA Extraction (30)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQuarryTypeFilter('mpp')}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer shrink-0 border ${
+                          quarryTypeFilter === 'mpp'
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-700 hover:bg-stone-200'
+                        }`}
+                      >
+                        MPP Processing (15)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQuarryTypeFilter('cancelled')}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer shrink-0 border ${
+                          quarryTypeFilter === 'cancelled'
+                            ? 'bg-rose-600 text-white border-rose-600'
+                            : 'bg-stone-100 dark:bg-stone-800 text-rose-600 dark:text-rose-400 border-stone-200 dark:border-stone-700 hover:bg-stone-200'
+                        }`}
+                      >
+                        Cancelled (2)
+                      </button>
+                    </div>
+
+                    {/* Faceted Filter 2: Municipality Chips */}
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 text-[10px]">
+                      {[
+                        { id: 'all', label: 'All LGUs' },
+                        { id: 'rodriguez', label: 'Rodriguez' },
+                        { id: 'antipolo', label: 'Antipolo' },
+                        { id: 'teresa', label: 'Teresa' },
+                        { id: 'angono', label: 'Angono' },
+                        { id: 'baras', label: 'Baras' },
+                        { id: 'tanay', label: 'Tanay' },
+                        { id: 'morong', label: 'Morong' },
+                        { id: 'binangonan', label: 'Binangonan' },
+                      ].map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setQuarryMunicipalityFilter(m.id)}
+                          className={`px-1.5 py-0.5 rounded text-[9.5px] font-mono transition cursor-pointer shrink-0 border ${
+                            quarryMunicipalityFilter === m.id
+                              ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border-amber-400 dark:border-amber-700 font-bold'
+                              : 'bg-stone-50 dark:bg-stone-900 text-stone-500 dark:text-stone-400 border-stone-200/80 dark:border-stone-800 hover:bg-stone-100'
+                          }`}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Search Input */}
                     <div className="relative">
                       <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
                         type="text"
                         value={quarrySearchTerm}
                         onChange={(e) => setQuarrySearchTerm(e.target.value)}
-                        placeholder="Filter by operator, permit number, or municipality..."
+                        placeholder="Search operator, permit no., commodity, barangay..."
                         className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white dark:bg-stone-950 dark:hover:bg-stone-950 dark:focus:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 focus:border-amber-500 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 transition placeholder:text-stone-400 dark:placeholder:text-stone-600"
                       />
                       {quarrySearchTerm && (
@@ -4186,59 +4363,123 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* Regulatory Authority Notice */}
-                  <div className="px-3 py-2 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 text-[10px] text-stone-600 dark:text-stone-400 flex items-center justify-between shrink-0">
-                    <span>Official MGB Region IV-A mining tenement boundaries</span>
-                    <span className="font-mono text-amber-700 dark:text-amber-400 font-semibold">MPSA / CSAG</span>
+                  <div className="px-3 py-1.5 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 text-[9.5px] text-stone-600 dark:text-stone-400 flex items-center justify-between shrink-0 font-mono">
+                    <span>MGB MTMD Registries (MRMS 002A & APR-2024-MPP-2A)</span>
+                    <span className="text-amber-700 dark:text-amber-400 font-semibold">CALABARZON</span>
                   </div>
 
                   {/* Concession Cards List */}
                   <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar overscroll-contain">
-                    {mgbQuarriesFeatures
-                      .filter((feat) => {
-                        if (!quarrySearchTerm.trim()) return true;
-                        const q = quarrySearchTerm.toLowerCase();
+                    {(() => {
+                      const filtered = mgbQuarriesFeatures.filter((feat) => {
                         const p = feat.properties;
+
+                        // Type filter
+                        if (quarryTypeFilter === 'mpsa' && p.permitType !== 'MPSA') return false;
+                        if (quarryTypeFilter === 'mpp' && p.permitType !== 'MPP') return false;
+                        if (quarryTypeFilter === 'cancelled' && p.status !== 'Cancelled') return false;
+
+                        // Municipality filter
+                        if (quarryMunicipalityFilter !== 'all') {
+                          const munMatch = p.municipality.toLowerCase().includes(quarryMunicipalityFilter.toLowerCase());
+                          if (!munMatch) return false;
+                        }
+
+                        // Search term filter
+                        if (quarrySearchTerm.trim()) {
+                          const q = quarrySearchTerm.toLowerCase();
+                          const match =
+                            p.name.toLowerCase().includes(q) ||
+                            p.operator.toLowerCase().includes(q) ||
+                            (p.holder && p.holder.toLowerCase().includes(q)) ||
+                            p.permitNumber.toLowerCase().includes(q) ||
+                            p.municipality.toLowerCase().includes(q) ||
+                            (p.barangay && p.barangay.toLowerCase().includes(q)) ||
+                            p.commodity.toLowerCase().includes(q);
+                          if (!match) return false;
+                        }
+
+                        return true;
+                      });
+
+                      if (filtered.length === 0) {
                         return (
-                          p.name.toLowerCase().includes(q) ||
-                          p.operator.toLowerCase().includes(q) ||
-                          p.permitNumber.toLowerCase().includes(q) ||
-                          p.municipality.toLowerCase().includes(q) ||
-                          p.commodity.toLowerCase().includes(q)
+                          <div className="py-12 px-4 text-center space-y-2">
+                            <Pickaxe className="w-8 h-8 text-stone-300 dark:text-stone-600 mx-auto" />
+                            <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">
+                              No matching concessions found
+                            </p>
+                            <p className="text-[11px] text-stone-400">
+                              Try clearing filters or search terms.
+                            </p>
+                          </div>
                         );
-                      })
-                      .map((feat) => {
+                      }
+
+                      return filtered.map((feat) => {
                         const p = feat.properties;
                         const center = getQuarryCenter(feat);
+                        const isMpp = p.permitType === 'MPP';
+                        const isCancelled = p.status === 'Cancelled';
+                        const isExploration = p.status === 'Exploration';
 
                         return (
                           <div
                             key={feat.id || p.id}
                             onClick={() => {
                               setMapCenter(center);
-                              setMapZoom(14);
+                              setMapZoom(isMpp ? 15 : 14);
                               if (window.innerWidth < 640) setIsSheetOpen(false);
                             }}
-                            className="p-3 hover:bg-stone-50 dark:hover:bg-stone-850/80 transition-colors cursor-pointer text-left space-y-1.5 group bg-white dark:bg-stone-900"
+                            className={`p-3 transition-colors cursor-pointer text-left space-y-1.5 group ${
+                              isCancelled
+                                ? 'bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+                                : 'bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-850/80'
+                            }`}
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-semibold text-xs text-stone-900 dark:text-stone-100 truncate">
+                            <div className="flex items-center justify-between gap-1.5">
+                              <span className={`font-semibold text-xs truncate ${isCancelled ? 'text-rose-900 dark:text-rose-200 line-through' : 'text-stone-900 dark:text-stone-100'}`}>
                                 {p.name}
                               </span>
-                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold border border-amber-300 dark:border-amber-800 shrink-0">
-                                {p.permitType}
-                              </span>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span
+                                  className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold border ${
+                                    isMpp
+                                      ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800'
+                                      : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                                  }`}
+                                >
+                                  {p.permitType}
+                                </span>
+                                <span
+                                  className={`text-[8.5px] font-mono px-1 py-0.5 rounded font-bold uppercase ${
+                                    isCancelled
+                                      ? 'bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
+                                      : isExploration
+                                      ? 'bg-sky-100 text-sky-800 border border-sky-300 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
+                                      : 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                                  }`}
+                                >
+                                  {p.status}
+                                </span>
+                              </div>
                             </div>
 
                             <div className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
                               <strong>Operator:</strong> {p.operator}
+                              {p.holder && p.holder !== p.operator && (
+                                <span className="block text-[10px] text-stone-500 dark:text-stone-500">
+                                  <strong>Holder:</strong> {p.holder}
+                                </span>
+                              )}
                             </div>
 
                             <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 pt-0.5">
                               <span className="flex items-center gap-1 truncate">
                                 <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
-                                {p.municipality}
+                                {p.barangay ? `${p.barangay}, ` : ''}{p.municipality}
                               </span>
-                              <span className="font-mono text-stone-600 dark:text-stone-300 shrink-0">
+                              <span className="font-mono text-stone-700 dark:text-stone-300 font-semibold shrink-0">
                                 {p.areaHectares}
                               </span>
                             </div>
@@ -4246,9 +4487,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <div className="text-[10px] font-mono text-amber-700 dark:text-amber-400 truncate">
                               Permit: {p.permitNumber} • {p.commodity}
                             </div>
+
+                            {p.termDates && (
+                              <div className="text-[9.5px] text-stone-400 dark:text-stone-500 font-mono truncate">
+                                Term: {p.termDates}
+                              </div>
+                            )}
+
+                            {isCancelled && (
+                              <div className="text-[9.5px] text-rose-700 dark:text-rose-400 font-medium pt-1 border-t border-rose-200 dark:border-rose-900/40">
+                                Notice: Cancelled by DENR Order. Commercial extraction is unauthorized.
+                              </div>
+                            )}
                           </div>
                         );
-                      })}
+                      });
+                    })()}
                   </div>
                 </div>
               )}

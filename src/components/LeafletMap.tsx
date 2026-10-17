@@ -575,44 +575,145 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     if (!showMgbQuarries && layerMode !== 'quarries') return;
 
     const layer = L.geoJSON(mgbQuarriesData as any, {
-      style: () => ({
-        color: '#d97706',      // amber-600 border
-        weight: layerMode === 'quarries' ? 2.5 : 2,
-        fillColor: '#f59e0b',  // amber-500 fill
-        fillOpacity: layerMode === 'quarries' ? 0.30 : 0.16,
-        dashArray: layerMode === 'quarries' ? undefined : '5, 4',
-      }),
-      onEachFeature: (feature: any, featureLayer: L.Layer) => {
+      style: (feature: any) => {
         const props = feature?.properties || {};
-        const name = props.tenementName || props.operator || 'Permitted Quarry';
-        const permit = props.permitNumber || 'MGB Tenement';
-        const operator = props.operator || 'Authorized Concessionaire';
-        const commodity = props.commodity || 'Aggregates / Sand & Gravel';
-        const municipality = props.municipality || 'Rizal';
-        const area = props.areaHectares ? `${props.areaHectares} ha` : '';
-
-        const tooltipHtml = `
-          <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 200px; max-width: 270px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 3px;">
-              <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #d97706;">
-                MGB PERMITTED CADASTRE
+        const isCancelled = props.status === 'Cancelled';
+        const isExploration = props.status === 'Exploration';
+        
+        if (isCancelled) {
+          return {
+            color: '#dc2626',      // red-600
+            weight: 2,
+            fillColor: '#ef4444',  // red-500
+            fillOpacity: 0.18,
+            dashArray: '5, 5',
+          };
+        }
+        if (isExploration) {
+          return {
+            color: '#0284c7',      // sky-600
+            weight: 2,
+            fillColor: '#38bdf8',  // sky-400
+            fillOpacity: 0.20,
+            dashArray: '3, 3',
+          };
+        }
+        return {
+          color: '#d97706',      // amber-600 border
+          weight: layerMode === 'quarries' ? 2.5 : 2,
+          fillColor: '#f59e0b',  // amber-500 fill
+          fillOpacity: layerMode === 'quarries' ? 0.25 : 0.16,
+          dashArray: undefined,
+        };
+      },
+      pointToLayer: (feature: any, latlng: L.LatLng) => {
+        const props = feature?.properties || {};
+        const isMpp = props.permitType === 'MPP';
+        
+        const iconHtml = `
+          <div style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: auto;">
+            <div class="group cursor-pointer select-none" style="
+              display: inline-flex;
+              align-items: center;
+              gap: 4.5px;
+              background: rgba(30, 27, 75, 0.94);
+              backdrop-filter: blur(8px);
+              -webkit-backdrop-filter: blur(8px);
+              border: 1.5px solid #818cf8;
+              border-radius: 9999px;
+              padding: 2.5px 7px 2.5px 6px;
+              box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
+              transition: transform 0.16s ease, box-shadow 0.16s ease;
+              white-space: nowrap;
+            ">
+              <span style="color: #a5b4fc; display: flex; align-items: center; flex-shrink: 0;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+                  <path d="M17 18h1"></path>
+                  <path d="M12 18h1"></path>
+                  <path d="M7 18h1"></path>
+                </svg>
               </span>
-              <span style="font-size: 8px; font-family: monospace; background: rgba(217,119,6,0.18); border: 1px solid rgba(217,119,6,0.3); padding: 1px 4px; border-radius: 3px; color: #fde68a;">
-                ACTIVE
+              <span style="font-size: 10px; font-weight: 700; color: #ffffff; font-family: system-ui, -apple-system, sans-serif;">${props.shortName || props.operator}</span>
+              <span style="font-size: 8.5px; font-weight: 800; font-family: ui-monospace, monospace; padding: 1px 4px; border-radius: 4px; background: rgba(99, 102, 241, 0.4); color: #e0e7ff; border: 1px solid rgba(165, 180, 252, 0.4);">
+                MPP
               </span>
             </div>
-            <div style="font-weight: 700; font-size: 11px; color: #f8fafc; line-height: 1.3;">
+          </div>
+        `;
+
+        return L.marker(latlng, {
+          icon: L.divIcon({
+            className: 'custom-mpp-pin',
+            html: iconHtml,
+            iconSize: [0, 0],
+            iconAnchor: [0, 0],
+          }),
+          pane: 'weatherMarkerPane',
+          zIndexOffset: 1200,
+        });
+      },
+      onEachFeature: (feature: any, featureLayer: L.Layer) => {
+        const props = feature?.properties || {};
+        const isMpp = props.permitType === 'MPP';
+        const isCancelled = props.status === 'Cancelled';
+        const isExploration = props.status === 'Exploration';
+        const name = props.tenementName || props.name || props.operator || 'Permitted Concession';
+        const permit = props.permitNumber || 'MGB Tenement';
+        const operator = props.operator || 'Authorized Concessionaire';
+        const holder = props.holder && props.holder !== operator ? props.holder : null;
+        const commodity = props.commodity || 'Aggregates / Sand & Gravel';
+        const municipality = props.municipality || 'Rizal';
+        const area = props.areaHectares ? props.areaHectares : (props.exactAreaHa ? `${props.exactAreaHa.toFixed(4)} ha` : '');
+
+        let statusBadge = `
+          <span style="font-size: 8px; font-family: monospace; background: rgba(217,119,6,0.2); border: 1px solid rgba(217,119,6,0.4); padding: 1px 5px; border-radius: 3px; color: #fde68a; font-weight: 800;">
+            OPERATING MPSA
+          </span>
+        `;
+        if (isCancelled) {
+          statusBadge = `
+            <span style="font-size: 8px; font-family: monospace; background: rgba(220,38,38,0.3); border: 1px solid rgba(220,38,38,0.6); padding: 1px 5px; border-radius: 3px; color: #fca5a5; font-weight: 800;">
+              CANCELLED BY DENR
+            </span>
+          `;
+        } else if (isMpp) {
+          statusBadge = `
+            <span style="font-size: 8px; font-family: monospace; background: rgba(79,70,229,0.3); border: 1px solid rgba(129,140,248,0.5); padding: 1px 5px; border-radius: 3px; color: #c7d2fe; font-weight: 800;">
+              MINERAL PROCESSING (MPP)
+            </span>
+          `;
+        } else if (isExploration) {
+          statusBadge = `
+            <span style="font-size: 8px; font-family: monospace; background: rgba(2,132,199,0.25); border: 1px solid rgba(56,189,248,0.5); padding: 1px 5px; border-radius: 3px; color: #bae6fd; font-weight: 800;">
+              EXPLORATION / DMPF
+            </span>
+          `;
+        }
+
+        const tooltipHtml = `
+          <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 220px; max-width: 290px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px;">
+              <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: ${isMpp ? '#818cf8' : isCancelled ? '#ef4444' : '#d97706'};">
+                ${isMpp ? 'MGB MINERAL PROCESSING' : 'MGB EXTRACTION CADASTRE'}
+              </span>
+              ${statusBadge}
+            </div>
+            <div style="font-weight: 700; font-size: 11.5px; color: #f8fafc; line-height: 1.3;">
               ${name}
             </div>
             <div style="font-size: 10px; color: #cbd5e1; margin-top: 3px;">
               <strong>Operator:</strong> ${operator}
             </div>
+            ${holder ? `<div style="font-size: 9.5px; color: #94a3b8;"><strong>Holder:</strong> ${holder}</div>` : ''}
             <div style="font-size: 9.5px; color: #94a3b8; margin-top: 2px;">
-              ${props.barangay ? `${props.barangay}, ` : ''}${municipality} ${area ? `• ${area}` : ''}
+              ${props.barangay ? `${props.barangay}, ` : ''}${municipality} ${area ? `• <strong>${area}</strong>` : ''}
             </div>
-            <div style="font-size: 9px; font-family: monospace; color: #f59e0b; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 3px;">
+            <div style="font-size: 9px; font-family: monospace; color: ${isMpp ? '#a5b4fc' : isCancelled ? '#fca5a5' : '#f59e0b'}; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 3px;">
               Permit: ${permit} • ${commodity}
             </div>
+            ${props.termDates ? `<div style="font-size: 8.5px; color: #94a3b8; font-family: monospace; margin-top: 2px;">${props.termDates}</div>` : ''}
+            ${props.mgbRegistrySource ? `<div style="font-size: 8px; color: #64748b; font-family: monospace; margin-top: 2px;">Source: ${props.mgbRegistrySource}</div>` : ''}
           </div>
         `;
 
@@ -622,29 +723,38 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           className: 'tactical-map-tooltip',
         });
 
-        const pathLayer = featureLayer as L.Path;
-        pathLayer.on('mouseover', () => {
-          pathLayer.setStyle({
-            weight: 3.5,
-            fillOpacity: 0.32,
-            color: '#b45309',
+        if (feature.geometry?.type !== 'Point') {
+          const pathLayer = featureLayer as L.Path;
+          pathLayer.on('mouseover', () => {
+            pathLayer.setStyle({
+              weight: 3.5,
+              fillOpacity: isCancelled ? 0.28 : 0.35,
+              color: isCancelled ? '#b91c1c' : '#b45309',
+            });
           });
-        });
-        pathLayer.on('mouseout', () => {
-          pathLayer.setStyle({
-            weight: 2,
-            fillOpacity: 0.16,
-            color: '#d97706',
+          pathLayer.on('mouseout', () => {
+            pathLayer.setStyle({
+              weight: 2,
+              fillOpacity: isCancelled ? 0.18 : 0.16,
+              color: isCancelled ? '#dc2626' : '#d97706',
+            });
           });
-        });
-        pathLayer.on('click', () => {
-          try {
-            const bounds = (pathLayer as any).getBounds?.();
-            if (bounds && map) {
-              map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
-            }
-          } catch (e) {}
-        });
+          pathLayer.on('click', () => {
+            try {
+              const bounds = (pathLayer as any).getBounds?.();
+              if (bounds && map) {
+                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
+              }
+            } catch (e) {}
+          });
+        } else {
+          featureLayer.on('click', () => {
+            try {
+              const coords = feature.geometry.coordinates;
+              map.flyTo([coords[1], coords[0]], 15, { animate: true });
+            } catch (e) {}
+          });
+        }
       },
     }).addTo(map);
 
