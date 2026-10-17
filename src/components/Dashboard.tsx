@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ShieldAlert,
@@ -49,7 +49,19 @@ import {
   Satellite,
   Pickaxe,
   Activity,
+  CloudSun,
+  Cloud,
+  Compass,
 } from 'lucide-react';
+import {
+  RIZAL_LGU_PRESETS,
+  RizalLguPreset,
+  FullAtmosphericData,
+  fetchFullAtmosphericTelemetry,
+  getAqiMeta,
+  getWeatherInterpretation,
+  evaluateEnforcementRisks,
+} from '../lib/weatherService';
 import {
   IncidentReport,
   IncidentCategory,
@@ -725,11 +737,104 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [activeMgbQuarryHit, setActiveMgbQuarryHit] = useState<MgbQuarryFeatureProperties | null | undefined>(undefined);
 
   // Left Drawer multi-tab intelligence state
-  const [activeLeftDrawerTab, setActiveLeftDrawerTab] = useState<'queue' | 'firms' | 'protected_zones' | 'quarries'>('queue');
+  const [activeLeftDrawerTab, setActiveLeftDrawerTab] = useState<'queue' | 'firms' | 'protected_zones' | 'quarries' | 'weather'>('queue');
   const [mgbQuarriesFeatures, setMgbQuarriesFeatures] = useState<GeoJSONFeature<MgbQuarryFeatureProperties>[]>([]);
   const [quarrySearchTerm, setQuarrySearchTerm] = useState<string>('');
   const [protectedZoneSearchTerm, setProtectedZoneSearchTerm] = useState<string>('');
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
+
+  // Tab 5: Live Weather & Air Quality State
+  const [selectedWeatherLguId, setSelectedWeatherLguId] = useState<string>('rizal-center');
+  const [atmosphericData, setAtmosphericData] = useState<FullAtmosphericData | null>(null);
+  const [isLoadingAtmosphere, setIsLoadingAtmosphere] = useState<boolean>(false);
+  const [atmosphereError, setAtmosphereError] = useState<string | null>(null);
+
+  // On-demand Case Dossier Live Atmospheric Telemetry
+  const [liveCaseAtmosphere, setLiveCaseAtmosphere] = useState<Record<string, FullAtmosphericData>>({});
+  const [loadingCaseAtmosphereId, setLoadingCaseAtmosphereId] = useState<string | null>(null);
+
+  // Omnibox Category Chips Scroll Controller
+  const chipsScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState<boolean>(false);
+  const [canScrollRight, setCanScrollRight] = useState<boolean>(true);
+  const [isDraggingChips, setIsDraggingChips] = useState<boolean>(false);
+  const chipsDragStartX = useRef<number>(0);
+  const chipsDragStartScrollLeft = useRef<number>(0);
+  const hasDraggedChips = useRef<boolean>(false);
+
+  const checkChipsScroll = () => {
+    const el = chipsScrollRef.current;
+    if (!el) return;
+    const hasOverflow = el.scrollWidth > el.clientWidth + 1;
+    setCanScrollLeft(el.scrollLeft > 2);
+    setCanScrollRight(hasOverflow && el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
+  };
+
+  useEffect(() => {
+    const el = chipsScrollRef.current;
+    if (!el) return;
+
+    checkChipsScroll();
+
+    const onWheelHandler = (e: WheelEvent) => {
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (delta !== 0 && el.scrollWidth > el.clientWidth) {
+        e.preventDefault();
+        el.scrollLeft += delta;
+        checkChipsScroll();
+      }
+    };
+
+    el.addEventListener('wheel', onWheelHandler, { passive: false });
+    el.addEventListener('scroll', checkChipsScroll, { passive: true });
+
+    const resizeObserver = new ResizeObserver(() => {
+      checkChipsScroll();
+    });
+    resizeObserver.observe(el);
+
+    const timer = setTimeout(checkChipsScroll, 100);
+
+    return () => {
+      clearTimeout(timer);
+      el.removeEventListener('wheel', onWheelHandler);
+      el.removeEventListener('scroll', checkChipsScroll);
+      resizeObserver.disconnect();
+    };
+  }, [reports.length, mgbQuarriesFeatures.length]);
+
+  const scrollChips = (direction: 'left' | 'right') => {
+    const el = chipsScrollRef.current;
+    if (!el) return;
+    const delta = direction === 'left' ? -150 : 150;
+    el.scrollBy({ left: delta, behavior: 'smooth' });
+  };
+
+  const handleChipsMouseDown = (e: React.MouseEvent) => {
+    const el = chipsScrollRef.current;
+    if (!el) return;
+    setIsDraggingChips(true);
+    hasDraggedChips.current = false;
+    chipsDragStartX.current = e.pageX - el.offsetLeft;
+    chipsDragStartScrollLeft.current = el.scrollLeft;
+  };
+
+  const handleChipsMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingChips) return;
+    const el = chipsScrollRef.current;
+    if (!el) return;
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - chipsDragStartX.current) * 1.3;
+    if (Math.abs(walk) > 4) {
+      hasDraggedChips.current = true;
+    }
+    el.scrollLeft = chipsDragStartScrollLeft.current - walk;
+    checkChipsScroll();
+  };
+
+  const handleChipsMouseUp = () => {
+    setIsDraggingChips(false);
+  };
 
   // When switching to Full Map mode, enforce default clean state: nothing selected except Rizal's boundaries
   useEffect(() => {
@@ -766,7 +871,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     };
   }, []);
 
-  const handleSwitchLeftDrawerTab = (tab: 'queue' | 'firms' | 'protected_zones' | 'quarries') => {
+  const handleSwitchLeftDrawerTab = (tab: 'queue' | 'firms' | 'protected_zones' | 'quarries' | 'weather') => {
     setActiveLeftDrawerTab(tab);
     if (tab !== 'protected_zones') {
       setSelectedProtectedZoneId(null);
@@ -777,6 +882,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     } else if (tab === 'quarries') {
       setShowMgbQuarries(true);
       setMapLayerMode('quarries');
+    } else if (tab === 'weather') {
+      setShowMgbQuarries(false);
+      setMapLayerMode('boundaries');
     } else if (tab === 'firms' || tab === 'queue') {
       setShowMgbQuarries(false);
       setMapLayerMode('boundaries');
@@ -794,7 +902,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const handleToggleDrawerTab = (tab: 'queue' | 'firms' | 'protected_zones' | 'quarries') => {
+  const handleToggleDrawerTab = (tab: 'queue' | 'firms' | 'protected_zones' | 'quarries' | 'weather') => {
     if (selectedReport) {
       setSelectedReport(null);
       if (activeLeftDrawerTab === tab && isSheetOpen) {
@@ -808,6 +916,65 @@ export const Dashboard: React.FC<DashboardProps> = ({
     handleSwitchLeftDrawerTab(tab);
     setIsSheetOpen(true);
   };
+
+  const loadAtmosphericData = async (lguPreset?: RizalLguPreset) => {
+    const target = lguPreset || RIZAL_LGU_PRESETS.find((p) => p.id === selectedWeatherLguId) || RIZAL_LGU_PRESETS[0];
+    setIsLoadingAtmosphere(true);
+    setAtmosphereError(null);
+    try {
+      const data = await fetchFullAtmosphericTelemetry(target.lat, target.lng, target.name);
+      if (data) {
+        setAtmosphericData(data);
+      } else {
+        setAtmosphereError('Unable to connect to Open-Meteo telemetry stream. Please check connection and retry.');
+      }
+    } catch (err: any) {
+      setAtmosphereError(err?.message || 'Failed to fetch atmospheric conditions');
+    } finally {
+      setIsLoadingAtmosphere(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeLeftDrawerTab === 'weather' && !atmosphericData && !isLoadingAtmosphere) {
+      loadAtmosphericData();
+    }
+  }, [activeLeftDrawerTab]);
+
+  const handleSelectWeatherLgu = (preset: RizalLguPreset) => {
+    setSelectedWeatherLguId(preset.id);
+    setMapCenter({ lat: preset.lat, lng: preset.lng });
+    setMapZoom(preset.id === 'rizal-center' ? 11 : 13);
+    loadAtmosphericData(preset);
+  };
+
+  // On-demand fetch of weather & air quality for individual incident reports
+  useEffect(() => {
+    if (!selectedReport) return;
+    if (selectedReport.aiTriage?.airQuality && selectedReport.aiTriage?.weather) return;
+    if (liveCaseAtmosphere[selectedReport.id]) return;
+
+    const coords = resolveReportCoordinates(selectedReport);
+    if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
+
+    let isMounted = true;
+    setLoadingCaseAtmosphereId(selectedReport.id);
+    fetchFullAtmosphericTelemetry(coords.lat, coords.lng, selectedReport.location?.municipality || 'Rizal')
+      .then((res) => {
+        if (!isMounted || !res) return;
+        setLiveCaseAtmosphere((prev) => ({ ...prev, [selectedReport.id]: res }));
+      })
+      .catch((err) => {
+        console.warn('Failed to fetch on-demand live atmospheric telemetry for report:', err);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingCaseAtmosphereId(null);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedReport]);
 
   useEffect(() => {
     if (!selectedReport) {
@@ -1029,8 +1196,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   // Open-Meteo telemetry widget for active report
-  const renderWeatherWidget = (weather?: WeatherContext | null) => {
-    if (!weather) return null;
+  const renderWeatherWidget = (weather?: WeatherContext | null, reportId?: string) => {
+    let activeWeather: WeatherContext | null | undefined = weather;
+    if (!activeWeather && reportId && liveCaseAtmosphere[reportId]) {
+      const w = liveCaseAtmosphere[reportId].weather;
+      activeWeather = {
+        temperature: w.temperature,
+        humidity: w.relativeHumidity,
+        precipitation: w.precipitation,
+        windSpeed: w.windSpeed,
+        windGusts: w.windGusts ?? undefined,
+        fetchedAt: w.fetchedAt,
+      };
+    }
+
+    if (!activeWeather) {
+      if (reportId && loadingCaseAtmosphereId === reportId) {
+        return (
+          <div className="pt-2 mt-2 border-t border-stone-200/80 dark:border-stone-800 animate-pulse">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
+                <Wind className="w-3.5 h-3.5" />
+                <span>Reading Live Weather Telemetry...</span>
+              </span>
+            </div>
+            <div className="h-10 bg-stone-100 dark:bg-stone-800 rounded-lg"></div>
+          </div>
+        );
+      }
+      return null;
+    }
+
     return (
       <div className="pt-2 mt-2 border-t border-stone-200/80 dark:border-stone-800">
         <div className="flex items-center justify-between mb-1.5">
@@ -1039,25 +1235,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span>{t.weatherTelemetryTitle}</span>
           </span>
           <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono">
-            {new Date(weather.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {new Date(activeWeather.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
         <div className="grid grid-cols-4 gap-1 p-2 bg-stone-50 dark:bg-stone-950/70 border border-stone-200/80 dark:border-stone-800 rounded-lg text-center divide-x divide-stone-200/70 dark:divide-stone-800">
           <div className="px-1">
             <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium block leading-tight">{t.weatherTemp}</span>
-            <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100">{weather.temperature}°C</span>
+            <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100">{activeWeather.temperature}°C</span>
           </div>
           <div className="px-1">
             <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium block leading-tight">{t.weatherWind}</span>
-            <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100 truncate block">{weather.windSpeed} km/h</span>
+            <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100 truncate block">{activeWeather.windSpeed} km/h</span>
           </div>
           <div className="px-1">
             <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium block leading-tight">{t.weatherHumidity}</span>
-            <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100">{weather.humidity}%</span>
+            <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100">{activeWeather.humidity}%</span>
           </div>
           <div className="px-1">
             <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium block leading-tight">{t.weatherPrecipitation}</span>
-            <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100">{weather.precipitation} mm</span>
+            <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100">{activeWeather.precipitation} mm</span>
           </div>
         </div>
       </div>
@@ -1173,13 +1369,47 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   // Open-Meteo Air Quality Telemetry Card
-  const renderAirQualityCard = (aq?: AirQualitySnapshot | null) => {
-    if (!aq) return null;
+  const renderAirQualityCard = (aq?: AirQualitySnapshot | null, reportId?: string) => {
+    let activeAq: AirQualitySnapshot | null | undefined = aq;
+    if (!activeAq && reportId && liveCaseAtmosphere[reportId]) {
+      const a = liveCaseAtmosphere[reportId].airQuality;
+      activeAq = {
+        pm25: a.pm2_5,
+        pm2_5: a.pm2_5,
+        pm10: a.pm10,
+        carbonMonoxide: a.carbonMonoxide ?? 0,
+        ozone: a.ozone ?? undefined,
+        europeanAqi: a.europeanAqi,
+        aqiLabel: a.aqiLabel,
+        fetchedAt: a.fetchedAt,
+      };
+    }
+
+    if (!activeAq) {
+      if (reportId && loadingCaseAtmosphereId === reportId) {
+        return (
+          <div className="p-3 bg-stone-50 dark:bg-stone-950/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-2 my-2 animate-pulse">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="text-[11px] font-bold tracking-wide uppercase text-stone-600 dark:text-stone-400">
+                  Measuring Live Air Quality...
+                </span>
+              </div>
+              <span className="text-[9px] font-mono text-stone-400">Open-Meteo CAMS</span>
+            </div>
+            <div className="h-10 bg-stone-100 dark:bg-stone-800 rounded-lg"></div>
+          </div>
+        );
+      }
+      return null;
+    }
+
     let badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800';
-    if (aq.aqiLabel === 'Fair') badgeColor = 'bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800';
-    if (aq.aqiLabel === 'Moderate') badgeColor = 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800';
-    if (aq.aqiLabel === 'Poor') badgeColor = 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-800';
-    if (aq.aqiLabel === 'Very Poor') badgeColor = 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800';
+    if (activeAq.aqiLabel === 'Fair') badgeColor = 'bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800';
+    if (activeAq.aqiLabel === 'Moderate') badgeColor = 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800';
+    if (activeAq.aqiLabel === 'Poor') badgeColor = 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-800';
+    if (activeAq.aqiLabel === 'Very Poor') badgeColor = 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800';
 
     return (
       <div className="p-3 bg-stone-50 dark:bg-stone-950/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-2 my-2">
@@ -1191,32 +1421,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </span>
           </div>
           <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${badgeColor}`}>
-            AQI {aq.europeanAqi} • {aq.aqiLabel}
+            AQI {activeAq.europeanAqi} • {activeAq.aqiLabel}
           </span>
         </div>
 
         <div className="grid grid-cols-4 gap-1 p-2 bg-white dark:bg-stone-900/80 border border-stone-200 dark:border-stone-800 rounded-lg text-center divide-x divide-stone-200 dark:divide-stone-800">
           <div className="px-1">
             <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">PM2.5</span>
-            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">{aq.pm2_5} μg/m³</span>
+            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+              {activeAq.pm2_5 ?? activeAq.pm25} μg/m³
+            </span>
           </div>
           <div className="px-1">
             <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">PM10</span>
-            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">{aq.pm10} μg/m³</span>
+            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">{activeAq.pm10} μg/m³</span>
           </div>
           <div className="px-1">
             <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">CO</span>
-            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">{aq.carbonMonoxide ?? 'N/A'} μg/m³</span>
+            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">{activeAq.carbonMonoxide ?? 'N/A'} μg/m³</span>
           </div>
           <div className="px-1">
             <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Ozone</span>
-            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">{aq.ozone ?? 'N/A'} μg/m³</span>
+            <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">{activeAq.ozone ?? 'N/A'} μg/m³</span>
           </div>
         </div>
 
         <div className="text-[10px] text-stone-500 dark:text-stone-400 flex items-center justify-between">
           <span>Source: Open-Meteo European Air Quality Model (CAMS)</span>
-          <span className="font-mono">{new Date(aq.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          <span className="font-mono">{new Date(activeAq.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
       </div>
     );
@@ -2586,7 +2818,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                         {renderMgbQuarryCard(selectedReport)}
 
-                        {renderAirQualityCard(selectedReport.aiTriage.airQuality)}
+                        {renderAirQualityCard(selectedReport.aiTriage?.airQuality, selectedReport.id)}
 
                         <div className="pt-2 border-t border-stone-200/70 dark:border-stone-800">
                           <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block">
@@ -2597,7 +2829,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           </p>
                         </div>
 
-                        {renderWeatherWidget(selectedReport.aiTriage.weather)}
+                        {renderWeatherWidget(selectedReport.aiTriage?.weather, selectedReport.id)}
 
                         <div className="text-[11px] text-stone-400 dark:text-stone-500 font-mono">
                           Engine: {selectedReport.aiTriage.model}
@@ -3050,74 +3282,145 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 )}
               </div>
 
-              {/* Row 3: Horizontal Category Chips Row */}
-              <div
-                onWheel={(e) => {
-                  if (e.deltaY !== 0) {
-                    e.currentTarget.scrollLeft += e.deltaY;
-                  }
-                }}
-                className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full scroll-smooth overscroll-x-contain touch-pan-x"
-              >
-                {/* Chip 1: Queue */}
-                <button
-                  type="button"
-                  onClick={() => handleToggleDrawerTab('queue')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
-                    isSheetOpen && (activeLeftDrawerTab === 'queue' || selectedReport)
-                      ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
-                      : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
-                  }`}
-                  title="Citizen Incident Reports Queue"
-                >
-                  <Layers className="w-3.5 h-3.5 shrink-0" />
-                  <span>Queue ({filteredReports.length})</span>
-                </button>
+              {/* Row 3: Horizontal Category Chips with Scroll Affordances */}
+              <div className="w-full min-w-0 relative">
+                {/* Left Scroll Gradient & Button */}
+                {canScrollLeft && (
+                  <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pr-2.5 bg-gradient-to-r from-white via-white/90 to-transparent dark:from-stone-900 dark:via-stone-900/90 dark:to-transparent pointer-events-none">
+                    <button
+                      type="button"
+                      onClick={() => scrollChips('left')}
+                      className="w-5 h-5 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-xs hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition cursor-pointer active:scale-95 pointer-events-auto"
+                      title="Scroll left"
+                      aria-label="Scroll left"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
 
-                {/* Chip 2: FIRMS */}
-                <button
-                  type="button"
-                  onClick={() => handleToggleDrawerTab('firms')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
-                    isSheetOpen && !selectedReport && activeLeftDrawerTab === 'firms'
-                      ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
-                      : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
-                  }`}
-                  title="NASA FIRMS Satellite Thermal Watchdog"
+                {/* Chips Scrollport */}
+                <div
+                  ref={chipsScrollRef}
+                  onMouseDown={handleChipsMouseDown}
+                  onMouseMove={handleChipsMouseMove}
+                  onMouseUp={handleChipsMouseUp}
+                  onMouseLeave={handleChipsMouseUp}
+                  onWheel={(e) => {
+                    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+                    if (delta !== 0) {
+                      e.currentTarget.scrollLeft += delta;
+                      checkChipsScroll();
+                    }
+                  }}
+                  className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 scroll-smooth overscroll-x-contain touch-pan-x cursor-grab active:cursor-grabbing select-none"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
                 >
-                  <Satellite className="w-3.5 h-3.5 shrink-0" />
-                  <span>FIRMS ({satelliteReports.length})</span>
-                </button>
+                  {/* Chip 1: Queue */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (hasDraggedChips.current) return;
+                      handleToggleDrawerTab('queue');
+                    }}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
+                      isSheetOpen && (activeLeftDrawerTab === 'queue' || selectedReport)
+                        ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
+                        : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
+                    }`}
+                    title="Citizen Incident Reports Queue"
+                  >
+                    <Layers className="w-3.5 h-3.5 shrink-0" />
+                    <span>Queue ({filteredReports.length})</span>
+                  </button>
 
-                {/* Chip 3: Reserves */}
-                <button
-                  type="button"
-                  onClick={() => handleToggleDrawerTab('protected_zones')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
-                    isSheetOpen && !selectedReport && activeLeftDrawerTab === 'protected_zones'
-                      ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
-                      : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
-                  }`}
-                  title="Protected Ecological Reserves & Watersheds"
-                >
-                  <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
-                  <span>Reserves (15)</span>
-                </button>
+                  {/* Chip 2: FIRMS */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (hasDraggedChips.current) return;
+                      handleToggleDrawerTab('firms');
+                    }}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
+                      isSheetOpen && !selectedReport && activeLeftDrawerTab === 'firms'
+                        ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
+                        : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
+                    }`}
+                    title="NASA FIRMS Satellite Thermal Watchdog"
+                  >
+                    <Satellite className="w-3.5 h-3.5 shrink-0" />
+                    <span>FIRMS ({satelliteReports.length})</span>
+                  </button>
 
-                {/* Chip 4: Quarries */}
-                <button
-                  type="button"
-                  onClick={() => handleToggleDrawerTab('quarries')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
-                    isSheetOpen && !selectedReport && activeLeftDrawerTab === 'quarries'
-                      ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
-                      : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
-                  }`}
-                  title="MGB Permitted Mining & Quarry Concessions"
-                >
-                  <Pickaxe className="w-3.5 h-3.5 shrink-0" />
-                  <span>Quarries ({mgbQuarriesFeatures.length || 10})</span>
-                </button>
+                  {/* Chip 3: Reserves */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (hasDraggedChips.current) return;
+                      handleToggleDrawerTab('protected_zones');
+                    }}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
+                      isSheetOpen && !selectedReport && activeLeftDrawerTab === 'protected_zones'
+                        ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
+                        : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
+                    }`}
+                    title="Protected Ecological Reserves & Watersheds"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                    <span>Reserves (15)</span>
+                  </button>
+
+                  {/* Chip 4: Quarries */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (hasDraggedChips.current) return;
+                      handleToggleDrawerTab('quarries');
+                    }}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
+                      isSheetOpen && !selectedReport && activeLeftDrawerTab === 'quarries'
+                        ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
+                        : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
+                    }`}
+                    title="MGB Permitted Mining & Quarry Concessions"
+                  >
+                    <Pickaxe className="w-3.5 h-3.5 shrink-0" />
+                    <span>Quarries ({mgbQuarriesFeatures.length || 10})</span>
+                  </button>
+
+                  {/* Chip 5: Weather & Air Quality */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (hasDraggedChips.current) return;
+                      handleToggleDrawerTab('weather');
+                    }}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
+                      isSheetOpen && !selectedReport && activeLeftDrawerTab === 'weather'
+                        ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
+                        : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
+                    }`}
+                    title="Real-Time Weather & Atmospheric Air Quality Telemetry"
+                  >
+                    <CloudSun className="w-3.5 h-3.5 shrink-0" />
+                    <span>Weather</span>
+                  </button>
+                </div>
+
+                {/* Right Scroll Gradient & Button */}
+                {canScrollRight && (
+                  <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pl-3 bg-gradient-to-l from-white via-white/95 to-transparent dark:from-stone-900 dark:via-stone-900/95 dark:to-transparent">
+                    <button
+                      type="button"
+                      onClick={() => scrollChips('right')}
+                      className="w-5 h-5 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-xs hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition cursor-pointer active:scale-95 animate-pulse hover:animate-none"
+                      title="Scroll right to view more buttons"
+                      aria-label="Scroll right"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -3881,6 +4184,370 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* TAB 5: WEATHER & ATMOSPHERIC AIR QUALITY */}
+              {activeLeftDrawerTab === 'weather' && (
+                <div key="tab-weather" className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                  {/* Header */}
+                  <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2 shrink-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center shrink-0">
+                          <CloudSun className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight">
+                            Atmospheric & Weather Intelligence
+                          </h4>
+                          <span className="text-[10px] text-stone-500 dark:text-stone-400 block">
+                            Open-Meteo & European CAMS Live Telemetry
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => loadAtmosphericData()}
+                          disabled={isLoadingAtmosphere}
+                          className="p-1.5 text-stone-500 hover:text-stone-900 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                          title="Refresh Live Telemetry"
+                          aria-label="Refresh Telemetry"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${isLoadingAtmosphere ? 'animate-spin text-emerald-600' : ''}`} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCloseDrawer}
+                          className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                          title="Close Weather"
+                          aria-label="Close Weather"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* LGU Preset Chips */}
+                    <div
+                      onWheel={(e) => {
+                        if (e.deltaY !== 0) {
+                          e.currentTarget.scrollLeft += e.deltaY;
+                        }
+                      }}
+                      className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full scroll-smooth overscroll-x-contain touch-pan-x"
+                    >
+                      {RIZAL_LGU_PRESETS.map((preset) => {
+                        const isActive = selectedWeatherLguId === preset.id;
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => handleSelectWeatherLgu(preset)}
+                            className={`px-2 py-1 rounded-lg text-[11px] font-medium shrink-0 transition flex items-center gap-1 cursor-pointer border ${
+                              isActive
+                                ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-2xs'
+                                : 'bg-stone-50 dark:bg-stone-800/80 text-stone-600 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
+                            }`}
+                            title={`${preset.name} (${preset.elevation})`}
+                          >
+                            <span>{preset.shortName}</span>
+                            <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${isActive ? 'bg-white/20 text-white' : 'bg-stone-200/70 dark:bg-stone-700 text-stone-500 dark:text-stone-400'}`}>
+                              {preset.tag}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Scrollable Weather Body */}
+                  <div className="flex-1 min-h-0 overflow-y-auto p-3.5 space-y-3 custom-scrollbar overscroll-contain">
+                    {isLoadingAtmosphere && !atmosphericData ? (
+                      <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
+                        <div className="w-10 h-10 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin flex items-center justify-center">
+                          <CloudSun className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-stone-800 dark:text-stone-200">
+                            Connecting to Open-Meteo Satellite Feed...
+                          </p>
+                          <p className="text-[10px] text-stone-400 mt-0.5">
+                            Reading live meteorological and atmospheric CAMS models for Rizal
+                          </p>
+                        </div>
+                      </div>
+                    ) : atmosphereError && !atmosphericData ? (
+                      <div className="p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 rounded-xl space-y-2 text-center">
+                        <AlertTriangle className="w-6 h-6 text-rose-600 mx-auto" />
+                        <p className="text-xs text-rose-800 dark:text-rose-300 font-semibold">{atmosphereError}</p>
+                        <button
+                          type="button"
+                          onClick={() => loadAtmosphericData()}
+                          className="px-3 py-1 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 rounded-lg text-xs font-medium hover:bg-stone-50 transition cursor-pointer"
+                        >
+                          Retry Connection
+                        </button>
+                      </div>
+                    ) : atmosphericData ? (
+                      <>
+                        {(() => {
+                          const activePreset = RIZAL_LGU_PRESETS.find((p) => p.id === selectedWeatherLguId) || RIZAL_LGU_PRESETS[0];
+                          const aqiMeta = getAqiMeta(atmosphericData.airQuality.europeanAqi, atmosphericData.airQuality.pm2_5);
+                          const risks = evaluateEnforcementRisks(atmosphericData.weather, atmosphericData.airQuality);
+
+                          return (
+                            <>
+                              {/* Active Preset Subheader */}
+                              <div className="p-2.5 bg-stone-50 dark:bg-stone-950/60 border border-stone-200/80 dark:border-stone-800 rounded-xl flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                    <span className="font-bold text-xs text-stone-900 dark:text-stone-100 truncate">
+                                      {activePreset.name}
+                                    </span>
+                                    <span className="font-mono text-[10px] text-stone-500 dark:text-stone-400 shrink-0">
+                                      ({activePreset.elevation})
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5 truncate">
+                                    {activePreset.ecologicalRole}
+                                  </p>
+                                </div>
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-stone-200/70 dark:bg-stone-800 text-stone-600 dark:text-stone-300 shrink-0">
+                                  {new Date(atmosphericData.weather.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+
+                              {/* 1. Live Meteorological Card */}
+                              <div className="p-3.5 bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 rounded-xl shadow-2xs space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
+                                      <Thermometer className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200">
+                                      Current Weather
+                                    </span>
+                                  </div>
+                                  <span className="text-[11px] font-medium text-stone-600 dark:text-stone-300 px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700">
+                                    {atmosphericData.weather.weatherDescription}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-baseline justify-between pt-1">
+                                  <div>
+                                    <div className="flex items-baseline gap-1.5">
+                                      <span className="font-display font-extrabold text-3xl text-stone-900 dark:text-stone-50">
+                                        {atmosphericData.weather.temperature}°C
+                                      </span>
+                                      <span className="text-xs text-stone-500 dark:text-stone-400 font-medium">
+                                        Feels like {atmosphericData.weather.apparentTemperature}°C
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">
+                                      Cloud Cover: {atmosphericData.weather.cloudCover}%
+                                    </p>
+                                  </div>
+
+                                  <div className="text-right">
+                                    <span className="font-mono text-xs font-bold text-stone-800 dark:text-stone-200 flex items-center justify-end gap-1">
+                                      <Wind className="w-3.5 h-3.5 text-stone-500" />
+                                      {atmosphericData.weather.windSpeed} km/h {atmosphericData.weather.windDirectionCompass}
+                                    </span>
+                                    {atmosphericData.weather.windGusts !== null && (
+                                      <span className="text-[10px] text-stone-400 block font-mono">
+                                        Gusts up to {atmosphericData.weather.windGusts} km/h
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-stone-100 dark:border-stone-800/80 text-center">
+                                  <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60">
+                                    <div className="flex items-center justify-center gap-1 text-[10px] text-stone-500 dark:text-stone-400 font-medium">
+                                      <Droplets className="w-3 h-3 text-sky-500" />
+                                      <span>Humidity</span>
+                                    </div>
+                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block">
+                                      {atmosphericData.weather.relativeHumidity}%
+                                    </span>
+                                  </div>
+
+                                  <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60">
+                                    <div className="flex items-center justify-center gap-1 text-[10px] text-stone-500 dark:text-stone-400 font-medium">
+                                      <CloudRain className="w-3 h-3 text-blue-500" />
+                                      <span>Rainfall</span>
+                                    </div>
+                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block">
+                                      {atmosphericData.weather.precipitation} mm
+                                    </span>
+                                  </div>
+
+                                  <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60">
+                                    <div className="flex items-center justify-center gap-1 text-[10px] text-stone-500 dark:text-stone-400 font-medium">
+                                      <Compass className="w-3 h-3 text-emerald-500" />
+                                      <span>Bearing</span>
+                                    </div>
+                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block">
+                                      {atmosphericData.weather.windDirection}° {atmosphericData.weather.windDirectionCompass}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* 2. Atmospheric Air Quality (AQI) Card */}
+                              <div className="p-3.5 bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 rounded-xl shadow-2xs space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-7 h-7 rounded-lg bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 flex items-center justify-center">
+                                      <Activity className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                                    </div>
+                                    <div>
+                                      <span className="text-xs font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200 block">
+                                        Atmospheric Air Quality
+                                      </span>
+                                      <span className="text-[10px] text-stone-400 block">
+                                        European CAMS Model & US EPA Standards
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${aqiMeta.badgeBg} ${aqiMeta.badgeText} ${aqiMeta.badgeBorder}`}>
+                                    AQI {atmosphericData.airQuality.europeanAqi} • {aqiMeta.label}
+                                  </span>
+                                </div>
+
+                                <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
+                                  {aqiMeta.description}
+                                </p>
+
+                                <div className="grid grid-cols-4 gap-1.5 p-2 bg-stone-50 dark:bg-stone-950/60 border border-stone-200/80 dark:border-stone-800 rounded-lg text-center divide-x divide-stone-200 dark:divide-stone-800">
+                                  <div className="px-1">
+                                    <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">PM2.5 (Fine)</span>
+                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+                                      {atmosphericData.airQuality.pm2_5} μg/m³
+                                    </span>
+                                  </div>
+                                  <div className="px-1">
+                                    <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">PM10 (Dust)</span>
+                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+                                      {atmosphericData.airQuality.pm10} μg/m³
+                                    </span>
+                                  </div>
+                                  <div className="px-1">
+                                    <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">CO</span>
+                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+                                      {atmosphericData.airQuality.carbonMonoxide ?? '—'} μg/m³
+                                    </span>
+                                  </div>
+                                  <div className="px-1">
+                                    <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Ozone</span>
+                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+                                      {atmosphericData.airQuality.ozone ?? '—'} μg/m³
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 text-[11px] text-stone-600 dark:text-stone-400 pt-1">
+                                  <div className="flex items-center justify-between px-2 py-1 bg-stone-50 dark:bg-stone-950/40 rounded border border-stone-200/50 dark:border-stone-800/50">
+                                    <span>US EPA AQI:</span>
+                                    <span className="font-mono font-bold text-stone-800 dark:text-stone-200">{atmosphericData.airQuality.usAqi}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between px-2 py-1 bg-stone-50 dark:bg-stone-950/40 rounded border border-stone-200/50 dark:border-stone-800/50">
+                                    <span>Nitrogen Dioxide:</span>
+                                    <span className="font-mono font-bold text-stone-800 dark:text-stone-200">{atmosphericData.airQuality.nitrogenDioxide ?? '—'} μg/m³</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* 3. Tactical Environmental Enforcement Insights */}
+                              <div className="p-3 bg-stone-50 dark:bg-stone-950/60 border border-stone-200/80 dark:border-stone-800 rounded-xl space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                                    <ShieldAlert className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <span>Environmental Enforcement Insights</span>
+                                  </span>
+                                </div>
+
+                                <div className="space-y-1.5 text-xs">
+                                  {/* Fire Vulnerability */}
+                                  <div className="p-2 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/60 dark:border-stone-800/60 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1">
+                                        <Flame className="w-3.5 h-3.5 text-orange-500" />
+                                        <span>Kaingin & Wildfire Vulnerability</span>
+                                      </span>
+                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded uppercase ${
+                                        risks.fire.risk === 'Extreme'
+                                          ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                          : risks.fire.risk === 'High'
+                                          ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300'
+                                          : risks.fire.risk === 'Moderate'
+                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                      }`}>
+                                        {risks.fire.risk} Risk
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
+                                      {risks.fire.desc}
+                                    </p>
+                                  </div>
+
+                                  {/* Quarry Dust Dispersion */}
+                                  <div className="p-2 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/60 dark:border-stone-800/60 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1">
+                                        <Pickaxe className="w-3.5 h-3.5 text-amber-500" />
+                                        <span>Quarry Mineral Dust Dispersion</span>
+                                      </span>
+                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded uppercase ${
+                                        risks.dust.risk === 'High'
+                                          ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300'
+                                          : risks.dust.risk === 'Moderate'
+                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                      }`}>
+                                        {risks.dust.risk} Dispersion
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
+                                      {risks.dust.desc}
+                                    </p>
+                                  </div>
+
+                                  {/* Siltation & Watershed Runoff */}
+                                  <div className="p-2 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/60 dark:border-stone-800/60 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1">
+                                        <Droplets className="w-3.5 h-3.5 text-sky-500" />
+                                        <span>Watershed Runoff & Siltation</span>
+                                      </span>
+                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded uppercase ${
+                                        risks.runoff.risk === 'Critical'
+                                          ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                          : risks.runoff.risk === 'High'
+                                          ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300'
+                                          : risks.runoff.risk === 'Moderate'
+                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                      }`}>
+                                        {risks.runoff.risk} Risk
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
+                                      {risks.runoff.desc}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
                 /* ------------------------------------------------------- */
@@ -4204,10 +4871,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     {renderMgbQuarryCard(selectedReport)}
 
                     {/* Atmospheric Air Quality Card */}
-                    {renderAirQualityCard(selectedReport.aiTriage?.airQuality)}
+                    {renderAirQualityCard(selectedReport.aiTriage?.airQuality, selectedReport.id)}
 
                     {/* Weather Telemetry */}
-                    {renderWeatherWidget(selectedReport.aiTriage?.weather)}
+                    {renderWeatherWidget(selectedReport.aiTriage?.weather, selectedReport.id)}
 
                     {/* Duplicate Cluster Alert */}
                     {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId && (
