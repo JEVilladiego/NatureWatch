@@ -105,13 +105,44 @@
 
 /* Maintain internal Leaflet pane layering hierarchy while keeping container isolated */
 .leaflet-tile-pane    { z-index: 200 !important; }
+.leaflet-radarPane-pane { z-index: 250 !important; pointer-events: none !important; }
 .leaflet-maskPane-pane,
 .leaflet-mask-pane    { z-index: 350 !important; pointer-events: none !important; }
 .leaflet-overlay-pane { z-index: 400 !important; }
 .leaflet-shadow-pane  { z-index: 500 !important; }
+.leaflet-weatherMarkerPane-pane { z-index: 580 !important; }
 .leaflet-marker-pane  { z-index: 600 !important; }
 .leaflet-tooltip-pane { z-index: 650 !important; }
 .leaflet-popup-pane   { z-index: 700 !important; }
+
+/* Custom Weather Pin and Popup Styling */
+.custom-weather-pin {
+  background: transparent !important;
+  border: none !important;
+}
+.custom-weather-popup .leaflet-popup-content-wrapper {
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(12px) !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  padding: 0 !important;
+}
+.dark .custom-weather-popup .leaflet-popup-content-wrapper {
+  background: rgba(24, 24, 27, 0.96) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+.custom-weather-popup .leaflet-popup-content {
+  margin: 12px 14px !important;
+  line-height: 1.4 !important;
+}
+.custom-weather-popup .leaflet-popup-tip {
+  background: rgba(255, 255, 255, 0.98) !important;
+}
+.dark .custom-weather-popup .leaflet-popup-tip {
+  background: rgba(24, 24, 27, 0.96) !important;
+}
+
 
 /* Non-Rizal Out-of-Jurisdiction Mask: Warm Brownish-Stone Cartographic Treatment */
 .non-rizal-jurisdiction-mask {

@@ -61,7 +61,8 @@ import {
   fetchAllRizalLgusTelemetry,
   getAqiMeta,
   getWeatherInterpretation,
-  evaluateEnforcementRisks,
+  getWindFlowTrajectory,
+  computeEmpiricalWeatherIndices,
 } from '../lib/weatherService';
 import {
   IncidentReport,
@@ -1249,6 +1250,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         precipitation: w.precipitation,
         windSpeed: w.windSpeed,
         windGusts: w.windGusts ?? undefined,
+        windDirection: w.windDirection,
+        windDirectionCompass: w.windDirectionCompass,
         fetchedAt: w.fetchedAt,
       };
     }
@@ -1270,6 +1273,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
       return null;
     }
 
+    const windTraj = activeWeather.windDirection !== undefined
+      ? getWindFlowTrajectory(activeWeather.windDirection, activeWeather.windSpeed)
+      : null;
+
     return (
       <div className="pt-2 mt-2 border-t border-stone-200/80 dark:border-stone-800">
         <div className="flex items-center justify-between mb-1.5">
@@ -1286,9 +1293,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium block leading-tight">{t.weatherTemp}</span>
             <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100">{activeWeather.temperature}°C</span>
           </div>
-          <div className="px-1">
+          <div className="px-1" title={windTraj ? (windTraj.isCalm ? windTraj.summary : `${windTraj.summary} at ${activeWeather.windSpeed} km/h`) : undefined}>
             <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium block leading-tight">{t.weatherWind}</span>
-            <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100 truncate block">{activeWeather.windSpeed} km/h</span>
+            <span className="font-mono font-semibold text-xs text-stone-900 dark:text-stone-100 truncate block">
+              {windTraj?.isCalm
+                ? '0 km/h (Calm)'
+                : `${activeWeather.windSpeed} km/h ${activeWeather.windDirectionCompass ? activeWeather.windDirectionCompass : ''}`}
+            </span>
           </div>
           <div className="px-1">
             <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium block leading-tight">{t.weatherHumidity}</span>
@@ -1448,11 +1459,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       return null;
     }
 
-    let badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800';
-    if (activeAq.aqiLabel === 'Fair') badgeColor = 'bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800';
-    if (activeAq.aqiLabel === 'Moderate') badgeColor = 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800';
-    if (activeAq.aqiLabel === 'Poor') badgeColor = 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-800';
-    if (activeAq.aqiLabel === 'Very Poor') badgeColor = 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800';
+    const meta = getAqiMeta(activeAq.europeanAqi, activeAq.pm2_5 ?? activeAq.pm25, activeAq.pm10);
 
     return (
       <div className="p-3 bg-stone-50 dark:bg-stone-950/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-2 my-2">
@@ -1463,8 +1470,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               Atmospheric Air Quality
             </span>
           </div>
-          <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${badgeColor}`}>
-            AQI {activeAq.europeanAqi} • {activeAq.aqiLabel}
+          <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}>
+            AQI {activeAq.europeanAqi} • {meta.label}
           </span>
         </div>
 
@@ -1489,8 +1496,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        <div className="text-[10px] text-stone-500 dark:text-stone-400 flex items-center justify-between">
-          <span>Source: Open-Meteo European Air Quality Model (CAMS)</span>
+        <div className="flex items-center justify-between text-[10px] text-stone-600 dark:text-stone-300 pt-0.5">
+          <span>DENR DAO 2020-14: <strong className="font-semibold text-stone-800 dark:text-stone-200">{meta.denrStatus}</strong></span>
+          <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-stone-200/60 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
+            Dominant: {meta.dominantPollutant ?? 'PM2.5'}
+          </span>
+        </div>
+
+        <div className="text-[10px] text-stone-500 dark:text-stone-400 flex items-center justify-between pt-1 border-t border-stone-200/60 dark:border-stone-800/60">
+          <span>European CAMS & Philippine Clean Air Act Standards</span>
           <span className="font-mono">{new Date(activeAq.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
       </div>
@@ -4339,8 +4353,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <>
                         {(() => {
                           const activePreset = RIZAL_LGU_PRESETS.find((p) => p.id === selectedWeatherLguId) || RIZAL_LGU_PRESETS[0];
-                          const aqiMeta = getAqiMeta(atmosphericData.airQuality.europeanAqi, atmosphericData.airQuality.pm2_5);
-                          const risks = evaluateEnforcementRisks(atmosphericData.weather, atmosphericData.airQuality);
+                          const aqiMeta = getAqiMeta(atmosphericData.airQuality.europeanAqi, atmosphericData.airQuality.pm2_5, atmosphericData.airQuality.pm10);
+                          const windTraj = getWindFlowTrajectory(atmosphericData.weather.windDirection, atmosphericData.weather.windSpeed);
+                          const indices = computeEmpiricalWeatherIndices(atmosphericData.weather, atmosphericData.airQuality);
 
                           return (
                             <>
@@ -4397,12 +4412,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   </div>
 
                                   <div className="text-right">
-                                    <span className="font-mono text-xs font-bold text-stone-800 dark:text-stone-200 flex items-center justify-end gap-1">
-                                      <Wind className="w-3.5 h-3.5 text-stone-500" />
-                                      {atmosphericData.weather.windSpeed} km/h {atmosphericData.weather.windDirectionCompass}
-                                    </span>
+                                    {windTraj.isCalm ? (
+                                      <>
+                                        <span className="font-mono text-xs font-bold text-stone-800 dark:text-stone-200 flex items-center justify-end gap-1">
+                                          <Wind className="w-3.5 h-3.5 text-stone-400" />
+                                          {atmosphericData.weather.windSpeed} km/h (Calm)
+                                        </span>
+                                        <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-mono">
+                                          No prevailing direction
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span className="font-mono text-xs font-bold text-stone-800 dark:text-stone-200 flex items-center justify-end gap-1">
+                                          <Wind className="w-3.5 h-3.5 text-stone-500" />
+                                          {atmosphericData.weather.windSpeed} km/h from {windTraj.fromCompass}
+                                        </span>
+                                        <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-mono">
+                                          &rarr; Blowing toward {windTraj.toCompass}
+                                        </span>
+                                      </>
+                                    )}
                                     {atmosphericData.weather.windGusts !== null && (
-                                      <span className="text-[10px] text-stone-400 block font-mono">
+                                      <span className="text-[9.5px] text-stone-400 block font-mono">
                                         Gusts up to {atmosphericData.weather.windGusts} km/h
                                       </span>
                                     )}
@@ -4433,11 +4465,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60">
                                     <div className="flex items-center justify-center gap-1 text-[10px] text-stone-500 dark:text-stone-400 font-medium">
                                       <Compass className="w-3 h-3 text-emerald-500" />
-                                      <span>Bearing</span>
+                                      <span>Trajectory</span>
                                     </div>
-                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block">
-                                      {atmosphericData.weather.windDirection}° {atmosphericData.weather.windDirectionCompass}
-                                    </span>
+                                    {windTraj.isCalm ? (
+                                      <>
+                                        <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block">
+                                          Calm
+                                        </span>
+                                        <span className="text-[9px] text-stone-400 block font-mono">
+                                          &lt; 1 km/h
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block" title={windTraj.summary}>
+                                          {windTraj.fromCompass} &rarr; {windTraj.toCompass}
+                                        </span>
+                                        <span className="text-[9px] text-stone-400 block font-mono">
+                                          {windTraj.fromBearing}° origin
+                                        </span>
+                                      </>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -4454,13 +4502,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                         Atmospheric Air Quality
                                       </span>
                                       <span className="text-[10px] text-stone-400 block">
-                                        European CAMS Model & US EPA Standards
+                                        European CAMS & Philippine Clean Air Act
                                       </span>
                                     </div>
                                   </div>
-                                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${aqiMeta.badgeBg} ${aqiMeta.badgeText} ${aqiMeta.badgeBorder}`}>
-                                    AQI {atmosphericData.airQuality.europeanAqi} • {aqiMeta.label}
-                                  </span>
+                                  <div className="flex flex-col items-end gap-0.5">
+                                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${aqiMeta.badgeBg} ${aqiMeta.badgeText} ${aqiMeta.badgeBorder}`}>
+                                      AQI {atmosphericData.airQuality.europeanAqi} • {aqiMeta.label}
+                                    </span>
+                                    <span className="text-[9px] font-mono text-stone-500 dark:text-stone-400">
+                                      Dominant: {aqiMeta.dominantPollutant ?? 'PM2.5'}
+                                    </span>
+                                  </div>
                                 </div>
 
                                 <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
@@ -4494,6 +4547,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   </div>
                                 </div>
 
+                                <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60 space-y-1">
+                                  <div className="flex items-center justify-between text-[11px]">
+                                    <span className="text-stone-600 dark:text-stone-400">DENR DAO 2020-14 (Clean Air Act) Status:</span>
+                                    <strong className="font-semibold text-stone-900 dark:text-stone-100">{aqiMeta.denrStatus}</strong>
+                                  </div>
+                                  <p className="text-[10.5px] text-stone-500 dark:text-stone-400 leading-snug">
+                                    {aqiMeta.healthSummary}
+                                  </p>
+                                </div>
+
                                 <div className="grid grid-cols-2 gap-2 text-[11px] text-stone-600 dark:text-stone-400 pt-1">
                                   <div className="flex items-center justify-between px-2 py-1 bg-stone-50 dark:bg-stone-950/40 rounded border border-stone-200/50 dark:border-stone-800/50">
                                     <span>US EPA AQI:</span>
@@ -4506,84 +4569,95 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 </div>
                               </div>
 
-                              {/* 3. Tactical Environmental Enforcement Insights */}
-                              <div className="p-3 bg-stone-50 dark:bg-stone-950/60 border border-stone-200/80 dark:border-stone-800 rounded-xl space-y-2">
+                              {/* 3. Empirical Meteorological & Scientific Data Boundaries */}
+                              <div className="p-3.5 bg-stone-50 dark:bg-stone-950/60 border border-stone-200/80 dark:border-stone-800 rounded-xl space-y-2.5">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
-                                    <ShieldAlert className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                    <span>Environmental Enforcement Insights</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <Scale className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <span className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">
+                                      Empirical Meteorological Indices
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] font-mono text-stone-500 dark:text-stone-400">
+                                    PAGASA & WMO Standards
                                   </span>
                                 </div>
 
-                                <div className="space-y-1.5 text-xs">
-                                  {/* Fire Vulnerability */}
-                                  <div className="p-2 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/60 dark:border-stone-800/60 space-y-1">
+                                <div className="space-y-2 text-xs">
+                                  {/* 1. Heat Index Card */}
+                                  <div className="p-2.5 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800/70 space-y-1.5">
                                     <div className="flex items-center justify-between">
-                                      <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1">
-                                        <Flame className="w-3.5 h-3.5 text-orange-500" />
-                                        <span>Kaingin & Wildfire Vulnerability</span>
+                                      <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+                                        <Thermometer className="w-3.5 h-3.5 text-amber-500" />
+                                        <span>Heat Index (Thermal Load)</span>
                                       </span>
-                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded uppercase ${
-                                        risks.fire.risk === 'Extreme'
-                                          ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                          : risks.fire.risk === 'High'
-                                          ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300'
-                                          : risks.fire.risk === 'Moderate'
-                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                      }`}>
-                                        {risks.fire.risk} Risk
+                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded uppercase border ${indices.heatIndex.badgeBg} ${indices.heatIndex.badgeText} ${indices.heatIndex.badgeBorder}`}>
+                                        {indices.heatIndex.category} ({indices.heatIndex.value}°C)
                                       </span>
                                     </div>
-                                    <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
-                                      {risks.fire.desc}
+                                    <p className="text-[11px] text-stone-600 dark:text-stone-300 font-medium">
+                                      {indices.heatIndex.pagasaGuideline}
+                                    </p>
+                                    <p className="text-[10px] text-stone-400 dark:text-stone-500 leading-snug italic border-t border-stone-100 dark:border-stone-800/60 pt-1">
+                                      {indices.heatIndex.dataLimitation}
                                     </p>
                                   </div>
 
-                                  {/* Quarry Dust Dispersion */}
-                                  <div className="p-2 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/60 dark:border-stone-800/60 space-y-1">
+                                  {/* 2. Rainfall Intensity Card */}
+                                  <div className="p-2.5 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800/70 space-y-1.5">
                                     <div className="flex items-center justify-between">
-                                      <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1">
-                                        <Pickaxe className="w-3.5 h-3.5 text-amber-500" />
-                                        <span>Quarry Mineral Dust Dispersion</span>
+                                      <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+                                        <CloudRain className="w-3.5 h-3.5 text-blue-500" />
+                                        <span>Precipitation Rate (PAGASA Thresholds)</span>
                                       </span>
-                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded uppercase ${
-                                        risks.dust.risk === 'High'
-                                          ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300'
-                                          : risks.dust.risk === 'Moderate'
-                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                      }`}>
-                                        {risks.dust.risk} Dispersion
+                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded uppercase border ${indices.rainfallIntensity.badgeBg} ${indices.rainfallIntensity.badgeText} ${indices.rainfallIntensity.badgeBorder}`}>
+                                        {indices.rainfallIntensity.category}
                                       </span>
                                     </div>
-                                    <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
-                                      {risks.dust.desc}
+                                    <p className="text-[11px] text-stone-600 dark:text-stone-300 font-medium">
+                                      {indices.rainfallIntensity.classification}
+                                    </p>
+                                    <p className="text-[10px] text-stone-400 dark:text-stone-500 leading-snug italic border-t border-stone-100 dark:border-stone-800/60 pt-1">
+                                      {indices.rainfallIntensity.dataLimitation}
                                     </p>
                                   </div>
 
-                                  {/* Siltation & Watershed Runoff */}
-                                  <div className="p-2 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/60 dark:border-stone-800/60 space-y-1">
+                                  {/* 3. Beaufort Wind Force Card */}
+                                  <div className="p-2.5 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800/70 space-y-1.5">
                                     <div className="flex items-center justify-between">
-                                      <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1">
-                                        <Droplets className="w-3.5 h-3.5 text-sky-500" />
-                                        <span>Watershed Runoff & Siltation</span>
+                                      <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+                                        <Wind className="w-3.5 h-3.5 text-teal-500" />
+                                        <span>Kinetic Wind Force (WMO Beaufort Scale)</span>
                                       </span>
-                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded uppercase ${
-                                        risks.runoff.risk === 'Critical'
-                                          ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                          : risks.runoff.risk === 'High'
-                                          ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300'
-                                          : risks.runoff.risk === 'Moderate'
-                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                      }`}>
-                                        {risks.runoff.risk} Risk
+                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded uppercase border ${indices.windKineticForce.badgeBg} ${indices.windKineticForce.badgeText} ${indices.windKineticForce.badgeBorder}`}>
+                                        {indices.windKineticForce.category} ({indices.windKineticForce.speed} km/h)
                                       </span>
                                     </div>
-                                    <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
-                                      {risks.runoff.desc}
+                                    <p className="text-[11px] text-stone-600 dark:text-stone-300 font-medium">
+                                      {indices.windKineticForce.beaufortDescription}
                                     </p>
+                                    <p className="text-[10px] text-stone-400 dark:text-stone-500 leading-snug italic border-t border-stone-100 dark:border-stone-800/60 pt-1">
+                                      {indices.windKineticForce.dataLimitation}
+                                    </p>
+                                  </div>
+
+                                  {/* 4. Scientific Data Sufficiency & Forecast Limitations */}
+                                  <div className="p-2.5 bg-stone-100/80 dark:bg-stone-900/80 rounded-lg border border-stone-200 dark:border-stone-800 space-y-1">
+                                    <div className="flex items-center gap-1.5 text-stone-700 dark:text-stone-300 font-bold text-[11px]">
+                                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                      <span>Scientific Boundary & Data Sufficiency Notice</span>
+                                    </div>
+                                    <ul className="text-[10.5px] text-stone-500 dark:text-stone-400 space-y-0.5 list-disc list-inside">
+                                      <li>
+                                        <strong>Scope:</strong> {indices.dataSufficiency.observationScope}
+                                      </li>
+                                      <li>
+                                        <strong>Forecast:</strong> {indices.dataSufficiency.forecastStatus}
+                                      </li>
+                                      <li>
+                                        <strong>Ground Events:</strong> {indices.dataSufficiency.groundEventLimitation}
+                                      </li>
+                                    </ul>
                                   </div>
                                 </div>
                               </div>

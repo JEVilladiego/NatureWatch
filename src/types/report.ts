@@ -62,6 +62,8 @@ export interface WeatherContext {
   precipitation: number; // in mm
   windSpeed: number; // in km/h
   windGusts?: number; // in km/h
+  windDirection?: number; // in degrees (0-360)
+  windDirectionCompass?: string; // e.g. 'NE', 'SSW'
   fetchedAt: string;
 }
 
@@ -71,8 +73,8 @@ export interface AirQualitySnapshot {
   pm10: number; // in μg/m³
   carbonMonoxide: number; // in μg/m³
   ozone?: number; // in μg/m³
-  europeanAqi: number; // EAQI (0-25 Good, 25-50 Fair, 50-75 Moderate, 75-100 Poor, >100 Very Poor)
-  aqiLabel: 'Good' | 'Fair' | 'Moderate' | 'Poor' | 'Very Poor';
+  europeanAqi: number; // EAQI (0-25 Good, 25-50 Fair, 50-75 Moderate, 75-100 Poor, 100-125 Very Poor, >125 Hazardous)
+  aqiLabel: 'Good' | 'Fair' | 'Moderate' | 'Poor' | 'Very Poor' | 'Hazardous';
   fetchedAt: string;
 }
 

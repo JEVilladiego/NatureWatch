@@ -10,7 +10,12 @@ export interface RadarFrameInfo {
   formattedTime: string;
   host: string;
   path: string;
+  maxNativeZoom: number;
+  status: 'connected' | 'offline';
 }
+
+export const TRANSPARENT_FALLBACK_TILE =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 let cachedFrame: { data: RadarFrameInfo; expiresAt: number } | null = null;
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -71,6 +76,8 @@ export async function fetchLatestRadarFrame(): Promise<RadarFrameInfo | null> {
       formattedTime: formatRadarTime(latest.time),
       host,
       path: latest.path,
+      maxNativeZoom: 12, // RainViewer radar tiles natively exist up to zoom 12
+      status: 'connected',
     };
 
     cachedFrame = {

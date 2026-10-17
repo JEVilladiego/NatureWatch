@@ -20,8 +20,9 @@ import {
   FullAtmosphericData,
   getAqiMeta,
   getWeatherInterpretation,
+  getWindFlowTrajectory,
 } from '../lib/weatherService';
-import { fetchLatestRadarFrame, RadarFrameInfo } from '../lib/radarService';
+import { fetchLatestRadarFrame, RadarFrameInfo, TRANSPARENT_FALLBACK_TILE } from '../lib/radarService';
 
 // Rizal Province default center (encompassing Sierra Madre, central corridor & Laguna de Bay shore)
 export const RIZAL_DEFAULT = { lat: 14.5800, lng: 121.2800 };
@@ -1253,7 +1254,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       const radarLayer = L.tileLayer(info.tileUrl, {
         pane: 'radarPane',
         opacity: 0.65,
+        maxNativeZoom: 12,
         maxZoom: 18,
+        errorTileUrl: TRANSPARENT_FALLBACK_TILE,
         attribution: 'Rain Radar &copy; RainViewer',
       });
       radarLayer.addTo(mapInstanceRef.current);
@@ -1310,8 +1313,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`;
     };
 
-    const getWindSvg = (deg: number) => {
-      return `<svg width="10" height="10" style="transform: rotate(${deg}deg); transform-origin: center; display: inline-block; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg>`;
+    const getWindSvg = (rotationDeg: number | null) => {
+      if (rotationDeg === null) {
+        return `<svg width="8" height="8" style="display: inline-block; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>`;
+      }
+      return `<svg width="10" height="10" style="transform: rotate(${rotationDeg}deg); transform-origin: center; display: inline-block; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg>`;
     };
 
     RIZAL_LGU_PRESETS.filter((p) => p.id !== 'rizal-center').forEach((preset) => {
@@ -1321,83 +1327,78 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       const temp = hasData ? Math.round(telemetry.weather.temperature) : '--';
       const windSpeed = hasData ? Math.round(telemetry.weather.windSpeed) : 0;
       const windDir = hasData ? telemetry.weather.windDirection : 0;
-      const windCompass = hasData ? telemetry.weather.windDirectionCompass : 'N';
       const aqi = hasData ? telemetry.airQuality.europeanAqi : 0;
-      const aqiLabel = hasData ? telemetry.airQuality.aqiLabel : 'Monitoring';
       const interp = hasData ? getWeatherInterpretation(telemetry.weather.weatherCode) : { label: 'Syncing', iconType: 'cloud' as const };
       const iconSvg = getIconSvg(interp.iconType);
-      const windSvg = getWindSvg(windDir);
+      
+      const traj = getWindFlowTrajectory(windDir, windSpeed);
+      const windSvg = getWindSvg(traj.rotationForArrow);
 
-      let aqiBg = '#d1fae5';
-      let aqiColor = '#059669';
-      let aqiBorder = '#a7f3d0';
+      const meta = hasData ? getAqiMeta(aqi, telemetry.airQuality.pm2_5, telemetry.airQuality.pm10) : {
+        label: 'Monitoring',
+        category: 'Good' as const,
+        accentColor: '#059669',
+        bgColor: '#ecfdf5',
+        borderColor: '#a7f3d0',
+        denrStatus: 'Monitoring',
+        dominantPollutant: 'None (Baseline)' as const,
+        healthSummary: 'Awaiting local atmospheric telemetry.'
+      };
 
-      if (hasData) {
-        const meta = getAqiMeta(aqi, telemetry.airQuality.pm2_5);
-        aqiColor = meta.accentColor;
-        if (aqiLabel === 'Very Poor') {
-          aqiBg = '#ffe4e6';
-          aqiBorder = '#fecdd3';
-        } else if (aqiLabel === 'Poor') {
-          aqiBg = '#ffedd5';
-          aqiBorder = '#fed7aa';
-        } else if (aqiLabel === 'Moderate') {
-          aqiBg = '#fef3c7';
-          aqiBorder = '#fde68a';
-        } else if (aqiLabel === 'Fair') {
-          aqiBg = '#ccfbf1';
-          aqiBorder = '#99f6e4';
-        }
-      }
+      const aqiBg = meta.bgColor;
+      const aqiColor = meta.accentColor;
+      const aqiBorder = meta.borderColor;
 
       const iconHtml = `
-        <div class="group cursor-pointer select-none" style="
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          background: rgba(255, 255, 255, 0.94);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          border: 1px solid rgba(229, 231, 235, 0.95);
-          border-radius: 9999px;
-          padding: 3px 7px 3px 6px;
-          box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.08);
-          transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease;
-          white-space: nowrap;
-        ">
-          <span style="color: #059669; display: flex; align-items: center; flex-shrink: 0;">${iconSvg}</span>
-          <span style="font-size: 11px; font-weight: 700; color: #1c1917; font-family: system-ui, -apple-system, sans-serif;">${preset.shortName}</span>
-          <span style="font-size: 11px; font-weight: 700; color: #44403c; font-family: ui-monospace, monospace;">${temp}°</span>
-          
-          <span style="
+        <div style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: auto;">
+          <div class="group cursor-pointer select-none" style="
             display: inline-flex;
             align-items: center;
-            gap: 3px;
-            font-size: 9.5px;
-            font-weight: 700;
-            padding: 1px 5px;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(229, 231, 235, 0.95);
             border-radius: 9999px;
-            background: ${aqiBg};
-            color: ${aqiColor};
-            border: 1px solid ${aqiBorder};
-            font-family: ui-monospace, monospace;
+            padding: 3px 7px 3px 6px;
+            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease;
+            white-space: nowrap;
           ">
-            <span style="width: 4px; height: 4px; border-radius: 50%; background: ${aqiColor};"></span>
-            AQI ${hasData ? aqi : '..'}
-          </span>
+            <span style="color: #059669; display: flex; align-items: center; flex-shrink: 0;">${iconSvg}</span>
+            <span style="font-size: 11px; font-weight: 700; color: #1c1917; font-family: system-ui, -apple-system, sans-serif;">${preset.shortName}</span>
+            <span style="font-size: 11px; font-weight: 700; color: #44403c; font-family: ui-monospace, monospace;">${temp}°</span>
+            
+            <span style="
+              display: inline-flex;
+              align-items: center;
+              gap: 3px;
+              font-size: 9.5px;
+              font-weight: 700;
+              padding: 1px 5px;
+              border-radius: 9999px;
+              background: ${aqiBg};
+              color: ${aqiColor};
+              border: 1px solid ${aqiBorder};
+              font-family: ui-monospace, monospace;
+            ">
+              <span style="width: 4px; height: 4px; border-radius: 50%; background: ${aqiColor};"></span>
+              AQI ${hasData ? aqi : '..'}
+            </span>
 
-          <span style="display: flex; align-items: center; gap: 2px; color: #78716c; font-size: 9.5px; font-family: ui-monospace, monospace;" title="Wind ${windSpeed} km/h ${windCompass}">
-            ${windSvg}
-            <span>${windSpeed}</span>
-          </span>
+            <span style="display: flex; align-items: center; gap: 2px; color: #78716c; font-size: 9.5px; font-family: ui-monospace, monospace;" title="${traj.isCalm ? traj.summary : `${traj.summary} at ${windSpeed} km/h`}">
+              ${windSvg}
+              <span>${windSpeed}</span>
+            </span>
+          </div>
         </div>
       `;
 
       const markerIcon = L.divIcon({
         className: 'custom-weather-pin',
         html: iconHtml,
-        iconSize: [120, 26],
-        iconAnchor: [60, 13],
+        iconSize: [0, 0],
+        iconAnchor: [0, 0],
       });
 
       const marker = L.marker([preset.lat, preset.lng], {
@@ -1406,25 +1407,40 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         zIndexOffset: 1500,
       }).addTo(map);
 
-      // Popup Content
+      // Enriched Popup Content
       const popupHtml = `
-        <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; min-width: 210px; max-width: 250px;">
+        <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; min-width: 230px; max-width: 270px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
             <strong style="font-size: 13px; color: #1c1917;">${preset.name}</strong>
             <span style="font-size: 9.5px; font-family: monospace; color: #78716c; background: #f5f5f4; padding: 1px 5px; border-radius: 4px;">${preset.elevation}</span>
           </div>
-          <div style="font-size: 11px; color: #57534e; margin-bottom: 8px;">
-            ${interp.label} • Wind ${windCompass} ${windSpeed} km/h ${telemetry?.weather?.windGusts ? `(Gusts: ${telemetry.weather.windGusts} km/h)` : ''}
+          <div style="font-size: 11px; color: #57534e; margin-bottom: 6px;">
+            ${interp.label} • Temp ${temp}°C ${telemetry?.weather?.relativeHumidity ? `(${telemetry.weather.relativeHumidity}% RH)` : ''}
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 8px; margin-bottom: 6px; font-size: 10.5px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span style="color: #64748b; font-weight: 500;">Wind Vector:</span>
+              <strong style="color: #1e293b;">${windSpeed} km/h ${telemetry?.weather?.windGusts ? `(Gusts: ${telemetry.weather.windGusts} km/h)` : ''}</strong>
+            </div>
+            <div style="color: #475569; font-size: 10px; font-family: monospace;">
+              ${traj.isCalm
+                ? 'Calm (&lt; 1 km/h) &mdash; No prevailing wind direction'
+                : `Origin: ${traj.fromCompass} (${traj.fromBearing}&deg;) &rarr; Blowing: ${traj.toCompass} (${traj.toBearing}&deg;)`}
+            </div>
           </div>
           
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 8px; margin-bottom: 8px; font-size: 11px;">
+          <div style="background: ${aqiBg}; border: 1px solid ${aqiBorder}; border-radius: 8px; padding: 6px 8px; margin-bottom: 8px; font-size: 11px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
-              <span style="color: #64748b;">Air Quality (EAQI)</span>
-              <strong style="color: ${aqiColor};">${aqi} (${aqiLabel})</strong>
+              <span style="color: #475569; font-weight: 600;">Air Quality (CAMS EAQI)</span>
+              <strong style="color: ${aqiColor};">${aqi} (${meta.label})</strong>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #475569; font-family: monospace;">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #334155; font-family: monospace; margin-bottom: 2px;">
               <span>PM2.5: ${telemetry?.airQuality?.pm2_5 ?? '--'} μg/m³</span>
               <span>PM10: ${telemetry?.airQuality?.pm10 ?? '--'} μg/m³</span>
+            </div>
+            <div style="font-size: 9.5px; color: #64748b; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 3px; margin-top: 3px;">
+              DENR DAO 2020-14 Status: <strong>${meta.denrStatus}</strong>
             </div>
           </div>
 
