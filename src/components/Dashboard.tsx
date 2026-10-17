@@ -845,9 +845,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        const msg = data.created > 0
-          ? `NASA FIRMS: Ingested ${data.created} new thermal anomaly incident${data.created === 1 ? '' : 's'} across Rizal.`
-          : `NASA FIRMS: Satellite scan complete. ${data.scanned || 0} hotspots analyzed; 0 new anomalies.`;
+        const createdCount = data.created ?? data.ingestedCount ?? 0;
+        const scannedCount = data.scanned ?? data.totalHotspotsDetected ?? 0;
+        const msg = data.message || (createdCount > 0
+          ? `NASA FIRMS: Ingested ${createdCount} new thermal anomaly incident${createdCount === 1 ? '' : 's'} across Rizal.`
+          : `NASA FIRMS: Satellite scan complete. ${scannedCount} hotspots analyzed; 0 new anomalies.`);
         setSyncSatelliteToast({ message: msg, type: 'success' });
         setTimeout(() => setSyncSatelliteToast(null), 7000);
       } else {

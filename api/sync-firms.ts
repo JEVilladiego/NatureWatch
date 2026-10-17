@@ -10,5 +10,9 @@ export const config = { maxDuration: 60 };
 export default route('POST', async (req, res) => {
   const dayRange = typeof req.body?.dayRange === 'number' ? req.body.dayRange : 3;
   const result = await ingestFirmsHotspots(dayRange);
-  return res.json(result);
+  return res.json({
+    ...result,
+    created: result.ingestedCount,
+    scanned: result.totalHotspotsDetected,
+  });
 });

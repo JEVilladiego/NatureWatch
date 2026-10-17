@@ -194,7 +194,7 @@ export async function ingestFirmsHotspots(dayRange: number = 2): Promise<FirmsIn
         source: 'satellite_firms',
         municipality: closestMun,
         barangay: protectedArea ? protectedArea.shortName : 'Sierra Madre Upland',
-        landmark: protectedArea ? `Inside ${protectedArea.name}` : undefined,
+        landmark: protectedArea ? `Inside ${protectedArea.name}` : null,
       },
       rawInput: {
         description: `Satellite-detected thermal hotspot from NASA VIIRS sensor (375m spatial resolution). Radiative fire power: ${frp} MW, brightness temperature: ${brightTi4} K (${(brightTi4 - 273.15).toFixed(1)}°C). Suspected active mountain fire, slash-and-burn (kaingin), or charcoal pit (ulingan).`,

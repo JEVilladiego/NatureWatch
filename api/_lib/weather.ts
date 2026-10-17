@@ -8,7 +8,7 @@ export interface WeatherSnapshot {
   humidity: number; // %
   precipitation: number; // mm
   windSpeed: number; // km/h
-  windGusts?: number; // km/h
+  windGusts?: number | null; // km/h
   fetchedAt: string;
 }
 
@@ -44,7 +44,7 @@ export async function fetchWeatherContext(lat: number, lng: number): Promise<Wea
       windGusts:
         typeof current.wind_gusts_10m === 'number'
           ? Math.round(Number(current.wind_gusts_10m) * 10) / 10
-          : undefined,
+          : null,
       fetchedAt: new Date().toISOString(),
     };
   } catch (err: any) {

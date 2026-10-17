@@ -34,8 +34,15 @@ function getAdminApp(): App {
   });
 }
 
+let dbInstance: Firestore | null = null;
 export function getDb(): Firestore {
-  return getFirestore(getAdminApp(), process.env.FIREBASE_DATABASE_ID || '(default)');
+  if (dbInstance) return dbInstance;
+  const db = getFirestore(getAdminApp(), process.env.FIREBASE_DATABASE_ID || '(default)');
+  try {
+    db.settings({ ignoreUndefinedProperties: true });
+  } catch {}
+  dbInstance = db;
+  return dbInstance;
 }
 
 export class HttpError extends Error {
