@@ -93,6 +93,11 @@ interface LeafletMapProps {
   onSelectProtectedZone?: (zoneId: string) => void;
   onMapBackgroundClick?: () => void;
   showMgbQuarries?: boolean;
+  quarryFilter?: {
+    type: 'all' | 'mpsa' | 'mpp' | 'cancelled';
+    municipality: string;
+    search: string;
+  };
   showRainRadar?: boolean;
   showWeatherMarkers?: boolean;
   weatherTelemetry?: Record<string, FullAtmosphericData>;
@@ -122,6 +127,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   onSelectProtectedZone,
   onMapBackgroundClick,
   showMgbQuarries = false,
+  quarryFilter,
   showRainRadar = false,
   showWeatherMarkers = false,
   weatherTelemetry = {},
@@ -136,9 +142,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
   const maskLayerRef = useRef<L.GeoJSON | null>(null);
   const protectedZonesLayerRef = useRef<L.GeoJSON | null>(null);
-  const mgbQuarriesLayerRef = useRef<L.GeoJSON | null>(null);
+  const mgbQuarriesLayerRef = useRef<L.LayerGroup | null>(null);
   const rainRadarLayerRef = useRef<L.TileLayer | null>(null);
   const weatherMarkersRef = useRef<Map<string, L.Marker>>(new Map());
+  const [currentZoom, setCurrentZoom] = useState<number>(zoom);
+  const [spiderfiedClusterKey, setSpiderfiedClusterKey] = useState<string | null>(null);
   const [radarInfo, setRadarInfo] = useState<RadarFrameInfo | null>(null);
   const [geoJsonData, setGeoJsonData] = useState<GeoJSONFeatureCollection<MunicipalityFeatureProperties> | null>(null);
   const [maskData, setMaskData] = useState<GeoJSONFeature | null>(null);
@@ -248,6 +256,14 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     weatherMarkerPane.style.zIndex = '580';
 
     mapInstanceRef.current = map;
+    setCurrentZoom(map.getZoom());
+
+    const handleZoomEnd = () => {
+      if (mapInstanceRef.current) {
+        setCurrentZoom(mapInstanceRef.current.getZoom());
+      }
+    };
+    map.on('zoomend', handleZoomEnd);
 
     // In dashboard mode, frame all of Rizal Province on initial mount if not focused on a report/LGU
     if (mode === 'dashboard' && !selectedReportId && (!activeMunicipality || activeMunicipality === 'all')) {
@@ -273,6 +289,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     }
 
     return () => {
+      map.off('zoomend', handleZoomEnd);
       resizeObserver.disconnect();
       map.remove();
       mapInstanceRef.current = null;
@@ -555,6 +572,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       if (onMapBackgroundClick) {
         onMapBackgroundClick();
       }
+      setSpiderfiedClusterKey(null);
     };
     map.on('click', handleBgClick);
     return () => {
@@ -562,7 +580,69 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     };
   }, [mode, onMapBackgroundClick]);
 
-  // MGB Permitted Quarries Vector Layer Rendering
+  // Helper function to build rich tactical tooltip for MGB concessions
+  const buildQuarryTooltip = (props: any, isMpp: boolean, isCancelled: boolean, isExploration: boolean) => {
+    const name = props.tenementName || props.name || props.operator || 'Permitted Concession';
+    const permit = props.permitNumber || 'MGB Tenement';
+    const operator = props.operator || 'Authorized Concessionaire';
+    const holder = props.holder && props.holder !== operator ? props.holder : null;
+    const commodity = props.commodity || 'Aggregates / Sand & Gravel';
+    const municipality = props.municipality || 'Rizal';
+    const area = props.areaHectares ? props.areaHectares : (props.exactAreaHa ? `${props.exactAreaHa.toFixed(4)} ha` : '');
+
+    let statusBadge = `
+      <span style="font-size: 8px; font-family: monospace; background: rgba(217,119,6,0.2); border: 1px solid rgba(217,119,6,0.4); padding: 1px 5px; border-radius: 3px; color: #fde68a; font-weight: 800;">
+        OPERATING MPSA
+      </span>
+    `;
+    if (isCancelled) {
+      statusBadge = `
+        <span style="font-size: 8px; font-family: monospace; background: rgba(220,38,38,0.3); border: 1px solid rgba(220,38,38,0.6); padding: 1px 5px; border-radius: 3px; color: #fca5a5; font-weight: 800;">
+          CANCELLED BY DENR
+        </span>
+      `;
+    } else if (isMpp) {
+      statusBadge = `
+        <span style="font-size: 8px; font-family: monospace; background: rgba(79,70,229,0.3); border: 1px solid rgba(129,140,248,0.5); padding: 1px 5px; border-radius: 3px; color: #c7d2fe; font-weight: 800;">
+          MINERAL PROCESSING (MPP)
+        </span>
+      `;
+    } else if (isExploration) {
+      statusBadge = `
+        <span style="font-size: 8px; font-family: monospace; background: rgba(2,132,199,0.25); border: 1px solid rgba(56,189,248,0.5); padding: 1px 5px; border-radius: 3px; color: #bae6fd; font-weight: 800;">
+          EXPLORATION / DMPF
+        </span>
+      `;
+    }
+
+    return `
+      <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 220px; max-width: 290px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px;">
+          <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: ${isMpp ? '#818cf8' : isCancelled ? '#ef4444' : '#d97706'};">
+            ${isMpp ? 'MGB MINERAL PROCESSING' : 'MGB EXTRACTION CADASTRE'}
+          </span>
+          ${statusBadge}
+        </div>
+        <div style="font-weight: 700; font-size: 11.5px; color: #f8fafc; line-height: 1.3;">
+          ${name}
+        </div>
+        <div style="font-size: 10px; color: #cbd5e1; margin-top: 3px;">
+          <strong>Operator:</strong> ${operator}
+        </div>
+        ${holder ? `<div style="font-size: 9.5px; color: #94a3b8;"><strong>Holder:</strong> ${holder}</div>` : ''}
+        <div style="font-size: 9.5px; color: #94a3b8; margin-top: 2px;">
+          ${props.barangay ? `${props.barangay}, ` : ''}${municipality} ${area ? `• <strong>${area}</strong>` : ''}
+        </div>
+        <div style="font-size: 9px; font-family: monospace; color: ${isMpp ? '#a5b4fc' : isCancelled ? '#fca5a5' : '#f59e0b'}; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 3px;">
+          Permit: ${permit} • ${commodity}
+        </div>
+        ${props.termDates ? `<div style="font-size: 8.5px; color: #94a3b8; font-family: monospace; margin-top: 2px;">${props.termDates}</div>` : ''}
+        ${props.mgbRegistrySource ? `<div style="font-size: 8px; color: #64748b; font-family: monospace; margin-top: 2px;">Source: ${props.mgbRegistrySource}</div>` : ''}
+      </div>
+    `;
+  };
+
+  // MGB Permitted Quarries Vector Layer Rendering (Semantic LOD & Hub Clustering)
   useEffect(() => {
     if (!mapInstanceRef.current || !mgbQuarriesData) return;
     const map = mapInstanceRef.current;
@@ -574,58 +654,384 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     if (!showMgbQuarries && layerMode !== 'quarries') return;
 
-    const layer = L.geoJSON(mgbQuarriesData as any, {
-      style: (feature: any) => {
-        const props = feature?.properties || {};
-        const isCancelled = props.status === 'Cancelled';
-        const isExploration = props.status === 'Exploration';
-        
-        if (isCancelled) {
+    const layerGroup = L.layerGroup().addTo(map);
+    mgbQuarriesLayerRef.current = layerGroup;
+
+    // 1. Filter cadastre features according to active quarry drawer filters
+    const allFeatures = mgbQuarriesData.features || [];
+    const filteredFeatures = allFeatures.filter((f) => {
+      const props = f.properties;
+      if (!props) return true;
+
+      // Category filter (All / MPSA / MPP / Cancelled)
+      if (quarryFilter?.type === 'mpsa' && props.permitType !== 'MPSA') return false;
+      if (quarryFilter?.type === 'mpp' && props.permitType !== 'MPP') return false;
+      if (quarryFilter?.type === 'cancelled' && props.status !== 'Cancelled') return false;
+
+      // Municipality filter
+      if (quarryFilter?.municipality && quarryFilter.municipality !== 'all') {
+        const qm = quarryFilter.municipality.toLowerCase();
+        const munStr = (props.municipality || '').toLowerCase();
+        const nameStr = (props.name || '').toLowerCase();
+        const brgyStr = (props.barangay || '').toLowerCase();
+        const matches = munStr.includes(qm) || nameStr.includes(qm) || brgyStr.includes(qm);
+        if (!matches) return false;
+      }
+
+      // Search term filter
+      if (quarryFilter?.search && quarryFilter.search.trim()) {
+        const q = quarryFilter.search.toLowerCase().trim();
+        const nameStr = (props.name || '').toLowerCase();
+        const shortStr = (props.shortName || '').toLowerCase();
+        const tenStr = (props.tenementName || '').toLowerCase();
+        const opStr = (props.operator || '').toLowerCase();
+        const holderStr = (props.holder || '').toLowerCase();
+        const permitStr = (props.permitNumber || '').toLowerCase();
+        const munStr = (props.municipality || '').toLowerCase();
+        const brgyStr = (props.barangay || '').toLowerCase();
+        const commStr = (props.commodity || '').toLowerCase();
+
+        const match =
+          nameStr.includes(q) ||
+          shortStr.includes(q) ||
+          tenStr.includes(q) ||
+          opStr.includes(q) ||
+          holderStr.includes(q) ||
+          permitStr.includes(q) ||
+          munStr.includes(q) ||
+          brgyStr.includes(q) ||
+          commStr.includes(q);
+        if (!match) return false;
+      }
+
+      return true;
+    });
+
+    const polygonFeatures = filteredFeatures.filter((f) => f.geometry.type !== 'Point');
+    const pointFeatures = filteredFeatures.filter((f) => f.geometry.type === 'Point');
+
+    // 2. Render Polygon Concessions (MPSAs)
+    if (polygonFeatures.length > 0) {
+      const polyCollection = {
+        type: 'FeatureCollection',
+        features: polygonFeatures,
+      };
+
+      const polyLayer = L.geoJSON(polyCollection as any, {
+        style: (feature: any) => {
+          const props = feature?.properties || {};
+          const isCancelled = props.status === 'Cancelled';
+          const isExploration = props.status === 'Exploration';
+
+          if (isCancelled) {
+            return {
+              color: '#dc2626',      // red-600
+              weight: 2.5,
+              fillColor: '#ef4444',  // red-500
+              fillOpacity: 0.22,
+              dashArray: '6, 6',
+            };
+          }
+          if (isExploration) {
+            return {
+              color: '#0284c7',      // sky-600
+              weight: 2,
+              fillColor: '#38bdf8',  // sky-400
+              fillOpacity: 0.20,
+              dashArray: '3, 3',
+            };
+          }
           return {
-            color: '#dc2626',      // red-600
-            weight: 2,
-            fillColor: '#ef4444',  // red-500
-            fillOpacity: 0.18,
-            dashArray: '5, 5',
+            color: '#d97706',      // amber-600 border
+            weight: layerMode === 'quarries' ? 2.5 : 2,
+            fillColor: '#f59e0b',  // amber-500 fill
+            fillOpacity: layerMode === 'quarries' ? 0.25 : 0.16,
+            dashArray: undefined,
           };
-        }
-        if (isExploration) {
-          return {
-            color: '#0284c7',      // sky-600
-            weight: 2,
-            fillColor: '#38bdf8',  // sky-400
-            fillOpacity: 0.20,
-            dashArray: '3, 3',
-          };
-        }
-        return {
-          color: '#d97706',      // amber-600 border
-          weight: layerMode === 'quarries' ? 2.5 : 2,
-          fillColor: '#f59e0b',  // amber-500 fill
-          fillOpacity: layerMode === 'quarries' ? 0.25 : 0.16,
-          dashArray: undefined,
-        };
-      },
-      pointToLayer: (feature: any, latlng: L.LatLng) => {
-        const props = feature?.properties || {};
-        const isMpp = props.permitType === 'MPP';
-        
-        const iconHtml = `
+        },
+        onEachFeature: (feature: any, featureLayer: L.Layer) => {
+          const props = feature?.properties || {};
+          const isCancelled = props.status === 'Cancelled';
+          const isExploration = props.status === 'Exploration';
+
+          featureLayer.bindTooltip(
+            buildQuarryTooltip(props, false, isCancelled, isExploration),
+            {
+              sticky: true,
+              direction: 'auto',
+              className: 'tactical-map-tooltip',
+            }
+          );
+
+          const pathLayer = featureLayer as L.Path;
+          pathLayer.on('mouseover', () => {
+            pathLayer.setStyle({
+              weight: 3.5,
+              fillOpacity: isCancelled ? 0.32 : 0.35,
+              color: isCancelled ? '#991b1b' : '#b45309',
+            });
+          });
+          pathLayer.on('mouseout', () => {
+            pathLayer.setStyle({
+              weight: isCancelled ? 2.5 : 2,
+              fillOpacity: isCancelled ? 0.22 : 0.16,
+              color: isCancelled ? '#dc2626' : '#d97706',
+            });
+          });
+          pathLayer.on('click', () => {
+            try {
+              const bounds = (pathLayer as any).getBounds?.();
+              if (bounds && map) {
+                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
+              }
+            } catch (e) {}
+          });
+        },
+      });
+
+      polyLayer.addTo(layerGroup);
+    }
+
+    // 3. Cluster Point Features (MPPs) for Semantic LOD & Spiderfy
+    interface MppCluster {
+      id: string;
+      hubName: string;
+      center: [number, number]; // [lat, lng]
+      features: GeoJSONFeature<MgbQuarryFeatureProperties>[];
+      bounds: L.LatLngBounds;
+    }
+
+    const clusters: MppCluster[] = [];
+    const CLUSTER_THRESHOLD_DEG = 0.045; // ~5 km grouping for regional hubs
+
+    pointFeatures.forEach((feat) => {
+      const coords = (feat.geometry as any).coordinates; // [lng, lat]
+      const lat = coords[1];
+      const lng = coords[0];
+      const rawMun = feat.properties?.municipality || 'Rizal';
+      const cleanMun = rawMun.replace(/\s*\(.*\)/, '').trim();
+
+      let targetCluster = clusters.find((c) => {
+        const dLat = Math.abs(c.center[0] - lat);
+        const dLng = Math.abs(c.center[1] - lng);
+        const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+        return dist < CLUSTER_THRESHOLD_DEG;
+      });
+
+      if (targetCluster) {
+        targetCluster.features.push(feat);
+        targetCluster.bounds.extend([lat, lng]);
+        const totalLat = targetCluster.features.reduce((acc, f) => acc + (f.geometry as any).coordinates[1], 0);
+        const totalLng = targetCluster.features.reduce((acc, f) => acc + (f.geometry as any).coordinates[0], 0);
+        targetCluster.center = [totalLat / targetCluster.features.length, totalLng / targetCluster.features.length];
+      } else {
+        clusters.push({
+          id: `cluster-${cleanMun.toLowerCase().replace(/\s+/g, '-')}`,
+          hubName: cleanMun,
+          center: [lat, lng],
+          features: [feat],
+          bounds: L.latLngBounds([[lat, lng], [lat, lng]]),
+        });
+      }
+    });
+
+    // 4. Render Clustered Hubs or Individual Plant Markers Based on Zoom & Spiderfy State
+    clusters.forEach((cluster) => {
+      const isMulti = cluster.features.length > 1;
+      const isSpiderfied = spiderfiedClusterKey === cluster.id;
+
+      // CASE A: Provincial / District Level (currentZoom < 14) and dense cluster
+      if (isMulti && currentZoom < 14 && !isSpiderfied) {
+        const hubBadgeHtml = `
           <div style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: auto;">
-            <div class="group cursor-pointer select-none" style="
-              display: inline-flex;
-              align-items: center;
-              gap: 4.5px;
-              background: rgba(30, 27, 75, 0.94);
-              backdrop-filter: blur(8px);
-              -webkit-backdrop-filter: blur(8px);
-              border: 1.5px solid #818cf8;
-              border-radius: 9999px;
-              padding: 2.5px 7px 2.5px 6px;
-              box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
-              transition: transform 0.16s ease, box-shadow 0.16s ease;
-              white-space: nowrap;
-            ">
+            <div class="nw-mpp-cluster-badge" title="Click to zoom in on ${cluster.hubName} Hub">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background: #4f46e5; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 10px; font-weight: 800; font-family: ui-monospace, monospace; box-shadow: inset 0 1px 2px rgba(255,255,255,0.3); flex-shrink: 0;">
+                ${cluster.features.length}
+              </div>
+              <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.15;">
+                <span style="font-size: 10.5px; font-weight: 700; color: #ffffff; font-family: system-ui, -apple-system, sans-serif; letter-spacing: -0.01em;">
+                  ${cluster.features.length} Plants • ${cluster.hubName} Hub
+                </span>
+                <span style="font-size: 8px; font-weight: 600; color: #c7d2fe; font-family: ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.04em;">
+                  Click to Expand • MGB Cadastre
+                </span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const clusterMarker = L.marker(cluster.center, {
+          icon: L.divIcon({
+            className: 'nw-mpp-hub-marker',
+            html: hubBadgeHtml,
+            iconSize: [0, 0],
+            iconAnchor: [0, 0],
+          }),
+          pane: 'weatherMarkerPane',
+          zIndexOffset: 1300,
+        });
+
+        // Hub Tooltip: List of all permitted facilities in cluster
+        const clusterTooltipHtml = `
+          <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 240px; max-width: 300px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">
+              <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #818cf8;">
+                MGB Region IV-A Clustered Hub
+              </span>
+              <span style="font-size: 8px; font-family: monospace; background: rgba(79,70,229,0.4); border: 1px solid rgba(129,140,248,0.5); padding: 1px 5px; border-radius: 3px; color: #e0e7ff; font-weight: 800;">
+                ${cluster.features.length} Facilities
+              </span>
+            </div>
+            <div style="font-weight: 700; font-size: 12px; color: #ffffff; margin-bottom: 4px;">
+              ${cluster.hubName} Mineral Processing Hub
+            </div>
+            <div style="font-size: 9.5px; color: #cbd5e1; margin-bottom: 6px;">
+              Aggregates crushing, screening, and industrial batching facilities permitted under MGB Region IV-A.
+            </div>
+            <div style="max-height: 140px; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 3px;">
+              ${cluster.features
+                .map((f) => {
+                  const p = f.properties;
+                  return `
+                    <div style="font-size: 9px; color: #e2e8f0; display: flex; justify-content: space-between; gap: 4px; background: rgba(255,255,255,0.05); padding: 2.5px 6px; border-radius: 4px;">
+                      <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">${p.shortName || p.operator}</span>
+                      <span style="font-family: monospace; color: #a5b4fc; font-size: 8px;">${p.permitNumber.split(' ')[0]}</span>
+                    </div>
+                  `;
+                })
+                .join('')}
+            </div>
+            <div style="font-size: 8.5px; color: #94a3b8; margin-top: 6px; font-style: italic; text-align: center;">
+              Click marker to zoom in and inspect individual plants
+            </div>
+          </div>
+        `;
+
+        clusterMarker.bindTooltip(clusterTooltipHtml, {
+          sticky: true,
+          direction: 'auto',
+          className: 'tactical-map-tooltip',
+        });
+
+        // Click handler: Smart Zoom to cluster bounds
+        clusterMarker.on('click', () => {
+          map.fitBounds(cluster.bounds, {
+            padding: [55, 55],
+            maxZoom: 15,
+            animate: true,
+          });
+        });
+
+        clusterMarker.addTo(layerGroup);
+        return;
+      }
+
+      // CASE B: High Zoom (currentZoom >= 14) Spiderfy mode
+      if (isMulti && isSpiderfied) {
+        // Render spiderfy center hub anchor
+        const anchorHtml = `
+          <div style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: auto;">
+            <div class="nw-mpp-glyph" style="background: rgba(49, 46, 129, 0.98); border-color: #c7d2fe; cursor: pointer;" title="Click to collapse radial view">
+              <span style="font-size: 10px; font-weight: 800; color: #ffffff; font-family: monospace;">✕</span>
+            </div>
+          </div>
+        `;
+        const anchorMarker = L.marker(cluster.center, {
+          icon: L.divIcon({ className: 'spiderfy-anchor', html: anchorHtml, iconSize: [0, 0], iconAnchor: [0, 0] }),
+          pane: 'weatherMarkerPane',
+          zIndexOffset: 1500,
+        });
+        anchorMarker.on('click', () => setSpiderfiedClusterKey(null));
+        anchorMarker.addTo(layerGroup);
+
+        // Fan out features in a radial circle
+        const count = cluster.features.length;
+        const radiusPx = Math.max(65, count * 9);
+        const centerPoint = map.latLngToLayerPoint(cluster.center);
+
+        cluster.features.forEach((feat, i) => {
+          const props = feat.properties;
+          const angle = (2 * Math.PI * i) / count - Math.PI / 2;
+          const targetPoint = L.point(
+            centerPoint.x + radiusPx * Math.cos(angle),
+            centerPoint.y + radiusPx * Math.sin(angle)
+          );
+          const targetLatLng = map.layerPointToLatLng(targetPoint);
+
+          // Connector line
+          L.polyline([cluster.center, targetLatLng], {
+            color: '#818cf8',
+            weight: 1.5,
+            dashArray: '3, 4',
+            opacity: 0.85,
+          }).addTo(layerGroup);
+
+          const pinHtml = `
+            <div style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: auto;">
+              <div class="nw-mpp-pill">
+                <span style="color: #a5b4fc; display: flex; align-items: center; flex-shrink: 0;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+                    <path d="M17 18h1"></path>
+                    <path d="M12 18h1"></path>
+                    <path d="M7 18h1"></path>
+                  </svg>
+                </span>
+                <span style="font-size: 10px; font-weight: 700; color: #ffffff; font-family: system-ui, -apple-system, sans-serif;">${props.shortName || props.operator}</span>
+                <span style="font-size: 8.5px; font-weight: 800; font-family: ui-monospace, monospace; padding: 1px 4px; border-radius: 4px; background: rgba(99, 102, 241, 0.4); color: #e0e7ff; border: 1px solid rgba(165, 180, 252, 0.4);">
+                  MPP
+                </span>
+              </div>
+            </div>
+          `;
+
+          const pinMarker = L.marker(targetLatLng, {
+            icon: L.divIcon({ className: 'custom-mpp-pin', html: pinHtml, iconSize: [0, 0], iconAnchor: [0, 0] }),
+            pane: 'weatherMarkerPane',
+            zIndexOffset: 1400,
+          });
+
+          pinMarker.bindTooltip(buildQuarryTooltip(props, true, false, false), {
+            sticky: true,
+            direction: 'auto',
+            className: 'tactical-map-tooltip',
+          });
+
+          pinMarker.on('click', () => {
+            const origCoords = (feat.geometry as any).coordinates;
+            map.flyTo([origCoords[1], origCoords[0]], 16, { animate: true });
+          });
+
+          pinMarker.addTo(layerGroup);
+        });
+        return;
+      }
+
+      // CASE C: Individual Plant Markers (isolated or zoom >= 14 non-spiderfied)
+      cluster.features.forEach((feat) => {
+        const props = feat.properties;
+        const coords = (feat.geometry as any).coordinates;
+        const latlng: [number, number] = [coords[1], coords[0]];
+
+        // Semantic LOD: Compact 26px glyph at low/medium zoom, full pill at site zoom (zoom >= 15)
+        const showFullPill = currentZoom >= 15;
+
+        const glyphHtml = `
+          <div style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: auto;">
+            <div class="nw-mpp-glyph" title="${props.shortName || props.operator}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+                <path d="M17 18h1"></path>
+                <path d="M12 18h1"></path>
+                <path d="M7 18h1"></path>
+              </svg>
+            </div>
+          </div>
+        `;
+
+        const pillHtml = `
+          <div style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: auto;">
+            <div class="nw-mpp-pill" title="${props.name || props.operator}">
               <span style="color: #a5b4fc; display: flex; align-items: center; flex-shrink: 0;">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
@@ -642,123 +1048,34 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           </div>
         `;
 
-        return L.marker(latlng, {
+        const marker = L.marker(latlng, {
           icon: L.divIcon({
             className: 'custom-mpp-pin',
-            html: iconHtml,
+            html: showFullPill ? pillHtml : glyphHtml,
             iconSize: [0, 0],
             iconAnchor: [0, 0],
           }),
           pane: 'weatherMarkerPane',
           zIndexOffset: 1200,
         });
-      },
-      onEachFeature: (feature: any, featureLayer: L.Layer) => {
-        const props = feature?.properties || {};
-        const isMpp = props.permitType === 'MPP';
-        const isCancelled = props.status === 'Cancelled';
-        const isExploration = props.status === 'Exploration';
-        const name = props.tenementName || props.name || props.operator || 'Permitted Concession';
-        const permit = props.permitNumber || 'MGB Tenement';
-        const operator = props.operator || 'Authorized Concessionaire';
-        const holder = props.holder && props.holder !== operator ? props.holder : null;
-        const commodity = props.commodity || 'Aggregates / Sand & Gravel';
-        const municipality = props.municipality || 'Rizal';
-        const area = props.areaHectares ? props.areaHectares : (props.exactAreaHa ? `${props.exactAreaHa.toFixed(4)} ha` : '');
 
-        let statusBadge = `
-          <span style="font-size: 8px; font-family: monospace; background: rgba(217,119,6,0.2); border: 1px solid rgba(217,119,6,0.4); padding: 1px 5px; border-radius: 3px; color: #fde68a; font-weight: 800;">
-            OPERATING MPSA
-          </span>
-        `;
-        if (isCancelled) {
-          statusBadge = `
-            <span style="font-size: 8px; font-family: monospace; background: rgba(220,38,38,0.3); border: 1px solid rgba(220,38,38,0.6); padding: 1px 5px; border-radius: 3px; color: #fca5a5; font-weight: 800;">
-              CANCELLED BY DENR
-            </span>
-          `;
-        } else if (isMpp) {
-          statusBadge = `
-            <span style="font-size: 8px; font-family: monospace; background: rgba(79,70,229,0.3); border: 1px solid rgba(129,140,248,0.5); padding: 1px 5px; border-radius: 3px; color: #c7d2fe; font-weight: 800;">
-              MINERAL PROCESSING (MPP)
-            </span>
-          `;
-        } else if (isExploration) {
-          statusBadge = `
-            <span style="font-size: 8px; font-family: monospace; background: rgba(2,132,199,0.25); border: 1px solid rgba(56,189,248,0.5); padding: 1px 5px; border-radius: 3px; color: #bae6fd; font-weight: 800;">
-              EXPLORATION / DMPF
-            </span>
-          `;
-        }
-
-        const tooltipHtml = `
-          <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 220px; max-width: 290px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px;">
-              <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: ${isMpp ? '#818cf8' : isCancelled ? '#ef4444' : '#d97706'};">
-                ${isMpp ? 'MGB MINERAL PROCESSING' : 'MGB EXTRACTION CADASTRE'}
-              </span>
-              ${statusBadge}
-            </div>
-            <div style="font-weight: 700; font-size: 11.5px; color: #f8fafc; line-height: 1.3;">
-              ${name}
-            </div>
-            <div style="font-size: 10px; color: #cbd5e1; margin-top: 3px;">
-              <strong>Operator:</strong> ${operator}
-            </div>
-            ${holder ? `<div style="font-size: 9.5px; color: #94a3b8;"><strong>Holder:</strong> ${holder}</div>` : ''}
-            <div style="font-size: 9.5px; color: #94a3b8; margin-top: 2px;">
-              ${props.barangay ? `${props.barangay}, ` : ''}${municipality} ${area ? `• <strong>${area}</strong>` : ''}
-            </div>
-            <div style="font-size: 9px; font-family: monospace; color: ${isMpp ? '#a5b4fc' : isCancelled ? '#fca5a5' : '#f59e0b'}; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 3px;">
-              Permit: ${permit} • ${commodity}
-            </div>
-            ${props.termDates ? `<div style="font-size: 8.5px; color: #94a3b8; font-family: monospace; margin-top: 2px;">${props.termDates}</div>` : ''}
-            ${props.mgbRegistrySource ? `<div style="font-size: 8px; color: #64748b; font-family: monospace; margin-top: 2px;">Source: ${props.mgbRegistrySource}</div>` : ''}
-          </div>
-        `;
-
-        featureLayer.bindTooltip(tooltipHtml, {
+        marker.bindTooltip(buildQuarryTooltip(props, true, false, false), {
           sticky: true,
           direction: 'auto',
           className: 'tactical-map-tooltip',
         });
 
-        if (feature.geometry?.type !== 'Point') {
-          const pathLayer = featureLayer as L.Path;
-          pathLayer.on('mouseover', () => {
-            pathLayer.setStyle({
-              weight: 3.5,
-              fillOpacity: isCancelled ? 0.28 : 0.35,
-              color: isCancelled ? '#b91c1c' : '#b45309',
-            });
-          });
-          pathLayer.on('mouseout', () => {
-            pathLayer.setStyle({
-              weight: 2,
-              fillOpacity: isCancelled ? 0.18 : 0.16,
-              color: isCancelled ? '#dc2626' : '#d97706',
-            });
-          });
-          pathLayer.on('click', () => {
-            try {
-              const bounds = (pathLayer as any).getBounds?.();
-              if (bounds && map) {
-                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
-              }
-            } catch (e) {}
-          });
-        } else {
-          featureLayer.on('click', () => {
-            try {
-              const coords = feature.geometry.coordinates;
-              map.flyTo([coords[1], coords[0]], 15, { animate: true });
-            } catch (e) {}
-          });
-        }
-      },
-    }).addTo(map);
+        marker.on('click', () => {
+          if (isMulti && currentZoom >= 14 && !isSpiderfied) {
+            setSpiderfiedClusterKey(cluster.id);
+          } else {
+            map.flyTo(latlng, 16, { animate: true });
+          }
+        });
 
-    mgbQuarriesLayerRef.current = layer;
+        marker.addTo(layerGroup);
+      });
+    });
 
     return () => {
       if (mgbQuarriesLayerRef.current) {
@@ -766,7 +1083,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         mgbQuarriesLayerRef.current = null;
       }
     };
-  }, [showMgbQuarries, layerMode, mgbQuarriesData]);
+  }, [showMgbQuarries, layerMode, mgbQuarriesData, quarryFilter, currentZoom, spiderfiedClusterKey]);
 
   // Update Center & Zoom
   useEffect(() => {

@@ -2505,6 +2505,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   choroplethCounts={choroplethCounts}
                   maskNonRizal={false}
                   showMgbQuarries={showMgbQuarries}
+                  quarryFilter={{
+                    type: quarryTypeFilter,
+                    municipality: quarryMunicipalityFilter,
+                    search: quarrySearchTerm,
+                  }}
                   onSelectReport={(r) => {
                     setSelectedReport(r);
                     const coords = resolveReportCoordinates(r);
@@ -3145,6 +3150,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               choroplethCounts={choroplethCounts}
               maskNonRizal={isMaskActive}
               showMgbQuarries={showMgbQuarries}
+              quarryFilter={{
+                type: quarryTypeFilter,
+                municipality: quarryMunicipalityFilter,
+                search: quarrySearchTerm,
+              }}
               showRainRadar={showRainRadar}
               showWeatherMarkers={showWeatherMarkers}
               weatherTelemetry={allLguWeather}
@@ -4367,6 +4377,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <span>MGB MTMD Registries (MRMS 002A & APR-2024-MPP-2A)</span>
                     <span className="text-amber-700 dark:text-amber-400 font-semibold">CALABARZON</span>
                   </div>
+
+                  {/* Active Filter Map Synchronization Notice & Reset */}
+                  {(quarryTypeFilter !== 'all' || quarryMunicipalityFilter !== 'all' || !!quarrySearchTerm.trim()) && (
+                    <div className="px-3 py-1 bg-amber-500/10 dark:bg-amber-950/40 border-b border-amber-500/20 text-[10px] text-amber-800 dark:text-amber-300 flex items-center justify-between shrink-0">
+                      <span className="font-medium flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        Map & drawer synchronized
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuarryTypeFilter('all');
+                          setQuarryMunicipalityFilter('all');
+                          setQuarrySearchTerm('');
+                        }}
+                        className="text-amber-700 dark:text-amber-400 font-semibold hover:underline cursor-pointer"
+                      >
+                        Reset filters
+                      </button>
+                    </div>
+                  )}
 
                   {/* Concession Cards List */}
                   <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar overscroll-contain">
