@@ -386,3 +386,23 @@ export async function fetchFullAtmosphericTelemetry(
     return null;
   }
 }
+
+/**
+ * Fetch live atmospheric telemetry for all Rizal Municipalities concurrently
+ */
+export async function fetchAllRizalLgusTelemetry(): Promise<Record<string, FullAtmosphericData>> {
+  const promises = RIZAL_LGU_PRESETS.filter((p) => p.id !== 'rizal-center').map(async (preset) => {
+    const data = await fetchFullAtmosphericTelemetry(preset.lat, preset.lng, preset.name);
+    return { id: preset.id, data };
+  });
+
+  const results = await Promise.all(promises);
+  const map: Record<string, FullAtmosphericData> = {};
+  for (const item of results) {
+    if (item.data) {
+      map[item.id] = item.data;
+    }
+  }
+  return map;
+}
+

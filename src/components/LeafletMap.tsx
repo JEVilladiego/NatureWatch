@@ -15,6 +15,13 @@ import {
   fetchRizalMgbQuarriesGeoJSON,
   getChoroplethStyle,
 } from '../lib/geojsonService';
+import {
+  RIZAL_LGU_PRESETS,
+  FullAtmosphericData,
+  getAqiMeta,
+  getWeatherInterpretation,
+} from '../lib/weatherService';
+import { fetchLatestRadarFrame, RadarFrameInfo } from '../lib/radarService';
 
 // Rizal Province default center (encompassing Sierra Madre, central corridor & Laguna de Bay shore)
 export const RIZAL_DEFAULT = { lat: 14.5800, lng: 121.2800 };
@@ -85,6 +92,10 @@ interface LeafletMapProps {
   onSelectProtectedZone?: (zoneId: string) => void;
   onMapBackgroundClick?: () => void;
   showMgbQuarries?: boolean;
+  showRainRadar?: boolean;
+  showWeatherMarkers?: boolean;
+  weatherTelemetry?: Record<string, FullAtmosphericData>;
+  onWeatherMarkerClick?: (presetId: string) => void;
 }
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
@@ -110,6 +121,10 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   onSelectProtectedZone,
   onMapBackgroundClick,
   showMgbQuarries = false,
+  showRainRadar = false,
+  showWeatherMarkers = false,
+  weatherTelemetry = {},
+  onWeatherMarkerClick,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -121,6 +136,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const maskLayerRef = useRef<L.GeoJSON | null>(null);
   const protectedZonesLayerRef = useRef<L.GeoJSON | null>(null);
   const mgbQuarriesLayerRef = useRef<L.GeoJSON | null>(null);
+  const rainRadarLayerRef = useRef<L.TileLayer | null>(null);
+  const weatherMarkersRef = useRef<Map<string, L.Marker>>(new Map());
+  const [radarInfo, setRadarInfo] = useState<RadarFrameInfo | null>(null);
   const [geoJsonData, setGeoJsonData] = useState<GeoJSONFeatureCollection<MunicipalityFeatureProperties> | null>(null);
   const [maskData, setMaskData] = useState<GeoJSONFeature | null>(null);
   const [protectedMaskData, setProtectedMaskData] = useState<GeoJSONFeature | null>(null);
@@ -218,6 +236,15 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     const maskPane = map.createPane('maskPane');
     maskPane.style.zIndex = '350';
     maskPane.style.pointerEvents = 'none';
+
+    // Dedicated radar pane: above basemap tiles (zIndex: 200), below mask (zIndex: 350)
+    const radarPane = map.createPane('radarPane');
+    radarPane.style.zIndex = '250';
+    radarPane.style.pointerEvents = 'none';
+
+    // Dedicated weather marker pane: zIndex 580 (sits below active high-severity report pins)
+    const weatherMarkerPane = map.createPane('weatherMarkerPane');
+    weatherMarkerPane.style.zIndex = '580';
 
     mapInstanceRef.current = map;
 
@@ -1202,6 +1229,269 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       });
     });
   }, [mode, reports, selectedReportId, onSelectReport, onClusterClick]);
+
+  // 1. Live Doppler Precipitation Radar Layer (RainViewer Open-Source API)
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    if (!showRainRadar) {
+      if (rainRadarLayerRef.current) {
+        map.removeLayer(rainRadarLayerRef.current);
+        rainRadarLayerRef.current = null;
+      }
+      return;
+    }
+
+    let isMounted = true;
+
+    const applyRadarLayer = (info: RadarFrameInfo) => {
+      if (!isMounted || !mapInstanceRef.current) return;
+      if (rainRadarLayerRef.current) {
+        mapInstanceRef.current.removeLayer(rainRadarLayerRef.current);
+      }
+      const radarLayer = L.tileLayer(info.tileUrl, {
+        pane: 'radarPane',
+        opacity: 0.65,
+        maxZoom: 18,
+        attribution: 'Rain Radar &copy; RainViewer',
+      });
+      radarLayer.addTo(mapInstanceRef.current);
+      rainRadarLayerRef.current = radarLayer;
+    };
+
+    if (radarInfo) {
+      applyRadarLayer(radarInfo);
+    } else {
+      fetchLatestRadarFrame().then((info) => {
+        if (isMounted && info) {
+          setRadarInfo(info);
+          applyRadarLayer(info);
+        }
+      });
+    }
+
+    return () => {
+      isMounted = false;
+      if (rainRadarLayerRef.current && mapInstanceRef.current) {
+        mapInstanceRef.current.removeLayer(rainRadarLayerRef.current);
+        rainRadarLayerRef.current = null;
+      }
+    };
+  }, [showRainRadar, radarInfo]);
+
+  // 2. Municipal Weather & AQI Pin Badges with Wind Direction Vectors (Open-Meteo)
+  useEffect(() => {
+    if (mode !== 'dashboard' || !mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    // Clear previous weather markers
+    weatherMarkersRef.current.forEach((marker) => marker.remove());
+    weatherMarkersRef.current.clear();
+
+    if (!showWeatherMarkers) return;
+
+    const getIconSvg = (type: string) => {
+      if (type === 'sun') {
+        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`;
+      }
+      if (type === 'cloud-sun') {
+        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>`;
+      }
+      if (type === 'cloud-rain') {
+        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg>`;
+      }
+      if (type === 'cloud-lightning') {
+        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"/><path d="m13 12-3 5h4l-3 5"/></svg>`;
+      }
+      if (type === 'cloud-fog') {
+        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 17H7"/><path d="M17 21H9"/></svg>`;
+      }
+      return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`;
+    };
+
+    const getWindSvg = (deg: number) => {
+      return `<svg width="10" height="10" style="transform: rotate(${deg}deg); transform-origin: center; display: inline-block; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg>`;
+    };
+
+    RIZAL_LGU_PRESETS.filter((p) => p.id !== 'rizal-center').forEach((preset) => {
+      const telemetry = weatherTelemetry[preset.id];
+      const hasData = !!telemetry;
+
+      const temp = hasData ? Math.round(telemetry.weather.temperature) : '--';
+      const windSpeed = hasData ? Math.round(telemetry.weather.windSpeed) : 0;
+      const windDir = hasData ? telemetry.weather.windDirection : 0;
+      const windCompass = hasData ? telemetry.weather.windDirectionCompass : 'N';
+      const aqi = hasData ? telemetry.airQuality.europeanAqi : 0;
+      const aqiLabel = hasData ? telemetry.airQuality.aqiLabel : 'Monitoring';
+      const interp = hasData ? getWeatherInterpretation(telemetry.weather.weatherCode) : { label: 'Syncing', iconType: 'cloud' as const };
+      const iconSvg = getIconSvg(interp.iconType);
+      const windSvg = getWindSvg(windDir);
+
+      let aqiBg = '#d1fae5';
+      let aqiColor = '#059669';
+      let aqiBorder = '#a7f3d0';
+
+      if (hasData) {
+        const meta = getAqiMeta(aqi, telemetry.airQuality.pm2_5);
+        aqiColor = meta.accentColor;
+        if (aqiLabel === 'Very Poor') {
+          aqiBg = '#ffe4e6';
+          aqiBorder = '#fecdd3';
+        } else if (aqiLabel === 'Poor') {
+          aqiBg = '#ffedd5';
+          aqiBorder = '#fed7aa';
+        } else if (aqiLabel === 'Moderate') {
+          aqiBg = '#fef3c7';
+          aqiBorder = '#fde68a';
+        } else if (aqiLabel === 'Fair') {
+          aqiBg = '#ccfbf1';
+          aqiBorder = '#99f6e4';
+        }
+      }
+
+      const iconHtml = `
+        <div class="group cursor-pointer select-none" style="
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: rgba(255, 255, 255, 0.94);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(229, 231, 235, 0.95);
+          border-radius: 9999px;
+          padding: 3px 7px 3px 6px;
+          box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.08);
+          transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease;
+          white-space: nowrap;
+        ">
+          <span style="color: #059669; display: flex; align-items: center; flex-shrink: 0;">${iconSvg}</span>
+          <span style="font-size: 11px; font-weight: 700; color: #1c1917; font-family: system-ui, -apple-system, sans-serif;">${preset.shortName}</span>
+          <span style="font-size: 11px; font-weight: 700; color: #44403c; font-family: ui-monospace, monospace;">${temp}°</span>
+          
+          <span style="
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 9.5px;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 9999px;
+            background: ${aqiBg};
+            color: ${aqiColor};
+            border: 1px solid ${aqiBorder};
+            font-family: ui-monospace, monospace;
+          ">
+            <span style="width: 4px; height: 4px; border-radius: 50%; background: ${aqiColor};"></span>
+            AQI ${hasData ? aqi : '..'}
+          </span>
+
+          <span style="display: flex; align-items: center; gap: 2px; color: #78716c; font-size: 9.5px; font-family: ui-monospace, monospace;" title="Wind ${windSpeed} km/h ${windCompass}">
+            ${windSvg}
+            <span>${windSpeed}</span>
+          </span>
+        </div>
+      `;
+
+      const markerIcon = L.divIcon({
+        className: 'custom-weather-pin',
+        html: iconHtml,
+        iconSize: [120, 26],
+        iconAnchor: [60, 13],
+      });
+
+      const marker = L.marker([preset.lat, preset.lng], {
+        icon: markerIcon,
+        pane: 'weatherMarkerPane',
+        zIndexOffset: 1500,
+      }).addTo(map);
+
+      // Popup Content
+      const popupHtml = `
+        <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; min-width: 210px; max-width: 250px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <strong style="font-size: 13px; color: #1c1917;">${preset.name}</strong>
+            <span style="font-size: 9.5px; font-family: monospace; color: #78716c; background: #f5f5f4; padding: 1px 5px; border-radius: 4px;">${preset.elevation}</span>
+          </div>
+          <div style="font-size: 11px; color: #57534e; margin-bottom: 8px;">
+            ${interp.label} • Wind ${windCompass} ${windSpeed} km/h ${telemetry?.weather?.windGusts ? `(Gusts: ${telemetry.weather.windGusts} km/h)` : ''}
+          </div>
+          
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 8px; margin-bottom: 8px; font-size: 11px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+              <span style="color: #64748b;">Air Quality (EAQI)</span>
+              <strong style="color: ${aqiColor};">${aqi} (${aqiLabel})</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #475569; font-family: monospace;">
+              <span>PM2.5: ${telemetry?.airQuality?.pm2_5 ?? '--'} μg/m³</span>
+              <span>PM10: ${telemetry?.airQuality?.pm10 ?? '--'} μg/m³</span>
+            </div>
+          </div>
+
+          <div style="font-size: 10.5px; color: #44403c; border-top: 1px solid #f5f5f4; padding-top: 6px; margin-bottom: 8px;">
+            <strong>Ecological Role:</strong> ${preset.ecologicalRole}
+          </div>
+
+          <button class="nw-open-lgu-weather-btn" data-preset-id="${preset.id}" style="
+            width: 100%;
+            padding: 6px 10px;
+            background: #1c1917;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.15s;
+          ">
+            Open Atmospheric Telemetry &rarr;
+          </button>
+        </div>
+      `;
+
+      marker.bindPopup(popupHtml, {
+        closeButton: false,
+        className: 'custom-weather-popup',
+        offset: [0, -10],
+      });
+
+      marker.on('popupopen', (e) => {
+        const popupNode = e.popup.getElement();
+        if (!popupNode) return;
+        const btn = popupNode.querySelector<HTMLButtonElement>('.nw-open-lgu-weather-btn');
+        if (btn) {
+          btn.onclick = (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            marker.closePopup();
+            if (onWeatherMarkerClick) {
+              onWeatherMarkerClick(preset.id);
+            }
+          };
+          btn.onmouseenter = () => {
+            btn.style.backgroundColor = '#000000';
+          };
+          btn.onmouseleave = () => {
+            btn.style.backgroundColor = '#1c1917';
+          };
+        }
+      });
+
+      marker.on('click', () => {
+        if (onWeatherMarkerClick) {
+          onWeatherMarkerClick(preset.id);
+        }
+      });
+
+      weatherMarkersRef.current.set(preset.id, marker);
+    });
+
+    return () => {
+      weatherMarkersRef.current.forEach((marker) => marker.remove());
+      weatherMarkersRef.current.clear();
+    };
+  }, [mode, showWeatherMarkers, weatherTelemetry, onWeatherMarkerClick]);
 
   return <div ref={mapContainerRef} className={`relative isolate z-0 ${className || ''}`} />;
 };

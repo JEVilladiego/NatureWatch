@@ -58,6 +58,7 @@ import {
   RizalLguPreset,
   FullAtmosphericData,
   fetchFullAtmosphericTelemetry,
+  fetchAllRizalLgusTelemetry,
   getAqiMeta,
   getWeatherInterpretation,
   evaluateEnforcementRisks,
@@ -749,6 +750,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isLoadingAtmosphere, setIsLoadingAtmosphere] = useState<boolean>(false);
   const [atmosphereError, setAtmosphereError] = useState<string | null>(null);
 
+  // Atmospheric & Radar Overlays on Map
+  const [showRainRadar, setShowRainRadar] = useState<boolean>(false);
+  const [showWeatherMarkers, setShowWeatherMarkers] = useState<boolean>(false);
+  const [allLguWeather, setAllLguWeather] = useState<Record<string, FullAtmosphericData>>({});
+  const [isLoadingAllLguWeather, setIsLoadingAllLguWeather] = useState<boolean>(false);
+
   // On-demand Case Dossier Live Atmospheric Telemetry
   const [liveCaseAtmosphere, setLiveCaseAtmosphere] = useState<Record<string, FullAtmosphericData>>({});
   const [loadingCaseAtmosphereId, setLoadingCaseAtmosphereId] = useState<string | null>(null);
@@ -935,16 +942,52 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const loadAllLguTelemetry = async () => {
+    if (Object.keys(allLguWeather).length > 0 || isLoadingAllLguWeather) return;
+    setIsLoadingAllLguWeather(true);
+    try {
+      const data = await fetchAllRizalLgusTelemetry();
+      if (data) {
+        setAllLguWeather(data);
+      }
+    } catch (err) {
+      console.warn('Failed to load all LGU weather telemetry:', err);
+    } finally {
+      setIsLoadingAllLguWeather(false);
+    }
+  };
+
   useEffect(() => {
-    if (activeLeftDrawerTab === 'weather' && !atmosphericData && !isLoadingAtmosphere) {
-      loadAtmosphericData();
+    if (activeLeftDrawerTab === 'weather') {
+      setShowWeatherMarkers(true);
+      loadAllLguTelemetry();
+      if (!atmosphericData && !isLoadingAtmosphere) {
+        loadAtmosphericData();
+      }
     }
   }, [activeLeftDrawerTab]);
+
+  useEffect(() => {
+    if (showWeatherMarkers) {
+      loadAllLguTelemetry();
+    }
+  }, [showWeatherMarkers]);
 
   const handleSelectWeatherLgu = (preset: RizalLguPreset) => {
     setSelectedWeatherLguId(preset.id);
     setMapCenter({ lat: preset.lat, lng: preset.lng });
     setMapZoom(preset.id === 'rizal-center' ? 11 : 13);
+    loadAtmosphericData(preset);
+  };
+
+  const handleWeatherMarkerClick = (presetId: string) => {
+    const preset = RIZAL_LGU_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+    setSelectedWeatherLguId(preset.id);
+    handleSwitchLeftDrawerTab('weather');
+    setIsSheetOpen(true);
+    setMapCenter({ lat: preset.lat, lng: preset.lng });
+    setMapZoom(13);
     loadAtmosphericData(preset);
   };
 
@@ -3003,6 +3046,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
               choroplethCounts={choroplethCounts}
               maskNonRizal={isMaskActive}
               showMgbQuarries={showMgbQuarries}
+              showRainRadar={showRainRadar}
+              showWeatherMarkers={showWeatherMarkers}
+              weatherTelemetry={allLguWeather}
+              onWeatherMarkerClick={handleWeatherMarkerClick}
               selectedProtectedZoneId={selectedProtectedZoneId}
               onSelectProtectedZone={(zoneId) => {
                 setSelectedProtectedZoneId(zoneId);
@@ -5525,9 +5572,105 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 </div>
 
-                {/* 4. Refined Contextual Legend */}
+                {/* 4. Atmospheric & Radar Overlays */}
+                <div className="space-y-1.5 pt-1 border-t border-stone-100 dark:border-stone-800">
+                  <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block">
+                    Atmospheric & Radar Overlays
+                  </span>
+
+                  {/* Toggle A: Live Doppler Rain Radar */}
+                  <div
+                    onClick={() => setShowRainRadar(!showRainRadar)}
+                    className="flex items-center justify-between p-2 rounded-xl border border-stone-200/90 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-950/60 hover:bg-stone-50 dark:hover:bg-stone-950/80 transition cursor-pointer"
+                    title="Live Doppler precipitation radar from open-source RainViewer API"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${
+                        showRainRadar ? 'bg-blue-600 text-white' : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                      }`}>
+                        <CloudRain className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-stone-900 dark:text-stone-100 block leading-tight">
+                          Live Rain Radar
+                        </span>
+                        <span className="text-[10px] text-stone-400 dark:text-stone-500 block leading-tight">
+                          RainViewer Doppler sweeps
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Sliding Toggle */}
+                    <div
+                      className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${
+                        showRainRadar ? 'bg-blue-600' : 'bg-stone-300 dark:bg-stone-700'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${
+                          showRainRadar ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Toggle B: Municipal Weather & AQI Pins */}
+                  <div
+                    onClick={() => setShowWeatherMarkers(!showWeatherMarkers)}
+                    className="flex items-center justify-between p-2 rounded-xl border border-stone-200/90 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-950/60 hover:bg-stone-50 dark:hover:bg-stone-950/80 transition cursor-pointer"
+                    title="Live Open-Meteo temperature, air quality score & wind vectors across Rizal LGUs"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${
+                        showWeatherMarkers ? 'bg-emerald-600 text-white' : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                      }`}>
+                        <Wind className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-stone-900 dark:text-stone-100 block leading-tight">
+                          Weather & AQI Pins
+                        </span>
+                        <span className="text-[10px] text-stone-400 dark:text-stone-500 block leading-tight">
+                          Open-Meteo live vectors
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Sliding Toggle */}
+                    <div
+                      className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${
+                        showWeatherMarkers ? 'bg-emerald-600' : 'bg-stone-300 dark:bg-stone-700'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${
+                          showWeatherMarkers ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. Refined Contextual Legend */}
                 <div className="pt-2 border-t border-stone-100 dark:border-stone-800 text-[11px] space-y-1.5">
-                  {mapLayerMode === 'choropleth' ? (
+                  {showRainRadar ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-stone-500 dark:text-stone-400 font-mono text-[9px]">
+                        <span>Light (15 dBZ)</span>
+                        <span>Moderate (35)</span>
+                        <span>Heavy (55+ dBZ)</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-0.5 h-2 w-full rounded-full overflow-hidden border border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-800">
+                        <div className="h-full bg-emerald-400" title="Light Rain" />
+                        <div className="h-full bg-yellow-400" title="Moderate Rain" />
+                        <div className="h-full bg-orange-500" title="Heavy Rain" />
+                        <div className="h-full bg-rose-600" title="Severe Downpour" />
+                      </div>
+                      <div className="text-stone-400 dark:text-stone-500 text-[9px] text-center font-medium">
+                        Live Doppler Precipitation Radar (RainViewer)
+                      </div>
+                    </div>
+                  ) : mapLayerMode === 'choropleth' ? (
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-stone-500 dark:text-stone-400 font-mono text-[9px]">
                         <span>0</span>
@@ -5628,6 +5771,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Live Rain Radar Active Pill */}
+          {showRainRadar && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto bg-stone-900/90 dark:bg-stone-900/95 text-white backdrop-blur-md px-3.5 py-1.5 rounded-full border border-stone-700/80 shadow-xl flex items-center gap-2.5 text-xs animate-in fade-in slide-in-from-bottom-2 duration-200 select-none">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-semibold text-[11px] tracking-wide">Live Rain Radar</span>
+              <span className="text-[10px] text-stone-400 font-mono">RainViewer Open-Source</span>
+              <div className="h-2 w-14 rounded-full overflow-hidden flex ml-0.5">
+                <div className="h-full w-1/4 bg-emerald-400" title="Light" />
+                <div className="h-full w-1/4 bg-yellow-400" title="Moderate" />
+                <div className="h-full w-1/4 bg-orange-500" title="Heavy" />
+                <div className="h-full w-1/4 bg-rose-600" title="Severe" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRainRadar(false)}
+                className="text-stone-400 hover:text-white p-0.5 ml-0.5 rounded cursor-pointer"
+                title="Hide Radar Layer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
