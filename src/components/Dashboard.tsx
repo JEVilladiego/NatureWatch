@@ -886,15 +886,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
     if (tab === 'protected_zones') {
       setShowMgbQuarries(false);
+      setShowWeatherMarkers(false);
       setMapLayerMode('protected_zones');
     } else if (tab === 'quarries') {
       setShowMgbQuarries(true);
+      setShowWeatherMarkers(false);
       setMapLayerMode('quarries');
     } else if (tab === 'weather') {
       setShowMgbQuarries(false);
+      setShowWeatherMarkers(true);
       setMapLayerMode('boundaries');
     } else if (tab === 'firms' || tab === 'queue') {
       setShowMgbQuarries(false);
+      setShowWeatherMarkers(false);
       setMapLayerMode('boundaries');
     }
   };
@@ -902,6 +906,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleCloseDrawer = () => {
     setIsSheetOpen(false);
     setSelectedProtectedZoneId(null);
+    setShowWeatherMarkers(false);
     if (activeLeftDrawerTab === 'quarries') {
       setShowMgbQuarries(false);
       setMapLayerMode('boundaries');
@@ -959,14 +964,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   useEffect(() => {
-    if (activeLeftDrawerTab === 'weather') {
+    if (activeLeftDrawerTab === 'weather' && isSheetOpen && !selectedReport) {
       setShowWeatherMarkers(true);
       loadAllLguTelemetry();
       if (!atmosphericData && !isLoadingAtmosphere) {
         loadAtmosphericData();
       }
+    } else {
+      setShowWeatherMarkers(false);
     }
-  }, [activeLeftDrawerTab]);
+  }, [activeLeftDrawerTab, isSheetOpen, selectedReport]);
 
   useEffect(() => {
     if (showWeatherMarkers) {
@@ -5690,7 +5697,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                   {/* Toggle B: Municipal Weather & AQI Pins */}
                   <div
-                    onClick={() => setShowWeatherMarkers(!showWeatherMarkers)}
+                    onClick={() => {
+                      if (showWeatherMarkers) {
+                        setShowWeatherMarkers(false);
+                        if (activeLeftDrawerTab === 'weather' && isSheetOpen) {
+                          handleCloseDrawer();
+                        }
+                      } else {
+                        handleSwitchLeftDrawerTab('weather');
+                        setIsSheetOpen(true);
+                      }
+                    }}
                     className="flex items-center justify-between p-2 rounded-xl border border-stone-200/90 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-950/60 hover:bg-stone-50 dark:hover:bg-stone-950/80 transition cursor-pointer"
                     title="Live Open-Meteo temperature, air quality score & wind vectors across Rizal LGUs"
                   >
@@ -5846,26 +5863,54 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          {/* Live Rain Radar Active Pill */}
-          {showRainRadar && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto bg-stone-900/90 dark:bg-stone-900/95 text-white backdrop-blur-md px-3.5 py-1.5 rounded-full border border-stone-700/80 shadow-xl flex items-center gap-2.5 text-xs animate-in fade-in slide-in-from-bottom-2 duration-200 select-none">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-semibold text-[11px] tracking-wide">Live Rain Radar</span>
-              <span className="text-[10px] text-stone-400 font-mono">RainViewer Open-Source</span>
-              <div className="h-2 w-14 rounded-full overflow-hidden flex ml-0.5">
-                <div className="h-full w-1/4 bg-emerald-400" title="Light" />
-                <div className="h-full w-1/4 bg-yellow-400" title="Moderate" />
-                <div className="h-full w-1/4 bg-orange-500" title="Heavy" />
-                <div className="h-full w-1/4 bg-rose-600" title="Severe" />
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowRainRadar(false)}
-                className="text-stone-400 hover:text-white p-0.5 ml-0.5 rounded cursor-pointer"
-                title="Hide Radar Layer"
-              >
-                <X className="w-3 h-3" />
-              </button>
+          {/* Active Map Overlay Pills (Bottom Center HUD Dock) */}
+          {(showRainRadar || showWeatherMarkers) && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex items-center gap-2 select-none flex-wrap justify-center max-w-[90vw]">
+              {/* Live Rain Radar Active Pill */}
+              {showRainRadar && (
+                <div className="bg-stone-900/90 dark:bg-stone-900/95 text-white backdrop-blur-md px-3.5 py-1.5 rounded-full border border-stone-700/80 shadow-xl flex items-center gap-2.5 text-xs animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="font-semibold text-[11px] tracking-wide">Live Rain Radar</span>
+                  <span className="text-[10px] text-stone-400 font-mono">RainViewer Open-Source</span>
+                  <div className="h-2 w-14 rounded-full overflow-hidden flex ml-0.5">
+                    <div className="h-full w-1/4 bg-emerald-400" title="Light" />
+                    <div className="h-full w-1/4 bg-yellow-400" title="Moderate" />
+                    <div className="h-full w-1/4 bg-orange-500" title="Heavy" />
+                    <div className="h-full w-1/4 bg-rose-600" title="Severe" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowRainRadar(false)}
+                    className="text-stone-400 hover:text-white p-0.5 ml-0.5 rounded cursor-pointer"
+                    title="Hide Radar Layer"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              {/* Live Weather & AQI Pins Active Pill */}
+              {showWeatherMarkers && (
+                <div className="bg-stone-900/90 dark:bg-stone-900/95 text-white backdrop-blur-md px-3.5 py-1.5 rounded-full border border-stone-700/80 shadow-xl flex items-center gap-2 text-xs animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+                  <CloudSun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="font-semibold text-[11px] tracking-wide">Weather &amp; AQI Pins</span>
+                  <span className="text-[10px] text-stone-400 font-mono">Open-Meteo</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowWeatherMarkers(false);
+                      if (activeLeftDrawerTab === 'weather' && isSheetOpen) {
+                        handleCloseDrawer();
+                      }
+                    }}
+                    className="text-stone-400 hover:text-white p-0.5 ml-0.5 rounded cursor-pointer"
+                    title="Hide Weather Pins"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
