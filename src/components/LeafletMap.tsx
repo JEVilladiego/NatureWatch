@@ -81,7 +81,9 @@ interface LeafletMapProps {
   maskNonRizal?: boolean;
   fitProvinceKey?: number | string;
   showProtectedZones?: boolean;
+  selectedProtectedZoneId?: string | null;
   onSelectProtectedZone?: (zoneId: string) => void;
+  onMapBackgroundClick?: () => void;
   showMgbQuarries?: boolean;
 }
 
@@ -104,7 +106,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   maskNonRizal,
   fitProvinceKey,
   showProtectedZones = true,
+  selectedProtectedZoneId = null,
   onSelectProtectedZone,
+  onMapBackgroundClick,
   showMgbQuarries = false,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -366,9 +370,28 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     if (layerMode !== 'protected_zones' || !protectedZonesData) return;
 
     const layer = L.geoJSON(protectedZonesData as any, {
+      filter: (feature: any) => {
+        // Requirement 2: when a specific reserve is selected, the map must only highlight that reserve
+        if (!selectedProtectedZoneId) return true;
+        const fid = feature?.properties?.id || feature?.id;
+        return fid === selectedProtectedZoneId;
+      },
       style: (feature: any) => {
         const props = feature?.properties;
         const cat = props?.category;
+        const isSelected = Boolean(selectedProtectedZoneId && (props?.id === selectedProtectedZoneId || feature?.id === selectedProtectedZoneId));
+
+        if (isSelected) {
+          // Radiant highlight for the selected reserve
+          return {
+            color: props?.strokeColor || '#059669',
+            weight: 3.5,
+            fillColor: props?.fillColor || '#10b981',
+            fillOpacity: 0.38,
+            dashArray: undefined,
+          };
+        }
+
         let dashArray = '5, 5';
         let weight = 2;
         let fillOpacity = 0.16;
@@ -437,22 +460,39 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           className: 'tactical-map-tooltip',
         });
 
+        const isSelected = Boolean(selectedProtectedZoneId && (props?.id === selectedProtectedZoneId || feature?.id === selectedProtectedZoneId));
+        if (isSelected) {
+          setTimeout(() => {
+            try {
+              (featureLayer as any).openTooltip?.();
+            } catch (e) {}
+          }, 80);
+        }
+
         const pathLayer = featureLayer as L.Path;
         pathLayer.on('mouseover', () => {
           pathLayer.setStyle({
             weight: 3.5,
-            fillOpacity: 0.32,
+            fillOpacity: 0.38,
           });
         });
 
         pathLayer.on('mouseout', () => {
-          pathLayer.setStyle({
-            weight: props.category === 'nipas' ? 2.5 : 2,
-            fillOpacity: props.category === 'llda_zomap' ? 0.22 : 0.16,
-          });
+          if (isSelected) {
+            pathLayer.setStyle({
+              weight: 3.5,
+              fillOpacity: 0.38,
+            });
+          } else {
+            pathLayer.setStyle({
+              weight: props.category === 'nipas' ? 2.5 : 2,
+              fillOpacity: props.category === 'llda_zomap' ? 0.22 : 0.16,
+            });
+          }
         });
 
-        pathLayer.on('click', () => {
+        pathLayer.on('click', (e: L.LeafletMouseEvent) => {
+          L.DomEvent.stopPropagation(e);
           try {
             const bounds = (pathLayer as any).getBounds?.();
             if (bounds && map) {
@@ -477,7 +517,22 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         protectedZonesLayerRef.current = null;
       }
     };
-  }, [layerMode, protectedZonesData]);
+  }, [layerMode, protectedZonesData, selectedProtectedZoneId]);
+
+  // Dashboard Map Background Click Listener to deselect active features
+  useEffect(() => {
+    if (!mapInstanceRef.current || mode !== 'dashboard') return;
+    const map = mapInstanceRef.current;
+    const handleBgClick = () => {
+      if (onMapBackgroundClick) {
+        onMapBackgroundClick();
+      }
+    };
+    map.on('click', handleBgClick);
+    return () => {
+      map.off('click', handleBgClick);
+    };
+  }, [mode, onMapBackgroundClick]);
 
   // MGB Permitted Quarries Vector Layer Rendering
   useEffect(() => {

@@ -768,6 +768,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const handleSwitchLeftDrawerTab = (tab: 'queue' | 'firms' | 'protected_zones' | 'quarries') => {
     setActiveLeftDrawerTab(tab);
+    if (tab !== 'protected_zones') {
+      setSelectedProtectedZoneId(null);
+    }
     if (tab === 'protected_zones') {
       setShowMgbQuarries(false);
       setMapLayerMode('protected_zones');
@@ -782,6 +785,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const handleCloseDrawer = () => {
     setIsSheetOpen(false);
+    setSelectedProtectedZoneId(null);
     if (activeLeftDrawerTab === 'quarries') {
       setShowMgbQuarries(false);
       setMapLayerMode('boundaries');
@@ -1015,6 +1019,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setMunicipalityFilter(matchedKey);
     }
     setSelectedReport(null);
+    setSelectedProtectedZoneId(null);
     setIsSheetOpen(true);
     handleSwitchLeftDrawerTab('queue');
     setMapCenter({ lat: group.lat, lng: group.lng });
@@ -1285,6 +1290,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleQuickJump = (munKey: string) => {
     setActiveClusterFilter(null);
     setActiveProtectedZoneFilter(null);
+    setSelectedProtectedZoneId(null);
     if (munKey === 'all') {
       setMunicipalityFilter('all');
       setSelectedReport(null);
@@ -2763,6 +2769,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               choroplethCounts={choroplethCounts}
               maskNonRizal={isMaskActive}
               showMgbQuarries={showMgbQuarries}
+              selectedProtectedZoneId={selectedProtectedZoneId}
               onSelectProtectedZone={(zoneId) => {
                 setSelectedProtectedZoneId(zoneId);
                 // On narrow viewports, close the left sheet to ensure drawer visibility
@@ -2770,7 +2777,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   setIsSheetOpen(false);
                 }
               }}
+              onMapBackgroundClick={() => {
+                if (selectedProtectedZoneId) {
+                  setSelectedProtectedZoneId(null);
+                }
+              }}
               onSelectReport={(r) => {
+                setSelectedProtectedZoneId(null);
                 setSelectedReport(r);
                 setIsSheetOpen(true);
                 const coords = resolveReportCoordinates(r);
@@ -2877,6 +2890,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <div
                             key={item.id}
                             onMouseDown={() => {
+                              setSelectedProtectedZoneId(null);
                               handleQuickJump(item.payload);
                               setSearchTerm('');
                               setIsSearchFocused(false);
@@ -2945,6 +2959,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <div
                             key={item.id}
                             onMouseDown={() => {
+                              setSelectedProtectedZoneId(null);
                               const f = item.payload;
                               setShowMgbQuarries(true);
                               setMapLayerMode('quarries');
@@ -3001,6 +3016,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <div
                             key={item.id}
                             onMouseDown={() => {
+                              setSelectedProtectedZoneId(null);
                               const r = item.payload;
                               setSelectedReport(r);
                               setIsSheetOpen(true);
@@ -3646,6 +3662,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                   </div>
 
+                  {/* Active Reserve Highlight Status Bar */}
+                  {selectedProtectedZoneId && (
+                    <div className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border-b border-emerald-200/60 dark:border-emerald-850 flex items-center justify-between text-xs shrink-0">
+                      <span className="text-[11px] font-medium text-emerald-900 dark:text-emerald-200 truncate pr-2">
+                        Highlighting: <strong className="font-semibold">{selectedProtectedZone?.shortName || selectedProtectedZone?.name}</strong>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProtectedZoneId(null)}
+                        className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer shrink-0"
+                      >
+                        Show all reserves
+                      </button>
+                    </div>
+                  )}
+
                   {/* Interactive Zone List */}
                   <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar overscroll-contain">
                     {RIZAL_PROTECTED_ZONES_CATALOG
@@ -3668,10 +3700,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <div
                             key={zone.id}
                             onClick={() => {
-                              setMapCenter({ lat: zone.lat, lng: zone.lng });
-                              setMapZoom(zone.zoom);
-                              setSelectedProtectedZoneId(zone.id);
-                              if (window.innerWidth < 640) setIsSheetOpen(false);
+                              if (selectedProtectedZoneId === zone.id) {
+                                setSelectedProtectedZoneId(null);
+                              } else {
+                                setMapCenter({ lat: zone.lat, lng: zone.lng });
+                                setMapZoom(zone.zoom);
+                                setSelectedProtectedZoneId(zone.id);
+                                if (window.innerWidth < 640) setIsSheetOpen(false);
+                              }
                             }}
                             className={`p-3 transition-colors cursor-pointer text-left space-y-1.5 group ${
                               isSelected
@@ -4342,7 +4378,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* ========================================================= */}
           {/* 3.5 RIGHT SLIDE-OVER PROTECTED ZONE DOSSIER & THREAT HUD  */}
           {/* ========================================================= */}
-          {selectedProtectedZone && (
+          {selectedProtectedZone && isSheetOpen && activeLeftDrawerTab === 'protected_zones' && !selectedReport && (
             <div className="absolute top-3 right-16 sm:top-4 sm:right-18 z-30 pointer-events-auto w-[calc(100vw-88px)] sm:w-[410px] max-h-[calc(100vh-88px)] bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200 dark:border-stone-800 shadow-2xl rounded-2xl overflow-hidden flex flex-col transition-all duration-300 animate-nav-pill min-h-0">
               {/* Header */}
               <div className="p-3.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 shrink-0 space-y-2">
@@ -4453,8 +4489,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     catBreakdown[c] = (catBreakdown[c] || 0) + 1;
                   }
 
-                  const isFilterActive = activeProtectedZoneFilter === selectedProtectedZone.id;
-
                   return (
                     <div className="space-y-2">
                       <div className={`p-3 rounded-xl border space-y-2.5 ${
@@ -4505,76 +4539,62 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               })}
                             </div>
 
-                            {/* One-click "Filter Queue to this Zone" button */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (isFilterActive) {
-                                  setActiveProtectedZoneFilter(null);
-                                } else {
-                                  setActiveProtectedZoneFilter(selectedProtectedZone.id);
-                                  setIsSheetOpen(true);
-                                  setSelectedReport(null);
-                                }
-                              }}
-                              className={`w-full py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-[0.99] ${
-                                isFilterActive
-                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                  : 'bg-stone-900 hover:bg-black text-white dark:bg-emerald-600 dark:hover:bg-emerald-500'
-                              }`}
-                            >
-                              <Filter className="w-3.5 h-3.5" />
-                              <span>
-                                {isFilterActive
-                                  ? 'Active Filter: Zone Isolated (Click to Clear)'
-                                  : `Filter Queue to this Zone (${activeThreats.length})`}
-                              </span>
-                            </button>
-
-                            {/* Mini stream of active reports in zone */}
-                            <div className="space-y-1 pt-1 border-t border-rose-200/60 dark:border-rose-900/60">
-                              <span className="text-[10px] font-medium text-rose-800 dark:text-rose-300 block">
-                                Zone Incidents:
-                              </span>
-                              {activeThreats.slice(0, 3).map((rep) => {
-                                const c = rep.final?.category || rep.aiTriage?.category;
-                                const catLabel = (CATEGORIES as any)[c || '']?.labelEn || c || 'Incident';
-                                const sev = rep.final?.severity || rep.aiTriage?.severity || 0;
-                                return (
-                                  <button
-                                    key={rep.id}
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedReport(rep);
-                                      setIsSheetOpen(true);
-                                      const coords = resolveReportCoordinates(rep);
-                                      setMapCenter(coords);
-                                      setMapZoom(14);
-                                    }}
-                                    className="w-full text-left p-1.5 rounded-md bg-white/70 dark:bg-stone-900/70 hover:bg-white dark:hover:bg-stone-900 border border-rose-200/50 dark:border-rose-900/40 transition flex items-center justify-between gap-2 cursor-pointer group"
-                                  >
-                                    <div className="min-w-0">
-                                      <div className="flex items-center gap-1 text-[11px] font-semibold text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
-                                        <span className="font-mono text-[10px] text-stone-500">{rep.referenceCode}</span>
-                                        <span>•</span>
-                                        <span className="truncate">{catLabel}</span>
-                                      </div>
-                                      <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
-                                        {rep.location.barangay ? `${rep.location.barangay}, ` : ''}{rep.location.municipality}
-                                      </div>
-                                    </div>
-                                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded shrink-0 ${
-                                      sev >= 4
-                                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/80 dark:text-rose-200'
-                                        : 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
-                                    }`}>
-                                      Sev {sev}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </>
+                              {/* Interactive Zone Incidents Stream */}
+                              <div className="space-y-1.5 pt-1.5 border-t border-rose-200/60 dark:border-rose-900/60">
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span className="font-semibold uppercase tracking-wider text-rose-800 dark:text-rose-300">
+                                    Zone Incidents ({activeThreats.length})
+                                  </span>
+                                  <span className="text-stone-400 dark:text-stone-500 font-medium">
+                                    Click to inspect
+                                  </span>
+                                </div>
+                                <div className="space-y-1.5 max-h-52 overflow-y-auto no-scrollbar overscroll-contain pr-0.5">
+                                  {activeThreats.map((rep) => {
+                                    const c = rep.final?.category || rep.aiTriage?.category;
+                                    const catLabel = (CATEGORIES as any)[c || '']?.labelEn || c || 'Incident';
+                                    const sev = rep.final?.severity || rep.aiTriage?.severity || 0;
+                                    return (
+                                      <button
+                                        key={rep.id}
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedReport(rep);
+                                          setIsSheetOpen(true);
+                                          const coords = resolveReportCoordinates(rep);
+                                          setMapCenter(coords);
+                                          setMapZoom(15);
+                                        }}
+                                        className="w-full text-left p-2 rounded-xl bg-white dark:bg-stone-900 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 border border-stone-200/90 dark:border-stone-800 hover:border-rose-300 dark:hover:border-rose-700/60 shadow-2xs hover:shadow-xs transition-all cursor-pointer group flex items-center justify-between gap-2.5 active:scale-[0.99]"
+                                        title={`Inspect report ${rep.referenceCode}`}
+                                      >
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900 dark:text-stone-100 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                                            <span className="font-mono text-[10px] text-stone-400 dark:text-stone-500 font-semibold">{rep.referenceCode}</span>
+                                            <span className="text-stone-300 dark:text-stone-600">•</span>
+                                            <span className="truncate">{catLabel}</span>
+                                          </div>
+                                          <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate mt-0.5 flex items-center gap-1">
+                                            <MapPin className="w-2.5 h-2.5 shrink-0 text-stone-400" />
+                                            <span className="truncate">{rep.location.barangay ? `${rep.location.barangay}, ` : ''}{rep.location.municipality}</span>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                                            sev >= 4
+                                              ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                              : 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
+                                          }`}>
+                                            Sev {sev}
+                                          </span>
+                                          <ChevronRight className="w-3.5 h-3.5 text-stone-400 group-hover:text-rose-600 dark:group-hover:text-rose-400 group-hover:translate-x-0.5 transition-all" />
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </>
                         ) : (
                           <div className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-relaxed">
                             Zero active citizen violation reports are mapped within this reserve's polygon.
