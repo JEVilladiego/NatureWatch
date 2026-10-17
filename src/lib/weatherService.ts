@@ -384,7 +384,7 @@ export function getAqiMeta(
       accentColor: '#f59e0b',
       bgColor: '#fef3c7',
       borderColor: '#fde68a',
-      description: `Typical ambient background particulate concentration (${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10). Within Philippine 24-hour guidelines.`,
+      description: `Moderate ambient air quality (${europeanAqi}). Measured concentrations: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
       healthSummary: 'Air quality acceptable for normal outdoor activity.',
       denrStatus,
       dominantPollutant,
@@ -401,7 +401,7 @@ export function getAqiMeta(
       accentColor: '#0d9488',
       bgColor: '#ccfbf1',
       borderColor: '#99f6e4',
-      description: `Good-to-fair ambient atmospheric column (${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10). Within normal provincial baseline.`,
+      description: `Fair ambient atmospheric column (${europeanAqi}). Measured concentrations: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
       healthSummary: 'Air quality is fair and within normal provincial baseline.',
       denrStatus,
       dominantPollutant,
@@ -417,11 +417,51 @@ export function getAqiMeta(
     accentColor: '#059669',
     bgColor: '#d1fae5',
     borderColor: '#a7f3d0',
-    description: `Pristine ambient atmospheric quality (${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10). Minimal airborne particulate burden.`,
+    description: `Clean ambient atmospheric column (${europeanAqi}). Measured concentrations: ${pm25} μg/m³ PM2.5, ${p10} μg/m³ PM10.`,
     healthSummary: 'Air quality is optimal. No health impacts expected.',
     denrStatus,
     dominantPollutant,
   };
+}
+
+/**
+ * Calculates official DOST-PAGASA Heat Index using the Rothfusz regression equation
+ * adapted from the US National Weather Service for tropical Philippine environments.
+ * Returns the biometeorological human thermal stress index in °C.
+ */
+export function calculatePagasaHeatIndex(temperatureC: number, relativeHumidity: number): number {
+  if (typeof temperatureC !== 'number' || isNaN(temperatureC)) return 0;
+  if (typeof relativeHumidity !== 'number' || isNaN(relativeHumidity)) return Math.round(temperatureC * 10) / 10;
+
+  // PAGASA defines heat index for ambient temperatures >= 27°C (80°F)
+  if (temperatureC < 27) return Math.round(temperatureC * 10) / 10;
+
+  // Convert Celsius to Fahrenheit for the Rothfusz regression equation
+  const T = (temperatureC * 9) / 5 + 32;
+  const R = Math.max(0, Math.min(100, relativeHumidity));
+
+  // Rothfusz polynomial regression
+  let hiF =
+    -42.379 +
+    2.04901523 * T +
+    10.14333127 * R -
+    0.22475541 * T * R -
+    0.00683783 * T * T -
+    0.05481717 * R * R +
+    0.00122874 * T * T * R +
+    0.00085282 * T * R * R -
+    0.00000199 * T * T * R * R;
+
+  // Rothfusz humidity adjustments
+  if (R < 13 && T >= 80 && T <= 112) {
+    hiF -= ((13 - R) / 4) * Math.sqrt((17 - Math.abs(T - 95)) / 17);
+  } else if (R > 85 && T >= 80 && T <= 87) {
+    hiF += ((R - 85) / 10) * ((87 - T) / 5);
+  }
+
+  // Convert back to Celsius
+  const hiC = ((hiF - 32) * 5) / 9;
+  return Math.round(hiC * 10) / 10;
 }
 
 export interface EmpiricalMeteorologicalIndices {
@@ -436,7 +476,7 @@ export interface EmpiricalMeteorologicalIndices {
   };
   rainfallIntensity: {
     category: 'Dry / Nil' | 'Light Rain' | 'Moderate Rain' | 'Heavy Rain (Yellow Alert)' | 'Intense Rain (Orange Alert)' | 'Torrential Rain (Red Alert)';
-    rate: number; // in mm/h
+    rate: number; // in mm
     classification: string;
     dataLimitation: string;
     badgeBg: string;
@@ -469,8 +509,8 @@ export function computeEmpiricalWeatherIndices(
   weather: LiveWeatherConditions,
   _aqi?: LiveAirQualityConditions
 ): EmpiricalMeteorologicalIndices {
-  // 1. PAGASA Heat Index (apparent temperature)
-  const hi = weather.apparentTemperature;
+  // 1. Official DOST-PAGASA Heat Index (Rothfusz equation)
+  const hi = calculatePagasaHeatIndex(weather.temperature, weather.relativeHumidity);
   let heatCategory: EmpiricalMeteorologicalIndices['heatIndex']['category'] = 'Normal';
   let pagasaGuideline = 'PAGASA: Normal physiological thermal range. Minimal outdoor stress.';
   let heatBadgeBg = 'bg-emerald-50 dark:bg-emerald-950/60';
@@ -504,47 +544,50 @@ export function computeEmpiricalWeatherIndices(
   }
 
   // 2. Precipitation Rate & Official PAGASA Advisory Threshold
-  const effectiveRain = Math.max(weather.precipitation, weather.rain);
+  const effectiveRain = Math.max(
+    typeof weather.precipitation === 'number' && !isNaN(weather.precipitation) ? weather.precipitation : 0,
+    typeof weather.rain === 'number' && !isNaN(weather.rain) ? weather.rain : 0
+  );
   let rainCategory: EmpiricalMeteorologicalIndices['rainfallIntensity']['category'] = 'Dry / Nil';
-  let rainClassification = '0.0 mm/h recorded. No active atmospheric rainfall detected.';
+  let rainClassification = '0.0 mm recorded. No active atmospheric rainfall detected.';
   let rainBadgeBg = 'bg-stone-50 dark:bg-stone-800/80';
   let rainBadgeText = 'text-stone-600 dark:text-stone-300';
   let rainBadgeBorder = 'border-stone-200 dark:border-stone-700';
 
   if (effectiveRain >= 30.0) {
     rainCategory = 'Torrential Rain (Red Alert)';
-    rainClassification = `Exceeds PAGASA Red Warning threshold (≥ 30.0 mm/h). Rate measured: ${effectiveRain} mm/h.`;
+    rainClassification = `Exceeds PAGASA Red Warning threshold (≥ 30.0 mm/h). Recorded: ${effectiveRain} mm.`;
     rainBadgeBg = 'bg-rose-50 dark:bg-rose-950/60';
     rainBadgeText = 'text-rose-700 dark:text-rose-300';
     rainBadgeBorder = 'border-rose-200 dark:border-rose-800';
   } else if (effectiveRain >= 15.0) {
     rainCategory = 'Intense Rain (Orange Alert)';
-    rainClassification = `Exceeds PAGASA Orange Warning threshold (15.0 – 29.9 mm/h). Rate measured: ${effectiveRain} mm/h.`;
+    rainClassification = `Exceeds PAGASA Orange Warning threshold (15.0 – 29.9 mm/h). Recorded: ${effectiveRain} mm.`;
     rainBadgeBg = 'bg-orange-50 dark:bg-orange-950/60';
     rainBadgeText = 'text-orange-700 dark:text-orange-300';
     rainBadgeBorder = 'border-orange-200 dark:border-orange-800';
   } else if (effectiveRain >= 7.5) {
     rainCategory = 'Heavy Rain (Yellow Alert)';
-    rainClassification = `Exceeds PAGASA Yellow Warning threshold (7.5 – 14.9 mm/h). Rate measured: ${effectiveRain} mm/h.`;
+    rainClassification = `Exceeds PAGASA Yellow Warning threshold (7.5 – 14.9 mm/h). Recorded: ${effectiveRain} mm.`;
     rainBadgeBg = 'bg-amber-50 dark:bg-amber-950/60';
     rainBadgeText = 'text-amber-700 dark:text-amber-300';
     rainBadgeBorder = 'border-amber-200 dark:border-amber-800';
   } else if (effectiveRain >= 2.5) {
     rainCategory = 'Moderate Rain';
-    rainClassification = `Moderate rainfall measured (${effectiveRain} mm/h). Below official advisory thresholds.`;
+    rainClassification = `Moderate rainfall recorded (${effectiveRain} mm). Below official advisory thresholds.`;
     rainBadgeBg = 'bg-blue-50 dark:bg-blue-950/60';
     rainBadgeText = 'text-blue-700 dark:text-blue-300';
     rainBadgeBorder = 'border-blue-200 dark:border-blue-800';
   } else if (effectiveRain > 0) {
     rainCategory = 'Light Rain';
-    rainClassification = `Light precipitation measured (${effectiveRain} mm/h). Normal wetting rate.`;
+    rainClassification = `Light precipitation recorded (${effectiveRain} mm). Normal wetting rate.`;
     rainBadgeBg = 'bg-sky-50 dark:bg-sky-950/60';
     rainBadgeText = 'text-sky-700 dark:text-sky-300';
     rainBadgeBorder = 'border-sky-200 dark:border-sky-800';
   }
 
   // 3. WMO Beaufort Wind Force
-  const ws = weather.windSpeed;
+  const ws = typeof weather.windSpeed === 'number' && !isNaN(weather.windSpeed) ? weather.windSpeed : 0;
   let windCategory: EmpiricalMeteorologicalIndices['windKineticForce']['category'] = 'Calm / Light Air';
   let beaufortDesc = ws < 1
     ? 'WMO Beaufort 0 (Calm): Smoke rises vertically; prevailing wind direction is physically indeterminate.'
@@ -590,7 +633,7 @@ export function computeEmpiricalWeatherIndices(
       category: heatCategory,
       value: hi,
       pagasaGuideline,
-      dataLimitation: `Calculated from ambient temperature (${weather.temperature}°C) and relative humidity (${weather.relativeHumidity}%). Ambient heat index measures human biometeorological thermal load. Does not measure ground fuel moisture, vegetation flammability, or fire ignition.`,
+      dataLimitation: `Calculated from ambient air temperature (${weather.temperature}°C) and relative humidity (${weather.relativeHumidity}%) using the official DOST-PAGASA Rothfusz regression equation. Measures human biometeorological thermal load. Does not measure ground fuel moisture, vegetation flammability, or fire ignition.`,
       badgeBg: heatBadgeBg,
       badgeText: heatBadgeText,
       badgeBorder: heatBadgeBorder,
@@ -599,7 +642,7 @@ export function computeEmpiricalWeatherIndices(
       category: rainCategory,
       rate: effectiveRain,
       classification: rainClassification,
-      dataLimitation: 'Reflects hourly atmospheric precipitation rate. Ground siltation, river flooding, and slope stability cannot be concluded without local stream gauges and antecedent soil saturation history.',
+      dataLimitation: 'Reflects atmospheric precipitation recorded in the current observation interval. Ground siltation, river flooding, and slope stability cannot be concluded without local stream gauges and antecedent soil saturation history.',
       badgeBg: rainBadgeBg,
       badgeText: rainBadgeText,
       badgeBorder: rainBadgeBorder,

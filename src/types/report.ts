@@ -73,7 +73,7 @@ export interface AirQualitySnapshot {
   pm10: number; // in μg/m³
   carbonMonoxide: number; // in μg/m³
   ozone?: number; // in μg/m³
-  europeanAqi: number; // EAQI (0-25 Good, 25-50 Fair, 50-75 Moderate, 75-100 Poor, 100-125 Very Poor, >125 Hazardous)
+  europeanAqi: number; // EAQI (0-20 Good, 20-40 Fair, 40-60 Moderate, 60-80 Poor, 80-100 Very Poor, >100 Hazardous)
   aqiLabel: 'Good' | 'Fair' | 'Moderate' | 'Poor' | 'Very Poor' | 'Hazardous';
   fetchedAt: string;
 }

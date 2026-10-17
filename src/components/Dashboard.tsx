@@ -4608,7 +4608,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     <div className="flex items-center justify-between">
                                       <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
                                         <CloudRain className="w-3.5 h-3.5 text-blue-500" />
-                                        <span>Precipitation Rate (PAGASA Thresholds)</span>
+                                        <span>Precipitation (PAGASA Warning Brackets)</span>
                                       </span>
                                       <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded uppercase border ${indices.rainfallIntensity.badgeBg} ${indices.rainfallIntensity.badgeText} ${indices.rainfallIntensity.badgeBorder}`}>
                                         {indices.rainfallIntensity.category}
