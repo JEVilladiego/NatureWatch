@@ -23,6 +23,8 @@ import {
   ChevronDown,
   ChevronUp,
   ZoomIn,
+  Plus,
+  Minus,
   ArrowLeft,
   Layout,
   Maximize2,
@@ -727,6 +729,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [mgbQuarriesFeatures, setMgbQuarriesFeatures] = useState<GeoJSONFeature<MgbQuarryFeatureProperties>[]>([]);
   const [quarrySearchTerm, setQuarrySearchTerm] = useState<string>('');
   const [protectedZoneSearchTerm, setProtectedZoneSearchTerm] = useState<string>('');
+  const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
 
   // When switching to Full Map mode, enforce default clean state: nothing selected except Rizal's boundaries
   useEffect(() => {
@@ -905,6 +908,86 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
     return counts;
   }, [reports]);
+
+  // Real-time Unified GIS Search suggestions across Municipalities, Reserves, Quarries, and Incidents
+  const searchSuggestions = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return null;
+
+    const munResults = Object.keys(MUNICIPALITY_COORDINATES)
+      .filter((k) => k.toLowerCase().includes(query))
+      .slice(0, 3)
+      .map((k) => ({
+        type: 'municipality' as const,
+        id: `mun-${k}`,
+        title: k,
+        subtitle: 'Rizal LGU • Boundary fly-to',
+        payload: k,
+      }));
+
+    const zoneResults = RIZAL_PROTECTED_ZONES_CATALOG
+      .filter((z) => z.name.toLowerCase().includes(query) || z.municipality.toLowerCase().includes(query))
+      .slice(0, 3)
+      .map((z) => ({
+        type: 'reserve' as const,
+        id: `zone-${z.id}`,
+        title: z.name,
+        subtitle: `${z.municipality} • Protected Reserve`,
+        payload: z,
+      }));
+
+    const quarryResults = mgbQuarriesFeatures
+      .filter((f) => {
+        const name = f.properties?.name || '';
+        const op = f.properties?.operator || '';
+        const mun = f.properties?.municipality || '';
+        return name.toLowerCase().includes(query) || op.toLowerCase().includes(query) || mun.toLowerCase().includes(query);
+      })
+      .slice(0, 3)
+      .map((f, idx) => ({
+        type: 'quarry' as const,
+        id: `quarry-${idx}-${f.properties?.permitNumber || f.properties?.name || idx}`,
+        title: f.properties?.name || 'MGB Quarry Concession',
+        subtitle: `${f.properties?.operator || f.properties?.municipality || 'Permitted Mining Tenement'}`,
+        payload: f,
+      }));
+
+    const reportResults = reports
+      .filter((r) => {
+        const cat = r.final?.category || r.aiTriage?.category || '';
+        const desc = r.rawInput?.description || '';
+        const brgy = r.location?.barangay || '';
+        return (
+          r.referenceCode.toLowerCase().includes(query) ||
+          desc.toLowerCase().includes(query) ||
+          brgy.toLowerCase().includes(query) ||
+          cat.toLowerCase().includes(query)
+        );
+      })
+      .slice(0, 3)
+      .map((r) => {
+        const cat = r.final?.category || r.aiTriage?.category || 'Incident';
+        const summary = r.aiTriage?.summary || r.rawInput?.description?.slice(0, 35) || cat;
+        return {
+          type: 'report' as const,
+          id: `report-${r.id}`,
+          title: `${r.referenceCode} • ${summary}`,
+          subtitle: `${r.location?.barangay ? `${r.location.barangay}, ` : ''}${r.location?.municipality || 'Rizal'}`,
+          payload: r,
+        };
+      });
+
+    const totalCount = munResults.length + zoneResults.length + quarryResults.length + reportResults.length;
+    if (totalCount === 0) return null;
+
+    return {
+      municipalities: munResults,
+      reserves: zoneResults,
+      quarries: quarryResults,
+      reports: reportResults,
+      totalCount,
+    };
+  }, [searchTerm, mgbQuarriesFeatures, reports]);
 
   // Cluster marker click handler: filters the Incident Queue to the co-located reports
   const handleClusterClick = (group: {
@@ -2699,266 +2782,365 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* ========================================================= */}
-          {/* 2. FLOATING TOP-LEFT NAVIGATION PILL                     */}
+          {/* 2. GOOGLE & APPLE MAPS HYBRID OMNIBOX & INTELLIGENCE HUB   */}
           {/* ========================================================= */}
-          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-40 flex items-center gap-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-md rounded-xl p-1.5 pointer-events-auto animate-nav-pill transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
-            {/* NatureWatch brand mark matching Navbar */}
-            <button
-              type="button"
-              onClick={() => {
-                if (onNavigateTab) onNavigateTab('workbench');
-                else handleViewModeChange('workbench');
-              }}
-              className="flex items-center gap-2 select-none px-1.5 py-0.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer text-left"
-              title="NatureWatch"
-            >
-              <span className="w-6 h-6 rounded-lg bg-tagapo-800 dark:bg-emerald-600 text-white flex items-center justify-center shadow-2xs">
-                <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2.2} />
-              </span>
-              <span className="font-bold text-xs tracking-tight text-stone-950 dark:text-stone-100 hidden sm:inline">
-                NatureWatch
-              </span>
-              <span className="hidden md:flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
-                <span className="h-3.5 w-px bg-stone-300 dark:bg-stone-800" aria-hidden="true" />
-                <span className="font-semibold text-[11px] text-stone-600 dark:text-stone-300">{t.operationsLabel}</span>
-              </span>
-            </button>
-
-            <div className="h-4 w-px bg-stone-200 dark:bg-stone-800 hidden sm:block" />
-
-            {/* Tab Navigation Pill Group matching Navbar */}
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                className="px-2.5 py-1 rounded-md text-xs font-semibold bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs cursor-default flex items-center gap-1.5 transition-all duration-150"
-              >
-                <MapIcon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{t.officerNavMap}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (onNavigateTab) onNavigateTab('workbench');
-                  else handleViewModeChange('workbench');
-                }}
-                className="px-2.5 py-1 rounded-md text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
-                title={t.officerNavWorkbench}
-              >
-                <Layout className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
-                <span className="hidden sm:inline">{t.officerNavWorkbench}</span>
-              </button>
-
-              {onNavigateTab && (
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-40 w-[calc(100vw-24px)] sm:w-[440px] pointer-events-auto flex flex-col min-h-0">
+            {/* Master Omnibox Card (Google layout + Apple frosted glass) */}
+            <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200/90 dark:border-stone-800 shadow-xl rounded-2xl p-2.5 sm:p-3 space-y-2.5 select-none transition-all">
+              {/* Row 1: App Header & View Mode Switcher */}
+              <div className="flex items-center justify-between gap-2">
                 <button
                   type="button"
-                  onClick={() => onNavigateTab('status')}
-                  className="px-2.5 py-1 rounded-md text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition-all duration-150 cursor-pointer hidden sm:flex items-center gap-1.5"
-                  title={t.officerNavStatus}
+                  onClick={() => {
+                    if (onNavigateTab) onNavigateTab('workbench');
+                    else handleViewModeChange('workbench');
+                  }}
+                  className="flex items-center gap-2 select-none px-1 py-0.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer text-left"
+                  title="NatureWatch Operations"
                 >
-                  <Search className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
-                  <span className="hidden sm:inline">{t.officerNavStatus}</span>
+                  <span className="w-6 h-6 rounded-lg bg-tagapo-800 dark:bg-emerald-600 text-white flex items-center justify-center shadow-2xs shrink-0">
+                    <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2.2} />
+                  </span>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-xs tracking-tight text-stone-950 dark:text-stone-100 leading-tight">
+                      NatureWatch
+                    </span>
+                    <span className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 leading-none">
+                      {t.operationsLabel}
+                    </span>
+                  </div>
                 </button>
-              )}
 
-            </div>
-          </div>
+                {/* Segmented [Workbench | Map] App Switcher */}
+                <div className="flex items-center bg-stone-100 dark:bg-stone-800/90 p-0.5 rounded-xl border border-stone-200/80 dark:border-stone-750">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onNavigateTab) onNavigateTab('workbench');
+                      else handleViewModeChange('workbench');
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-200/50 dark:hover:bg-stone-750 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                    title={t.officerNavWorkbench}
+                  >
+                    <Layout className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
+                    <span>{t.officerNavWorkbench}</span>
+                  </button>
 
-          {/* ========================================================= */}
-          {/* 3. FLOATING INTELLIGENCE INTERFACE (UNIFIED SHELL / PILLS) */}
-          {/* ========================================================= */}
-          <AnimatePresence mode="wait">
-            {!isSheetOpen ? (
-              /* STATE A: CLOSED -> 4 FULL VERTICAL SEPARATE PILL BUTTONS */
-              <motion.div
-                key="separate-pills"
-                initial={{ opacity: 0, x: -14, scale: 0.98 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: -12, scale: 0.98 }}
-                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute top-16 left-3 sm:top-[68px] sm:left-4 z-30 pointer-events-auto flex flex-col items-start gap-1.5 sm:gap-2"
+                  <button
+                    type="button"
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-stone-900 text-stone-900 dark:text-white shadow-xs cursor-default flex items-center gap-1.5 transition-all"
+                  >
+                    <MapIcon className="w-3.5 h-3.5 text-tagapo-700 dark:text-emerald-400" />
+                    <span>{t.officerNavMap}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Row 2: Unified GIS Search Input */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setIsSearchFocused(true);
+                  }}
+                  placeholder="Search incidents, LGUs, reserves, quarries..."
+                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-stone-100/70 focus:bg-white dark:bg-stone-950 dark:hover:bg-stone-950/80 dark:focus:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 focus:border-stone-900 dark:focus:border-emerald-500 rounded-xl focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 font-sans transition placeholder:text-stone-400 dark:placeholder:text-stone-600"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setIsSearchFocused(false);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 cursor-pointer"
+                    title="Clear search"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+
+                {/* Autocomplete / Live GIS Jump Suggestions Dropdown */}
+                {isSearchFocused && searchSuggestions && (
+                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xl rounded-2xl overflow-hidden z-50 divide-y divide-stone-100 dark:divide-stone-800 max-h-72 overflow-y-auto custom-scrollbar select-none">
+                    {/* Municipalities Section */}
+                    {searchSuggestions.municipalities.length > 0 && (
+                      <div className="p-1.5">
+                        <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block">
+                          Rizal LGUs
+                        </span>
+                        {searchSuggestions.municipalities.map((item) => (
+                          <div
+                            key={item.id}
+                            onMouseDown={() => {
+                              handleQuickJump(item.payload);
+                              setSearchTerm('');
+                              setIsSearchFocused(false);
+                            }}
+                            className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <MapPin className="w-3.5 h-3.5 text-tagapo-600 dark:text-emerald-400 shrink-0" />
+                              <span className="font-semibold text-stone-900 dark:text-stone-100 truncate">
+                                {item.title}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-stone-400 dark:text-stone-500">
+                              Fly to boundary
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Protected Reserves Section */}
+                    {searchSuggestions.reserves.length > 0 && (
+                      <div className="p-1.5">
+                        <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block">
+                          Protected Reserves
+                        </span>
+                        {searchSuggestions.reserves.map((item) => (
+                          <div
+                            key={item.id}
+                            onMouseDown={() => {
+                              const z = item.payload;
+                              setMapCenter({ lat: z.lat, lng: z.lng });
+                              setMapZoom(z.zoom);
+                              setSelectedProtectedZoneId(z.id);
+                              handleSwitchLeftDrawerTab('protected_zones');
+                              setIsSheetOpen(true);
+                              setSearchTerm('');
+                              setIsSearchFocused(false);
+                            }}
+                            className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <ShieldAlert className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-semibold text-stone-900 dark:text-stone-100 truncate">
+                                  {item.title}
+                                </span>
+                                <span className="text-[10px] text-stone-400 dark:text-stone-500 truncate">
+                                  {item.subtitle}
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-3 h-3 text-stone-400 shrink-0" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* MGB Quarries Section */}
+                    {searchSuggestions.quarries.length > 0 && (
+                      <div className="p-1.5">
+                        <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block">
+                          MGB Quarries Cadastre
+                        </span>
+                        {searchSuggestions.quarries.map((item) => (
+                          <div
+                            key={item.id}
+                            onMouseDown={() => {
+                              const f = item.payload;
+                              setShowMgbQuarries(true);
+                              setMapLayerMode('quarries');
+                              handleSwitchLeftDrawerTab('quarries');
+                              setIsSheetOpen(true);
+                              if (f.geometry?.coordinates) {
+                                let lat = 14.5800;
+                                let lng = 121.2800;
+                                if (f.geometry.type === 'Polygon') {
+                                  const ring = f.geometry.coordinates[0];
+                                  if (ring && ring.length > 0) {
+                                    lng = ring[0][0];
+                                    lat = ring[0][1];
+                                  }
+                                } else if (f.geometry.type === 'MultiPolygon') {
+                                  const firstPoly = f.geometry.coordinates[0];
+                                  if (firstPoly && firstPoly[0] && firstPoly[0].length > 0) {
+                                    lng = firstPoly[0][0][0];
+                                    lat = firstPoly[0][0][1];
+                                  }
+                                }
+                                setMapCenter({ lat, lng });
+                                setMapZoom(14);
+                              }
+                              setSearchTerm('');
+                              setIsSearchFocused(false);
+                            }}
+                            className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Pickaxe className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-semibold text-stone-900 dark:text-stone-100 truncate">
+                                  {item.title}
+                                </span>
+                                <span className="text-[10px] text-stone-400 dark:text-stone-500 truncate">
+                                  {item.subtitle}
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-3 h-3 text-stone-400 shrink-0" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Citizen Incidents Section */}
+                    {searchSuggestions.reports.length > 0 && (
+                      <div className="p-1.5">
+                        <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block">
+                          Citizen Reports
+                        </span>
+                        {searchSuggestions.reports.map((item) => (
+                          <div
+                            key={item.id}
+                            onMouseDown={() => {
+                              const r = item.payload;
+                              setSelectedReport(r);
+                              setIsSheetOpen(true);
+                              const coords = resolveReportCoordinates(r);
+                              setMapCenter(coords);
+                              setMapZoom(14);
+                              setSearchTerm('');
+                              setIsSearchFocused(false);
+                            }}
+                            className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-semibold text-stone-900 dark:text-stone-100 truncate">
+                                  {item.title}
+                                </span>
+                                <span className="text-[10px] text-stone-400 dark:text-stone-500 truncate">
+                                  {item.subtitle}
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-3 h-3 text-stone-400 shrink-0" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Row 3: Horizontal Category Chips Row */}
+              <div
+                onWheel={(e) => {
+                  if (e.deltaY !== 0) {
+                    e.currentTarget.scrollLeft += e.deltaY;
+                  }
+                }}
+                className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full scroll-smooth overscroll-x-contain touch-pan-x"
               >
-                {/* Pill 1: Incident Queue */}
+                {/* Chip 1: Queue */}
                 <button
                   type="button"
                   onClick={() => handleToggleDrawerTab('queue')}
-                  className="w-38 sm:w-44 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center justify-between cursor-pointer shadow-md border bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-850 hover:shadow-lg"
-                  title="Incident Queue & Citizen Reports"
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
+                    isSheetOpen && (activeLeftDrawerTab === 'queue' || selectedReport)
+                      ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
+                      : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
+                  }`}
+                  title="Citizen Incident Reports Queue"
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Layers className="w-4 h-4 shrink-0 text-stone-700 dark:text-stone-300" />
-                    <span className="truncate">Queue ({filteredReports.length})</span>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 shrink-0 text-stone-400 dark:text-stone-500" />
+                  <Layers className="w-3.5 h-3.5 shrink-0" />
+                  <span>Queue ({filteredReports.length})</span>
                 </button>
 
-                {/* Pill 2: NASA FIRMS Satellites */}
+                {/* Chip 2: FIRMS */}
                 <button
                   type="button"
                   onClick={() => handleToggleDrawerTab('firms')}
-                  className="w-38 sm:w-44 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center justify-between cursor-pointer shadow-md border bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-850 hover:shadow-lg"
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
+                    isSheetOpen && !selectedReport && activeLeftDrawerTab === 'firms'
+                      ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
+                      : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
+                  }`}
                   title="NASA FIRMS Satellite Thermal Watchdog"
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Satellite className="w-4 h-4 shrink-0 text-stone-700 dark:text-stone-300" />
-                    <span className="truncate">FIRMS ({satelliteReports.length})</span>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 shrink-0 text-stone-400 dark:text-stone-500" />
+                  <Satellite className="w-3.5 h-3.5 shrink-0" />
+                  <span>FIRMS ({satelliteReports.length})</span>
                 </button>
 
-                {/* Pill 3: Protected Reserves */}
+                {/* Chip 3: Reserves */}
                 <button
                   type="button"
                   onClick={() => handleToggleDrawerTab('protected_zones')}
-                  className="w-38 sm:w-44 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center justify-between cursor-pointer shadow-md border bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-850 hover:shadow-lg"
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
+                    isSheetOpen && !selectedReport && activeLeftDrawerTab === 'protected_zones'
+                      ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
+                      : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
+                  }`}
                   title="Protected Ecological Reserves & Watersheds"
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <ShieldAlert className="w-4 h-4 shrink-0 text-stone-700 dark:text-stone-300" />
-                    <span className="truncate">Reserves (15)</span>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 shrink-0 text-stone-400 dark:text-stone-500" />
+                  <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                  <span>Reserves (15)</span>
                 </button>
 
-                {/* Pill 4: MGB Quarries Cadastre */}
+                {/* Chip 4: Quarries */}
                 <button
                   type="button"
                   onClick={() => handleToggleDrawerTab('quarries')}
-                  className="w-38 sm:w-44 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center justify-between cursor-pointer shadow-md border bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-850 hover:shadow-lg"
-                  title="MGB Permitted Concessions & Mining Cadastre"
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
+                    isSheetOpen && !selectedReport && activeLeftDrawerTab === 'quarries'
+                      ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-600 shadow-xs'
+                      : 'bg-stone-50 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-750'
+                  }`}
+                  title="MGB Permitted Mining & Quarry Concessions"
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Pickaxe className="w-4 h-4 shrink-0 text-stone-700 dark:text-stone-300" />
-                    <span className="truncate">Quarries ({mgbQuarriesFeatures.length || 10})</span>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 shrink-0 text-stone-400 dark:text-stone-500" />
+                  <Pickaxe className="w-3.5 h-3.5 shrink-0" />
+                  <span>Quarries ({mgbQuarriesFeatures.length || 10})</span>
                 </button>
-              </motion.div>
-            ) : (
-              /* STATE B: OPEN -> UNIFIED SHELL (SLIM ICON RAIL + CONNECTED PANEL BODY) */
-              <motion.div
-                key="unified-shell"
-                initial={{ opacity: 0, x: -16, scale: 0.98 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: -14, scale: 0.98 }}
-                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute top-16 left-3 sm:top-[68px] sm:left-4 z-30 pointer-events-auto flex bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xl rounded-2xl overflow-hidden max-h-[calc(100vh-88px)] w-[calc(100vw-24px)] sm:w-auto min-h-0"
-              >
-                {/* 1. Integrated Left Icon Rail */}
-                <div className="w-12 sm:w-14 bg-stone-50/90 dark:bg-stone-950/70 border-r border-stone-200 dark:border-stone-800 flex flex-col items-center py-2.5 gap-2 shrink-0 select-none min-h-0">
-                  {/* Icon 1: Queue */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleDrawerTab('queue')}
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer relative group ${
-                      activeLeftDrawerTab === 'queue' || selectedReport
-                        ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs'
-                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white hover:bg-stone-200/60 dark:hover:bg-stone-800'
-                    }`}
-                    title={`Incident Queue (${filteredReports.length})`}
-                    aria-label="Incident Queue"
-                  >
-                    <Layers className="w-4 h-4 shrink-0" />
-                  </button>
+              </div>
+            </div>
 
-                  {/* Icon 2: FIRMS */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleDrawerTab('firms')}
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer relative group ${
-                      !selectedReport && activeLeftDrawerTab === 'firms'
-                        ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs'
-                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white hover:bg-stone-200/60 dark:hover:bg-stone-800'
-                    }`}
-                    title={`NASA FIRMS Watchdog (${satelliteReports.length})`}
-                    aria-label="NASA FIRMS Watchdog"
-                  >
-                    <Satellite className="w-4 h-4 shrink-0" />
-                  </button>
-
-                  {/* Icon 3: Reserves */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleDrawerTab('protected_zones')}
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer relative group ${
-                      !selectedReport && activeLeftDrawerTab === 'protected_zones'
-                        ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:border-emerald-500 shadow-xs'
-                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white hover:bg-stone-200/60 dark:hover:bg-stone-800'
-                    }`}
-                    title="Protected Ecological Reserves (15)"
-                    aria-label="Protected Ecological Reserves"
-                  >
-                    <ShieldAlert className="w-4 h-4 shrink-0" />
-                  </button>
-
-                  {/* Icon 4: Quarries */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleDrawerTab('quarries')}
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer relative group ${
-                      !selectedReport && activeLeftDrawerTab === 'quarries'
-                        ? 'bg-stone-900 text-white dark:bg-emerald-600 dark:border-emerald-500 shadow-xs'
-                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white hover:bg-stone-200/60 dark:hover:bg-stone-800'
-                    }`}
-                    title={`MGB Permitted Quarries (${mgbQuarriesFeatures.length || 10})`}
-                    aria-label="MGB Permitted Quarries"
-                  >
-                    <Pickaxe className="w-4 h-4 shrink-0" />
-                  </button>
-
-                  {/* Bottom Collapse Button */}
-                  <div className="mt-auto pt-2 border-t border-stone-200/60 dark:border-stone-800 w-full flex items-center justify-center shrink-0">
-                    <button
-                      type="button"
-                      onClick={handleCloseDrawer}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition cursor-pointer"
-                      title="Collapse to full buttons"
-                      aria-label="Collapse panel"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2. Integrated Panel Body */}
-                <div className="w-[calc(100vw-72px)] sm:w-[410px] flex flex-col min-h-0 max-h-[calc(100vh-88px)] overflow-hidden">
-                {!selectedReport ? (
-                  <div key="intelligence-drawer" className="flex flex-col flex-1 min-h-0 overflow-hidden animate-sheet-morph">
-                  {/* TAB 1: INCIDENT QUEUE */}
-                  {activeLeftDrawerTab === 'queue' && (
-                    <div key="tab-queue" className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                      {/* Search and Header */}
-                      <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-2 shrink-0">
-                        <div className="relative flex-1">
-                          <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          <input
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Search ref, barangay..."
-                            className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white dark:bg-stone-950 dark:hover:bg-stone-950 dark:focus:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 focus:border-stone-900 dark:focus:border-emerald-500 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 font-sans transition placeholder:text-stone-400 dark:placeholder:text-stone-600"
-                          />
-                          {searchTerm && (
-                            <button
-                              type="button"
-                              onClick={() => setSearchTerm('')}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 cursor-pointer"
-                              title="Clear search"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          )}
+            {/* Connected Intelligence Results Drawer */}
+            <AnimatePresence>
+              {isSheetOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  className="mt-2 bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200/90 dark:border-stone-800 shadow-2xl rounded-2xl overflow-hidden max-h-[calc(100vh-190px)] min-h-0 flex flex-col"
+                >
+                  <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                  {!selectedReport ? (
+                    <div key="intelligence-drawer" className="flex flex-col flex-1 min-h-0 overflow-hidden animate-sheet-morph">
+                    {/* TAB 1: INCIDENT QUEUE */}
+                    {activeLeftDrawerTab === 'queue' && (
+                      <div key="tab-queue" className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                        {/* Queue Header & Active Summary */}
+                        <div className="px-3.5 py-2.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-2 shrink-0">
+                          <div className="flex items-center gap-2">
+                            <Layers className="w-4 h-4 text-tagapo-700 dark:text-emerald-400" />
+                            <span className="font-bold text-xs text-stone-900 dark:text-stone-100">
+                              Citizen Incident Reports
+                            </span>
+                            <span className="font-mono text-[11px] text-stone-500 dark:text-stone-400">
+                              ({filteredReports.length})
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleCloseDrawer}
+                            className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer shrink-0"
+                            title="Close Queue"
+                            aria-label="Close Queue"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={handleCloseDrawer}
-                          className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer shrink-0"
-                          title="Close Queue"
-                          aria-label="Close Queue"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
+
 
                   {/* Quick telemetry chips & LGU horizontal scroll */}
                   <div className="px-3 py-2 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 space-y-2 shrink-0">
@@ -4151,16 +4333,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 </div>
               )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* ========================================================= */}
           {/* 3.5 RIGHT SLIDE-OVER PROTECTED ZONE DOSSIER & THREAT HUD  */}
           {/* ========================================================= */}
           {selectedProtectedZone && (
-            <div className="absolute top-16 right-3 sm:right-4 z-30 pointer-events-auto w-[calc(100vw-24px)] sm:w-[420px] max-h-[calc(100vh-88px)] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xl rounded-xl overflow-hidden flex flex-col transition-all duration-300 animate-nav-pill min-h-0">
+            <div className="absolute top-3 right-16 sm:top-4 sm:right-18 z-30 pointer-events-auto w-[calc(100vw-88px)] sm:w-[410px] max-h-[calc(100vh-88px)] bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200 dark:border-stone-800 shadow-2xl rounded-2xl overflow-hidden flex flex-col transition-all duration-300 animate-nav-pill min-h-0">
               {/* Header */}
               <div className="p-3.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 shrink-0 space-y-2">
                 <div className="flex items-center justify-between gap-2">
@@ -4492,12 +4675,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
           )}
 
           {/* ========================================================= */}
-          {/* 4. GOOGLE / APPLE MAPS FLOATING LAYERS TRIGGER & POPOVER   */}
+          {/* 4. APPLE MAPS STYLE TOP-RIGHT FLOATING CAPSULE & LAYERS   */}
           {/* ========================================================= */}
-          <div className="absolute bottom-8 sm:bottom-9 right-4 z-20 pointer-events-auto flex flex-col items-end gap-2 transition-all duration-200">
-            {/* Popover Card */}
+          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-30 pointer-events-auto flex items-start gap-2.5 transition-all duration-200">
+            {/* Map Details Popover Card (Docked directly BESIDE the vertical capsule) */}
             {isLayersPanelOpen && (
-              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xl rounded-2xl p-4 w-[320px] space-y-3.5 animate-in fade-in slide-in-from-bottom-2 duration-200 select-none">
+              <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200/90 dark:border-stone-800 shadow-2xl rounded-2xl p-4 w-[320px] space-y-3.5 animate-in fade-in slide-in-from-right-2 duration-200 select-none">
                 {/* Popover Header */}
                 <div className="flex items-center justify-between pb-2 border-b border-stone-100 dark:border-stone-800">
                   <div className="flex items-center gap-2">
@@ -4514,7 +4697,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </button>
                 </div>
 
-                {/* 1. Basemap Style: 4 Visual Cards with Icons (including Dark Canvas) */}
+                {/* 1. Basemap Style: 3 Visual Cards with Icons */}
                 <div className="space-y-1.5">
                   <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block">
                     Basemap Style
@@ -4701,22 +4884,60 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             )}
 
-            {/* Google / Apple Maps Floating Trigger Pill Button */}
-            <button
-              type="button"
-              onClick={() => setIsLayersPanelOpen(!isLayersPanelOpen)}
-              className={`flex items-center gap-2 px-3.5 py-2.5 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-850 text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-800 shadow-md hover:shadow-lg rounded-xl transition cursor-pointer select-none ${
-                isLayersPanelOpen ? 'ring-2 ring-stone-900 dark:ring-emerald-500 bg-stone-50 dark:bg-stone-850' : ''
-              }`}
-              title="Toggle Map Layers & Overlays"
-            >
-              <Layers className="w-4 h-4 text-stone-700 dark:text-stone-300" />
-              <span className="text-xs font-semibold text-stone-900 dark:text-stone-100">Layers</span>
-              <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium capitalize pl-1.5 border-l border-stone-200 dark:border-stone-800">
-                {basemapMode}
-              </span>
-              <ChevronUp className={`w-3.5 h-3.5 text-stone-400 dark:text-stone-500 transition-transform ${isLayersPanelOpen ? 'rotate-180' : ''}`} />
-            </button>
+            {/* Apple Maps Style Vertical Floating Capsule */}
+            <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200/90 dark:border-stone-800 shadow-xl rounded-2xl p-1 flex flex-col items-center gap-1 select-none shrink-0">
+              {/* 1. Layers Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setIsLayersPanelOpen(!isLayersPanelOpen)}
+                className={`w-9 h-9 rounded-xl flex items-center justify-center transition cursor-pointer ${
+                  isLayersPanelOpen
+                    ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs'
+                    : 'text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
+                }`}
+                title="Toggle Map Layers & Overlays"
+                aria-label="Map Layers"
+              >
+                <Layers className="w-4 h-4" />
+              </button>
+
+              <div className="w-5 h-px bg-stone-200 dark:bg-stone-800" />
+
+              {/* 2. Reset Province View (Home / Crosshair) */}
+              <button
+                type="button"
+                onClick={() => handleQuickJump('all')}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition cursor-pointer"
+                title="Reset view to Rizal Province"
+                aria-label="Reset view to Rizal Province"
+              >
+                <Crosshair className="w-4 h-4" />
+              </button>
+
+              <div className="w-5 h-px bg-stone-200 dark:bg-stone-800" />
+
+              {/* 3. Zoom Controls (+ and -) */}
+              <div className="flex flex-col items-center">
+                <button
+                  type="button"
+                  onClick={() => setMapZoom((z) => Math.min(z + 1, 18))}
+                  className="w-9 h-8 rounded-t-xl flex items-center justify-center text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition cursor-pointer"
+                  title="Zoom in"
+                  aria-label="Zoom in"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapZoom((z) => Math.max(z - 1, 9))}
+                  className="w-9 h-8 rounded-b-xl flex items-center justify-center text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition cursor-pointer"
+                  title="Zoom out"
+                  aria-label="Zoom out"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
