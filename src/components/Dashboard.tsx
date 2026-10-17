@@ -862,6 +862,97 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setIsDraggingChips(false);
   };
 
+  // Weather Drawer LGU Preset Chips Scroll Controller
+  const weatherLguScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollWeatherLeft, setCanScrollWeatherLeft] = useState<boolean>(false);
+  const [canScrollWeatherRight, setCanScrollWeatherRight] = useState<boolean>(true);
+  const [isDraggingWeatherLgu, setIsDraggingWeatherLgu] = useState<boolean>(false);
+  const weatherLguDragStartX = useRef<number>(0);
+  const weatherLguDragStartScrollLeft = useRef<number>(0);
+  const hasDraggedWeatherLgu = useRef<boolean>(false);
+
+  const checkWeatherLguScroll = () => {
+    const el = weatherLguScrollRef.current;
+    if (!el) return;
+    const hasOverflow = el.scrollWidth > el.clientWidth + 1;
+    setCanScrollWeatherLeft(el.scrollLeft > 2);
+    setCanScrollWeatherRight(hasOverflow && el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
+  };
+
+  const scrollWeatherLgu = (direction: 'left' | 'right') => {
+    const el = weatherLguScrollRef.current;
+    if (!el) return;
+    const delta = direction === 'left' ? -140 : 140;
+    el.scrollBy({ left: delta, behavior: 'smooth' });
+    setTimeout(checkWeatherLguScroll, 150);
+  };
+
+  const handleWeatherLguMouseDown = (e: React.MouseEvent) => {
+    const el = weatherLguScrollRef.current;
+    if (!el) return;
+    setIsDraggingWeatherLgu(true);
+    hasDraggedWeatherLgu.current = false;
+    weatherLguDragStartX.current = e.pageX - el.offsetLeft;
+    weatherLguDragStartScrollLeft.current = el.scrollLeft;
+  };
+
+  const handleWeatherLguMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingWeatherLgu) return;
+    const el = weatherLguScrollRef.current;
+    if (!el) return;
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - weatherLguDragStartX.current) * 1.3;
+    if (Math.abs(walk) > 4) {
+      hasDraggedWeatherLgu.current = true;
+    }
+    el.scrollLeft = weatherLguDragStartScrollLeft.current - walk;
+    checkWeatherLguScroll();
+  };
+
+  const handleWeatherLguMouseUp = () => {
+    setIsDraggingWeatherLgu(false);
+  };
+
+  useEffect(() => {
+    if (activeLeftDrawerTab !== 'weather') return;
+    const el = weatherLguScrollRef.current;
+    if (!el) return;
+
+    checkWeatherLguScroll();
+
+    const onWheelHandler = (e: WheelEvent) => {
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (delta !== 0 && el.scrollWidth > el.clientWidth) {
+        e.preventDefault();
+        el.scrollLeft += delta;
+        checkWeatherLguScroll();
+      }
+    };
+
+    el.addEventListener('wheel', onWheelHandler, { passive: false });
+    el.addEventListener('scroll', checkWeatherLguScroll, { passive: true });
+
+    const resizeObserver = new ResizeObserver(() => {
+      checkWeatherLguScroll();
+    });
+    resizeObserver.observe(el);
+
+    const timer = setTimeout(() => {
+      checkWeatherLguScroll();
+      const activeEl = el.querySelector(`[data-lgu-id="${selectedWeatherLguId}"]`);
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    }, 120);
+
+    return () => {
+      clearTimeout(timer);
+      el.removeEventListener('wheel', onWheelHandler);
+      el.removeEventListener('scroll', checkWeatherLguScroll);
+      resizeObserver.disconnect();
+    };
+  }, [activeLeftDrawerTab, selectedWeatherLguId]);
+
   // When switching to Full Map mode, enforce default clean state: nothing selected except Rizal's boundaries
   useEffect(() => {
     if (viewMode === 'full_map') {
@@ -1008,6 +1099,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setMapCenter({ lat: preset.lat, lng: preset.lng });
     setMapZoom(preset.id === 'rizal-center' ? 11 : 13);
     loadAtmosphericData(preset);
+    setTimeout(() => {
+      const activeEl = weatherLguScrollRef.current?.querySelector(`[data-lgu-id="${preset.id}"]`);
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+      checkWeatherLguScroll();
+    }, 60);
   };
 
   const handleWeatherMarkerClick = (presetId: string) => {
@@ -1019,6 +1117,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setMapCenter({ lat: preset.lat, lng: preset.lng });
     setMapZoom(13);
     loadAtmosphericData(preset);
+    setTimeout(() => {
+      const activeEl = weatherLguScrollRef.current?.querySelector(`[data-lgu-id="${preset.id}"]`);
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+      checkWeatherLguScroll();
+    }, 120);
   };
 
   // On-demand fetch of weather & air quality for individual incident reports
@@ -5395,36 +5500,71 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
                     </div>
 
-                    {/* LGU Preset Chips */}
-                    <div
-                      onWheel={(e) => {
-                        if (e.deltaY !== 0) {
-                          e.currentTarget.scrollLeft += e.deltaY;
-                        }
-                      }}
-                      className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full scroll-smooth overscroll-x-contain touch-pan-x"
-                    >
-                      {RIZAL_LGU_PRESETS.map((preset) => {
-                        const isActive = selectedWeatherLguId === preset.id;
-                        return (
+                    {/* LGU Preset Chips with Horizontal Scroll Navigation */}
+                    <div className="relative flex items-center group/weather-lgu">
+                      {/* Left Scroll Button */}
+                      {canScrollWeatherLeft && (
+                        <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pr-2 bg-gradient-to-r from-white via-white/95 to-transparent dark:from-stone-900 dark:via-stone-900/95 dark:to-transparent">
                           <button
-                            key={preset.id}
                             type="button"
-                            onClick={() => handleSelectWeatherLgu(preset)}
-                            className={`px-2 py-1 rounded-lg text-[11px] font-medium shrink-0 transition flex items-center gap-1 cursor-pointer border ${
-                              isActive
-                                ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs font-semibold'
-                                : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800'
-                            }`}
-                            title={`${preset.name} (${preset.elevation})`}
+                            onClick={() => scrollWeatherLgu('left')}
+                            className="w-5 h-5 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-xs hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition cursor-pointer active:scale-95 pointer-events-auto"
+                            title="Scroll left to view previous municipalities"
+                            aria-label="Scroll left"
                           >
-                            <span>{preset.shortName}</span>
-                            <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${isActive ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900' : 'bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400'}`}>
-                              {preset.tag}
-                            </span>
+                            <ChevronLeft className="w-3.5 h-3.5" />
                           </button>
-                        );
-                      })}
+                        </div>
+                      )}
+
+                      {/* Scrollport */}
+                      <div
+                        ref={weatherLguScrollRef}
+                        onMouseDown={handleWeatherLguMouseDown}
+                        onMouseMove={handleWeatherLguMouseMove}
+                        onMouseUp={handleWeatherLguMouseUp}
+                        onMouseLeave={handleWeatherLguMouseUp}
+                        className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 scroll-smooth overscroll-x-contain touch-pan-x cursor-grab active:cursor-grabbing select-none"
+                        style={{ WebkitOverflowScrolling: 'touch' }}
+                      >
+                        {RIZAL_LGU_PRESETS.map((preset) => {
+                          const isActive = selectedWeatherLguId === preset.id;
+                          return (
+                            <button
+                              key={preset.id}
+                              data-lgu-id={preset.id}
+                              type="button"
+                              onClick={() => {
+                                if (hasDraggedWeatherLgu.current) return;
+                                handleSelectWeatherLgu(preset);
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
+                                isActive
+                                  ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs font-semibold'
+                                  : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800'
+                              }`}
+                              title={`${preset.name} (${preset.elevation}) • ${preset.ecologicalRole}`}
+                            >
+                              <span>{preset.shortName}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Right Scroll Button */}
+                      {canScrollWeatherRight && (
+                        <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pl-2 bg-gradient-to-l from-white via-white/95 to-transparent dark:from-stone-900 dark:via-stone-900/95 dark:to-transparent">
+                          <button
+                            type="button"
+                            onClick={() => scrollWeatherLgu('right')}
+                            className="w-5 h-5 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-xs hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition cursor-pointer active:scale-95 pointer-events-auto"
+                            title="Scroll right to view more municipalities"
+                            aria-label="Scroll right"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 

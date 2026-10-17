@@ -163,8 +163,12 @@
   border-radius: 8px !important;
   color: #ffffff !important;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35) !important;
-  padding: 5px 9px !important;
+  padding: 6px 10px !important;
   pointer-events: none !important;
+  white-space: normal !important;
+  max-width: 280px !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
 }
 .clean-weather-tooltip::before {
   border-top-color: #0f172a !important;
@@ -244,6 +248,10 @@
   color: #ffffff !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
   padding: 6px 10px !important;
+  white-space: normal !important;
+  max-width: 280px !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
 }
 
 .dark .tactical-map-tooltip {

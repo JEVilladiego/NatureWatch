@@ -59,7 +59,7 @@ export interface RizalLguPreset {
 export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   {
     id: 'rizal-center',
-    name: 'Rizal Province (Centroid Coordinates)',
+    name: 'All Rizal (Province-wide)',
     shortName: 'All Rizal',
     tag: 'Centroid',
     lat: 14.5800,
@@ -69,7 +69,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'antipolo',
-    name: 'Antipolo City (Upper Slopes)',
+    name: 'Antipolo City',
     shortName: 'Antipolo',
     tag: 'Capital',
     lat: 14.5842,
@@ -79,7 +79,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'angono',
-    name: 'Angono (Bay Shoreland)',
+    name: 'Angono',
     shortName: 'Angono',
     tag: 'Bay Corridor',
     lat: 14.5249,
@@ -89,7 +89,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'baras',
-    name: 'Baras (Masungi Corridor)',
+    name: 'Baras',
     shortName: 'Baras',
     tag: 'Karst Buffer',
     lat: 14.5361,
@@ -99,7 +99,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'binangonan',
-    name: 'Binangonan (Laguna de Bay)',
+    name: 'Binangonan',
     shortName: 'Binangonan',
     tag: 'Lakeside',
     lat: 14.4644,
@@ -109,7 +109,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'cainta',
-    name: 'Cainta (Marikina-Pasig Basin)',
+    name: 'Cainta',
     shortName: 'Cainta',
     tag: 'Urban Basin',
     lat: 14.5772,
@@ -119,7 +119,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'cardona',
-    name: 'Cardona (Talim Island Strait)',
+    name: 'Cardona',
     shortName: 'Cardona',
     tag: 'Fisheries',
     lat: 14.4842,
@@ -129,7 +129,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'jalajala',
-    name: 'Jalajala (Peninsula Sanctuary)',
+    name: 'Jalajala',
     shortName: 'Jalajala',
     tag: 'Peninsula',
     lat: 14.3542,
@@ -139,7 +139,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'morong',
-    name: 'Morong (Laguna Central Catchment)',
+    name: 'Morong',
     shortName: 'Morong',
     tag: 'Delta',
     lat: 14.5111,
@@ -149,7 +149,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'pililla',
-    name: 'Pililla (Windmill Heights)',
+    name: 'Pililla',
     shortName: 'Pililla',
     tag: 'Wind Corridor',
     lat: 14.4814,
@@ -159,7 +159,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'rodriguez',
-    name: 'Rodriguez / Montalban (Quarrying Hub)',
+    name: 'Rodriguez',
     shortName: 'Rodriguez',
     tag: 'Quarries',
     lat: 14.7333,
@@ -169,7 +169,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'san-mateo',
-    name: 'San Mateo (Upper Marikina)',
+    name: 'San Mateo',
     shortName: 'San Mateo',
     tag: 'Catchment',
     lat: 14.6972,
@@ -179,7 +179,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'tanay',
-    name: 'Tanay (Sierra Madre Uplands)',
+    name: 'Tanay',
     shortName: 'Tanay',
     tag: 'Watershed',
     lat: 14.4981,
@@ -189,7 +189,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'taytay',
-    name: 'Taytay (Lakeshore Wetlands)',
+    name: 'Taytay',
     shortName: 'Taytay',
     tag: 'Wetlands',
     lat: 14.5667,
@@ -199,7 +199,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'teresa',
-    name: 'Teresa (Limestone Basin)',
+    name: 'Teresa',
     shortName: 'Teresa',
     tag: 'Mineral',
     lat: 14.5606,

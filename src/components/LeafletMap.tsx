@@ -484,40 +484,47 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       },
       onEachFeature: (feature: any, featureLayer: L.Layer) => {
         const props = feature?.properties || {};
-        const title = props.shortName || props.name || 'Protected Zone';
-        const type = String(props.type || 'Sanctuary').toUpperCase().replace(/_/g, ' ');
-        const mun = props.municipality || 'Rizal';
-        const legal = props.legalBasis ? `<div style="font-size: 9px; color: #a1a1aa; margin-top: 2px;">Basis: ${props.legalBasis}</div>` : '';
+        const name = props.name || props.shortName || 'Protected Zone';
+        const location = props.municipality || 'Rizal Province';
 
         let catBadge = 'DENR-NIPAS';
-        if (props.category === 'llda_zomap') catBadge = 'LLDA ZOMAP';
-        else if (props.category === 'kba_georeserve') catBadge = 'KEY BIODIVERSITY / GEORESERVE';
-        else if (props.category === 'local_mountain') catBadge = 'LOCAL MOUNTAIN WATERSHED';
+        let catColor = '#34d399';
+        if (props.category === 'llda_zomap') {
+          catBadge = 'LLDA ZOMAP';
+          catColor = '#38bdf8';
+        } else if (props.category === 'kba_georeserve') {
+          catBadge = 'KBA / GEORESERVE';
+          catColor = '#2dd4bf';
+        } else if (props.category === 'local_mountain') {
+          catBadge = 'LOCAL WATERSHED';
+          catColor = '#fbbf24';
+        }
 
         const tooltipHtml = `
-          <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 190px; max-width: 260px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 2px;">
-              <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: ${props.strokeColor || '#059669'};">
+          <div style="font-family: system-ui, -apple-system, sans-serif; pointer-events: none; width: 240px; max-width: 270px; white-space: normal; word-break: break-word; overflow-wrap: break-word;">
+            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 3px;">
+              <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: ${catColor}; background: rgba(255, 255, 255, 0.08); padding: 1.5px 5.5px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1); white-space: nowrap;">
                 ${catBadge}
               </span>
-              <span style="font-size: 8px; font-family: monospace; background: rgba(255,255,255,0.08); padding: 1px 4px; border-radius: 3px; color: #cbd5e1;">
-                ${type}
-              </span>
             </div>
-            <div style="font-weight: 700; font-size: 11.5px; color: #f8fafc; line-height: 1.25;">
-              ${title}
+            <div style="font-weight: 700; font-size: 11.5px; color: #f8fafc; line-height: 1.35; white-space: normal; word-break: break-word; overflow-wrap: break-word;">
+              ${name}
             </div>
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
-              ${mun}
+            <div style="font-size: 9.5px; color: #94a3b8; margin-top: 3.5px; display: flex; align-items: flex-start; gap: 4px; line-height: 1.35; white-space: normal; word-break: break-word; overflow-wrap: break-word;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span>${location}</span>
             </div>
-            ${legal}
           </div>
         `;
 
         featureLayer.bindTooltip(tooltipHtml, {
           sticky: true,
           direction: 'auto',
-          className: 'tactical-map-tooltip',
+          className: 'clean-weather-tooltip',
+          offset: [0, -10],
         });
 
         const isSelected = Boolean(selectedProtectedZoneId && (props?.id === selectedProtectedZoneId || feature?.id === selectedProtectedZoneId));
@@ -601,12 +608,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     const typeLabel = isMpp ? 'MPP Plant' : isCancelled ? 'Cancelled MPSA' : 'MPSA Concession';
     const tagColor = isMpp ? '#818cf8' : isCancelled ? '#ef4444' : '#f59e0b';
     return `
-      <div style="font-family: system-ui, -apple-system, sans-serif; pointer-events: none; min-width: 130px; max-width: 220px;">
-        <div style="font-size: 11px; font-weight: 700; color: #f8fafc; letter-spacing: -0.01em; line-height: 1.3;">
+      <div style="font-family: system-ui, -apple-system, sans-serif; pointer-events: none; width: 220px; max-width: 260px; white-space: normal; word-break: break-word; overflow-wrap: break-word;">
+        <div style="font-size: 11px; font-weight: 700; color: #f8fafc; letter-spacing: -0.01em; line-height: 1.35; white-space: normal; word-break: break-word; overflow-wrap: break-word;">
           ${name}
         </div>
-        <div style="font-size: 9.5px; color: #94a3b8; margin-top: 2px; display: flex; align-items: center; gap: 4px;">
-          <span style="color: ${tagColor}; font-weight: 700; font-family: ui-monospace, monospace;">${typeLabel}</span>
+        <div style="font-size: 9.5px; color: #94a3b8; margin-top: 2.5px; display: flex; align-items: flex-start; gap: 4px; line-height: 1.35; white-space: normal; word-break: break-word; overflow-wrap: break-word;">
+          <span style="color: ${tagColor}; font-weight: 700; font-family: ui-monospace, monospace; white-space: nowrap;">${typeLabel}</span>
           <span style="opacity: 0.5;">•</span>
           <span>${props.municipality || 'Rizal'}</span>
         </div>
