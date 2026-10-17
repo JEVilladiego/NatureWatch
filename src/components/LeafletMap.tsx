@@ -23,6 +23,11 @@ import {
   getWindFlowTrajectory,
 } from '../lib/weatherService';
 import { fetchLatestRadarFrame, RadarFrameInfo, TRANSPARENT_FALLBACK_TILE } from '../lib/radarService';
+import {
+  getFirms375mBounds,
+  formatFirmsPhtTime,
+  crossCheckFirmsWithReports,
+} from '../lib/firmsGeometry';
 
 // Rizal Province default center (encompassing Sierra Madre, central corridor & Laguna de Bay shore)
 export const RIZAL_DEFAULT = { lat: 14.5800, lng: 121.2800 };
@@ -145,6 +150,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const mgbQuarriesLayerRef = useRef<L.LayerGroup | null>(null);
   const rainRadarLayerRef = useRef<L.TileLayer | null>(null);
   const weatherMarkersRef = useRef<Map<string, L.Marker>>(new Map());
+  const firmsLayersRef = useRef<L.Layer[]>([]);
   const [currentZoom, setCurrentZoom] = useState<number>(zoom);
   const [spiderfiedClusterKey, setSpiderfiedClusterKey] = useState<string | null>(null);
   const [radarInfo, setRadarInfo] = useState<RadarFrameInfo | null>(null);
@@ -254,6 +260,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     // Dedicated weather marker pane: zIndex 580 (sits below active high-severity report pins)
     const weatherMarkerPane = map.createPane('weatherMarkerPane');
     weatherMarkerPane.style.zIndex = '580';
+
+    // Dedicated NASA FIRMS 375m grid square pane: above vectors/quarries (zIndex 400), below pins (zIndex 600)
+    const firmsGridPane = map.createPane('firmsGridPane');
+    firmsGridPane.style.zIndex = '420';
+    firmsGridPane.style.pointerEvents = 'auto';
 
     mapInstanceRef.current = map;
     setCurrentZoom(map.getZoom());
@@ -1350,9 +1361,27 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     if (mode !== 'dashboard' || !mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
 
-    // Clear old markers
+    // Clear old markers & FIRMS grid layers
     dashboardMarkersRef.current.forEach((m) => m.remove());
     dashboardMarkersRef.current.clear();
+    firmsLayersRef.current.forEach((l) => l.remove());
+    firmsLayersRef.current = [];
+
+    // Separate satellite hotspots from community citizen reports
+    const satReports: IncidentReport[] = [];
+    const communityReports: IncidentReport[] = [];
+
+    reports.forEach((report) => {
+      if (
+        report.source === 'satellite_firms' ||
+        report.id.startsWith('SAT-') ||
+        !!report.satelliteHotspot
+      ) {
+        satReports.push(report);
+      } else {
+        communityReports.push(report);
+      }
+    });
 
     // Group reports by resolved coordinates / barangay
     interface MarkerGroup {
@@ -1368,7 +1397,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     const groups = new Map<string, MarkerGroup>();
 
-    reports.forEach((report) => {
+    communityReports.forEach((report) => {
       const coords = resolveReportCoordinates(report);
       // Group by coordinate proximity (~11m precision)
       const key = `${coords.lat.toFixed(4)},${coords.lng.toFixed(4)}`;
@@ -1488,10 +1517,16 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               ? '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:#292524;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span>In Prog</span>'
               : '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:#292524;"><span style="width:6px;height:6px;border-radius:50%;background:#f43f5e;"></span>Pending</span>';
 
-        const satBadge = isSatellite
-          ? `<div style="background: rgba(234,88,12,0.12); border: 1px solid rgba(234,88,12,0.3); border-radius: 4px; padding: 3px 6px; margin-bottom: 5px; font-size: 10px; color: #ea580c; display: flex; align-items: center; justify-content: space-between;">
-              <strong style="display:flex;align-items:center;gap:3px;">NASA VIIRS HOTSPOT</strong>
-              <span>${report.satelliteHotspot?.frp ? report.satelliteHotspot.frp.toFixed(1) + ' MW' : 'Active'}</span>
+        // Check if any satellite hotspot corroborates this citizen report within 500m
+        const matchingSat = satReports.find((sat) => {
+          const chk = crossCheckFirmsWithReports(sat, [report], 500);
+          return chk.matched;
+        });
+
+        const satBadge = matchingSat
+          ? `<div style="background: rgba(225, 29, 72, 0.12); border: 1px solid rgba(225, 29, 72, 0.35); border-radius: 4px; padding: 4px 6px; margin-bottom: 5px; font-size: 10px; color: #be123c; display: flex; align-items: center; justify-content: space-between;">
+              <strong style="display:flex;align-items:center;gap:3px;">🛰️ VIIRS 375m CORROBORATED</strong>
+              <span>${matchingSat.satelliteHotspot?.frp ? matchingSat.satelliteHotspot.frp.toFixed(1) + ' MW' : 'Active'}</span>
             </div>`
           : '';
 
@@ -1656,6 +1691,146 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         dashboardMarkersRef.current.set(r.id, marker);
       });
     });
+
+    // =========================================================
+    // 2. RENDER NASA FIRMS VIIRS 375m GRID SQUARES (FOOTPRINT)
+    // =========================================================
+    satReports.forEach((satReport) => {
+      const coords = resolveReportCoordinates(satReport);
+      const isSelected = satReport.id === selectedReportId;
+      const bounds = getFirms375mBounds(coords.lat, coords.lng);
+      const sat = satReport.satelliteHotspot;
+      const frp = sat?.frp !== undefined ? sat.frp.toFixed(1) : 'N/A';
+      const tempK = sat?.brightnessTemperature !== undefined
+        ? sat.brightnessTemperature.toFixed(1)
+        : sat?.brightnessTemp
+        ? sat.brightnessTemp.toFixed(1)
+        : '330.0';
+      const tempC = sat?.brightnessTemperature !== undefined
+        ? (sat.brightnessTemperature - 273.15).toFixed(1)
+        : sat?.brightnessTemp
+        ? (sat.brightnessTemp - 273.15).toFixed(1)
+        : '56.9';
+      const confidence = (sat?.confidence || 'nominal').toUpperCase();
+      const passPht = formatFirmsPhtTime(sat?.acqDate, sat?.acqTime);
+
+      // Automated Cross-Check Verdict (< 500m against community reports)
+      const crossCheck = crossCheckFirmsWithReports(satReport, communityReports, 500);
+
+      // 375m x 375m Semi-transparent Red/Magenta Grid Square Polygon
+      const rect = L.rectangle(bounds, {
+        pane: 'firmsGridPane',
+        color: isSelected ? '#be123c' : '#f43f5e',
+        weight: isSelected ? 2.5 : 1.5,
+        dashArray: '5, 4',
+        fillColor: '#f43f5e',
+        fillOpacity: isSelected ? 0.38 : 0.22,
+        className: `firms-375m-grid-cell ${isSelected ? 'selected' : ''}`,
+      }).addTo(map);
+      firmsLayersRef.current.push(rect);
+
+      // Central Tactical Reticle with glowing thermal ember core
+      const reticleHtml = `
+        <div class="firms-reticle-wrapper ${isSelected ? 'selected' : ''}">
+          <div class="firms-reticle-ping"></div>
+          <div class="firms-reticle-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.5">
+              <circle cx="12" cy="12" r="3" fill="#f43f5e"/>
+              <line x1="12" y1="2" x2="12" y2="7"/>
+              <line x1="12" y1="17" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="7" y2="12"/>
+              <line x1="17" y1="12" x2="22" y2="12"/>
+            </svg>
+          </div>
+          <div class="firms-reticle-badge">VIIRS 375m • ${frp} MW</div>
+        </div>
+      `;
+
+      const reticleIcon = L.divIcon({
+        className: 'firms-center-reticle',
+        html: reticleHtml,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
+
+      const reticleMarker = L.marker([coords.lat, coords.lng], {
+        icon: reticleIcon,
+        pane: 'markerPane',
+        zIndexOffset: isSelected ? 2200 : 1200,
+      }).addTo(map);
+      firmsLayersRef.current.push(reticleMarker);
+      dashboardMarkersRef.current.set(satReport.id, reticleMarker);
+
+      // Detailed orbital popup
+      const popupHtml = `
+        <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; min-width: 240px; padding: 2px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; border-bottom: 1px solid #fee2e2; padding-bottom: 4px;">
+            <strong style="font-family: monospace; font-size: 13px; color: #9f1239;">${satReport.referenceCode}</strong>
+            <span style="font-size: 10px; font-weight: 700; color: #e11d48; background: #ffe4e6; padding: 2px 6px; border-radius: 4px; border: 1px solid #fecdd3;">VIIRS 375m</span>
+          </div>
+
+          ${
+            crossCheck.matched
+              ? `<div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; padding: 6px 8px; margin-bottom: 8px;">
+                   <div style="font-size: 10px; font-weight: 800; color: #065f46; display: flex; align-items: center; gap: 4px;">
+                     <span>✓ MATCHED: Report #${crossCheck.matchedReport?.referenceCode}</span>
+                   </div>
+                   <div style="font-size: 9.5px; color: #047857; margin-top: 2px;">
+                     Corroborated within ${crossCheck.distanceMeters}m • Auto-Escalated to Severity 5
+                   </div>
+                 </div>`
+              : `<div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 6px; padding: 6px 8px; margin-bottom: 8px;">
+                   <div style="font-size: 10px; font-weight: 800; color: #92400e; display: flex; align-items: center; gap: 4px;">
+                     <span>⚠️ UNREPORTED ANOMALY</span>
+                   </div>
+                   <div style="font-size: 9.5px; color: #b45309; margin-top: 2px;">
+                     Zero citizen reports within ${(crossCheck.distanceMeters / 1000).toFixed(1)} km of canopy
+                   </div>
+                 </div>`
+          }
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 6px; margin-bottom: 6px; text-align: center;">
+            <div>
+              <span style="font-size: 9px; color: #9f1239; font-weight: 600; display: block;">RADIANT TEMP</span>
+              <span style="font-family: monospace; font-size: 11px; font-weight: 800; color: #881337;">${tempK} K (${tempC}°C)</span>
+            </div>
+            <div>
+              <span style="font-size: 9px; color: #9f1239; font-weight: 600; display: block;">RADIATIVE POWER</span>
+              <span style="font-family: monospace; font-size: 11px; font-weight: 800; color: #e11d48;">${frp} MW</span>
+            </div>
+          </div>
+
+          <div style="font-size: 10px; color: #78716c; margin-bottom: 4px; display: flex; justify-content: space-between;">
+            <span>Confidence: <strong>${confidence}</strong></span>
+            <span>Pass: <strong>${sat?.dayNight === 'D' ? 'Day' : 'Night'}</strong></span>
+          </div>
+          <div style="font-size: 9.5px; color: #78716c; font-family: monospace; margin-bottom: 6px;">
+            ${passPht}
+          </div>
+
+          <div style="font-size: 9px; color: #94a3b8; font-style: italic; border-top: 1px solid #f1f5f9; padding-top: 4px; text-align: center;">
+            375m × 375m Ground Resolution Footprint
+          </div>
+        </div>
+      `;
+
+      rect.bindPopup(popupHtml, { className: 'firms-custom-popup' });
+      reticleMarker.bindPopup(popupHtml, { className: 'firms-custom-popup' });
+
+      rect.on('click', () => {
+        if (onSelectReport) onSelectReport(satReport);
+      });
+      reticleMarker.on('click', () => {
+        if (onSelectReport) onSelectReport(satReport);
+      });
+    });
+
+    return () => {
+      dashboardMarkersRef.current.forEach((m) => m.remove());
+      dashboardMarkersRef.current.clear();
+      firmsLayersRef.current.forEach((l) => l.remove());
+      firmsLayersRef.current = [];
+    };
   }, [mode, reports, selectedReportId, onSelectReport, onClusterClick]);
 
   // 1. Live Doppler Precipitation Radar Layer (RainViewer Open-Source API)

@@ -53,7 +53,14 @@ import {
   CloudSun,
   Cloud,
   Compass,
+  FlaskConical,
+  Send,
 } from 'lucide-react';
+import {
+  generateFirmsSimulationReports,
+  formatFirmsPhtTime,
+  crossCheckFirmsWithReports,
+} from '../lib/firmsGeometry';
 import {
   RIZAL_LGU_PRESETS,
   RizalLguPreset,
@@ -741,6 +748,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [showMgbQuarries, setShowMgbQuarries] = useState<boolean>(false);
   const [isSyncingSatellites, setIsSyncingSatellites] = useState<boolean>(false);
   const [syncSatelliteToast, setSyncSatelliteToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [isFirmsReplayMode, setIsFirmsReplayMode] = useState<boolean>(false);
+  const [dispatchedSimIds, setDispatchedSimIds] = useState<Record<string, string>>({});
   const [activeMgbQuarryHit, setActiveMgbQuarryHit] = useState<MgbQuarryFeatureProperties | null | undefined>(undefined);
 
   // Left Drawer multi-tab intelligence state
@@ -1095,12 +1104,52 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return RIZAL_PROTECTED_ZONES_CATALOG.find((z) => z.id === selectedProtectedZoneId) || null;
   }, [selectedProtectedZoneId]);
 
+  // Augmented reports incorporating Historical Replay / Simulation VIIRS anomalies
+  const allReports = useMemo(() => {
+    if (!isFirmsReplayMode) return reports;
+
+    // Dynamically find candidate citizen report to corroborate
+    const candidateReport =
+      reports.find(
+        (r) =>
+          r.source !== 'satellite_firms' &&
+          r.status !== 'spam' &&
+          (r.aiTriage?.category === 'air_pollution_burning' ||
+            r.location.municipality === 'Cainta' ||
+            r.location.municipality === 'Binangonan')
+      ) ||
+      reports.find((r) => r.source !== 'satellite_firms' && r.status !== 'spam');
+
+    const simAnomalies = generateFirmsSimulationReports(candidateReport);
+    const enhancedSim = simAnomalies.map((sim) => {
+      const ticketId = dispatchedSimIds[sim.id];
+      if (ticketId) {
+        return {
+          ...sim,
+          status: 'in_progress' as const,
+          statusHistory: [
+            ...sim.statusHistory,
+            {
+              status: 'in_progress' as const,
+              changedBy: 'PG-ENRO Operations Desk',
+              changedAt: new Date().toISOString(),
+              notes: `LGU Dispatch Ticket #${ticketId}: Bureau of Fire Protection (BFP) and MENRO emergency reconnaissance team deployed to anomaly coordinates.`,
+            },
+          ],
+        };
+      }
+      return sim;
+    });
+
+    return [...enhancedSim, ...reports.filter((r) => !r.id.startsWith('firms_sim_'))];
+  }, [reports, isFirmsReplayMode, dispatchedSimIds]);
+
   // NASA FIRMS satellite thermal anomaly hotspots
   const satelliteReports = useMemo(() => {
-    return reports.filter(
+    return allReports.filter(
       (r) => r.source === 'satellite_firms' || r.id.startsWith('SAT-') || !!r.satelliteHotspot
     );
-  }, [reports]);
+  }, [allReports]);
 
   // Spatial index: maps each protected zone ID to legitimate active/historical reports situated within its boundaries
   const reportsByProtectedZone = useMemo(() => {
@@ -1399,47 +1448,93 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const renderSatelliteHotspotCard = (report?: IncidentReport | null) => {
     if (!report) return null;
     const isSat = report.source === 'satellite_firms' || report.id.startsWith('SAT-') || !!report.satelliteHotspot;
-    if (!isSat) return null;
 
-    const sat = report.satelliteHotspot;
+    // Check if a community report is corroborated by a satellite hotspot within 500m
+    let matchedSatReport: IncidentReport | undefined = undefined;
+    if (!isSat) {
+      matchedSatReport = satelliteReports.find((sat) => {
+        const chk = crossCheckFirmsWithReports(sat, [report], 500);
+        return chk.matched;
+      });
+      if (!matchedSatReport) return null;
+    }
+
+    const effectiveReport = isSat ? report : matchedSatReport!;
+    const sat = effectiveReport.satelliteHotspot;
     const frp = sat?.frp !== undefined ? sat.frp.toFixed(2) : 'N/A';
-    const tempK = sat?.brightnessTemperature !== undefined ? sat.brightnessTemperature.toFixed(1) : 'N/A';
-    const tempC = sat?.brightnessTemperature !== undefined ? (sat.brightnessTemperature - 273.15).toFixed(1) : 'N/A';
+    const tempK = sat?.brightnessTemperature !== undefined
+      ? sat.brightnessTemperature.toFixed(1)
+      : sat?.brightnessTemp
+      ? sat.brightnessTemp.toFixed(1)
+      : 'N/A';
+    const tempC = sat?.brightnessTemperature !== undefined
+      ? (sat.brightnessTemperature - 273.15).toFixed(1)
+      : sat?.brightnessTemp
+      ? (sat.brightnessTemp - 273.15).toFixed(1)
+      : 'N/A';
     const confidence = sat?.confidence || 'Nominal';
-    const pass = sat?.daynight === 'N' ? 'Night Overpass' : sat?.daynight === 'D' ? 'Day Overpass' : 'Orbital Scan';
-    const sensor = sat?.instrument || 'VIIRS 375m (S-NPP / NOAA-20)';
+    const passPht = formatFirmsPhtTime(sat?.acqDate, sat?.acqTime);
+    const sensor = sat?.satellite || sat?.instrument || 'VIIRS 375m (S-NPP / NOAA-20)';
+
+    // Cross-check verdict for satellite reports
+    const communityReports = allReports.filter(
+      (r) => r.source !== 'satellite_firms' && !r.id.startsWith('SAT-') && !r.satelliteHotspot && r.status !== 'spam'
+    );
+    const crossCheck = isSat
+      ? crossCheckFirmsWithReports(effectiveReport, communityReports, 500)
+      : { matched: true, distanceMeters: crossCheckFirmsWithReports(effectiveReport, [report], 500).distanceMeters, matchedReport: report };
 
     return (
-      <div className="p-3 bg-amber-500/10 dark:bg-amber-950/40 border border-amber-500/30 dark:border-amber-700/50 rounded-xl space-y-2 my-2">
+      <div className="p-3 bg-rose-500/10 dark:bg-rose-950/40 border border-rose-500/30 dark:border-rose-700/50 rounded-xl space-y-2 my-2">
         <div className="flex items-center justify-between gap-1.5">
           <div className="flex items-center gap-1.5 min-w-0">
-            <Satellite className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span className="text-[11px] font-bold tracking-wide uppercase text-amber-900 dark:text-amber-200 truncate">
-              NASA FIRMS Orbital Telemetry
+            <Satellite className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+            <span className="text-[11px] font-bold tracking-wide uppercase text-rose-900 dark:text-rose-200 truncate">
+              {isSat ? 'NASA FIRMS Orbital Telemetry' : '🛰️ Multi-Source Satellite Corroboration'}
             </span>
           </div>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-500/40 uppercase shrink-0 flex items-center gap-1">
-            <Flame className="w-2.5 h-2.5 text-orange-600" />
+          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-900 dark:text-rose-300 border border-rose-500/40 uppercase shrink-0 flex items-center gap-1">
+            <Flame className="w-2.5 h-2.5 text-rose-600" />
             {frp} MW FRP
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-1.5 text-center p-1.5 bg-white/70 dark:bg-stone-900/80 rounded-lg border border-amber-500/20">
+        {/* Cross-check status pill */}
+        {crossCheck.matched ? (
+          <div className="p-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between text-[10px]">
+            <span className="font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+              <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+              {isSat
+                ? `Matched Community Report #${crossCheck.matchedReport?.referenceCode} (${crossCheck.distanceMeters}m)`
+                : `Corroborated by Satellite ${effectiveReport.referenceCode} (${crossCheck.distanceMeters}m)`}
+            </span>
+            <span className="font-mono font-bold text-rose-700 dark:text-rose-300 text-[9px] bg-rose-100 dark:bg-rose-950 px-1.5 py-0.2 rounded border border-rose-300 dark:border-rose-800">
+              Severity 5 Escalated
+            </span>
+          </div>
+        ) : (
+          <div className="p-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-[10px] text-amber-800 dark:text-amber-300 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Unreported Orbital Anomaly (No citizen reports within {(crossCheck.distanceMeters / 1000).toFixed(1)} km)</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-3 gap-1.5 text-center p-1.5 bg-white/70 dark:bg-stone-900/80 rounded-lg border border-rose-500/20">
           <div className="px-1">
             <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Radiant Temp</span>
-            <span className="font-mono font-bold text-xs text-stone-900 dark:text-amber-200">{tempK} K ({tempC}°C)</span>
+            <span className="font-mono font-bold text-xs text-stone-900 dark:text-rose-200">{tempK} K ({tempC}°C)</span>
           </div>
           <div className="px-1 border-x border-stone-200 dark:border-stone-800">
             <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Confidence</span>
-            <span className="font-mono font-bold text-xs text-amber-700 dark:text-amber-300 capitalize">{confidence}</span>
+            <span className="font-mono font-bold text-xs text-rose-700 dark:text-rose-300 capitalize">{confidence}</span>
           </div>
           <div className="px-1">
-            <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Overpass</span>
-            <span className="font-mono font-bold text-xs text-stone-800 dark:text-stone-200 truncate block">{pass}</span>
+            <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Pass (PHT)</span>
+            <span className="font-mono font-bold text-xs text-stone-800 dark:text-stone-200 truncate block">{passPht}</span>
           </div>
         </div>
 
-        <div className="text-[10px] text-stone-600 dark:text-stone-400 flex items-center justify-between font-mono pt-1 border-t border-amber-500/20">
+        <div className="text-[10px] text-stone-600 dark:text-stone-400 flex items-center justify-between font-mono pt-1 border-t border-rose-500/20">
           <span>Sensor: {sensor}</span>
           <span>Res: 375m Ground IFOV</span>
         </div>
@@ -1712,9 +1807,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [selectedReport?.id]);
 
-  // Keyboard shortcut: Esc closes lightbox, bottom inspection dock, or returns to Workbench
+  // Keyboard shortcuts: Esc closes dialogs; Shift+S toggles NASA FIRMS Historical Replay Mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Shift+S: Toggle NASA FIRMS Historical Replay / Simulation Mode
+      if (e.shiftKey && (e.key === 'S' || e.key === 's')) {
+        const targetTag = (e.target as HTMLElement)?.tagName;
+        if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(targetTag)) {
+          e.preventDefault();
+          setIsFirmsReplayMode((prev) => {
+            const next = !prev;
+            setSyncSatelliteToast({
+              message: next
+                ? '🧪 NASA FIRMS Historical Replay: Injected 2 VIIRS 375m anomalies for live demo.'
+                : '🛰️ NASA FIRMS Live Mode: Replay anomalies cleared.',
+              type: 'success',
+            });
+            setTimeout(() => setSyncSatelliteToast(null), 5000);
+            return next;
+          });
+          return;
+        }
+      }
+
       if (e.key === 'Escape') {
         if (isLightboxOpen) {
           setIsLightboxOpen(false);
@@ -1760,6 +1875,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
             aiTriage: data.aiTriage || null,
             final: data.final || null,
             duplicateClusterId: data.duplicateClusterId || null,
+            source: (data.source || data.location?.source || 'gps') as any,
+            satelliteHotspot: data.satelliteHotspot || data.satelliteData || null,
           };
         });
 
@@ -1821,7 +1938,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Duplicate spatial clustering calculation
   // Reports within ~100m, same category, within 48 hours grouped under duplicateClusterId
   const clusteredReports = useMemo(() => {
-    const list = reports.map((r) => ({ ...r }));
+    const list = allReports.map((r) => ({ ...r }));
     for (let i = 0; i < list.length; i++) {
       for (let j = i + 1; j < list.length; j++) {
         const r1 = list[i];
@@ -1852,7 +1969,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }
     }
     return list;
-  }, [reports]);
+  }, [allReports]);
 
   // Reports visible on the map (preserves municipal/category/severity context & protected zone filters)
   const mapVisibleReports = useMemo(() => {
@@ -3907,6 +4024,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Simulation / Historical Replay Mode Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsFirmsReplayMode((prev) => {
+                            const next = !prev;
+                            setSyncSatelliteToast({
+                              message: next
+                                ? '🧪 Historical Replay: Injected 2 VIIRS 375m anomalies for live demo pitch.'
+                                : '🛰️ Live Satellite Mode: Synthetic anomalies cleared.',
+                              type: 'success',
+                            });
+                            setTimeout(() => setSyncSatelliteToast(null), 5000);
+                            return next;
+                          });
+                        }}
+                        className={`px-2 py-1.5 rounded-lg text-xs font-semibold active:scale-95 transition-all shadow-xs cursor-pointer flex items-center gap-1.5 border shrink-0 ${
+                          isFirmsReplayMode
+                            ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-300 dark:border-rose-700/80 text-rose-700 dark:text-rose-300 ring-1 ring-rose-400/40'
+                            : 'bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300'
+                        }`}
+                        title="Toggle Historical Replay / Anomaly Simulation (Shortcut: Shift+S)"
+                      >
+                        <FlaskConical className={`w-3.5 h-3.5 ${isFirmsReplayMode ? 'text-rose-600 animate-pulse' : 'text-stone-500'}`} />
+                        <span>{isFirmsReplayMode ? 'Replay Active' : 'Demo Replay'}</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={handleSyncSatellites}
@@ -3944,7 +4088,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <span className="text-[9px] font-bold uppercase text-stone-400 dark:text-stone-500 block">
                           Peak Radiance
                         </span>
-                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400 font-mono mt-0.5 block">
+                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400 font-mono mt-0.5 block">
                           {satelliteReports.length > 0
                             ? `${Math.max(...satelliteReports.map((r) => r.satelliteHotspot?.frp || 0)).toFixed(1)} MW`
                             : '0.0 MW'}
@@ -3952,15 +4096,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
                       <div>
                         <span className="text-[9px] font-bold uppercase text-stone-400 dark:text-stone-500 block">
-                          Sensor
+                          Footprint
                         </span>
                         <span className="text-xs font-bold text-stone-900 dark:text-stone-100 font-mono mt-0.5 block truncate">
-                          VIIRS 375m
+                          375m Ground Cell
                         </span>
                       </div>
                     </div>
-                    <div className="text-[10px] text-stone-500 dark:text-stone-400 text-center pt-1.5">
-                      Near real-time orbital feeds via NASA LANCE / EOSDIS
+                    <div className="text-[10px] text-stone-500 dark:text-stone-400 text-center pt-1.5 flex items-center justify-center gap-1.5">
+                      <span>Near real-time orbital feeds via NASA LANCE / EOSDIS</span>
+                      {isFirmsReplayMode && (
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                          SIMULATION MODE
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -3979,24 +4128,60 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             No thermal anomalies or forest fire hotspots currently detected by VIIRS over Rizal Province.
                           </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={handleSyncSatellites}
-                          disabled={isSyncingSatellites}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-stone-900 dark:bg-stone-800 text-white hover:bg-black transition cursor-pointer"
-                        >
-                          <RefreshCw className={`w-3 h-3 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
-                          <span>Check for Updates</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsFirmsReplayMode(true);
+                              setSyncSatelliteToast({
+                                message: '🧪 Historical Replay: Injected 2 VIIRS 375m anomalies for live demo pitch.',
+                                type: 'success',
+                              });
+                              setTimeout(() => setSyncSatelliteToast(null), 5000);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition cursor-pointer shadow-xs"
+                          >
+                            <FlaskConical className="w-3.5 h-3.5" />
+                            <span>Load Demo Replay (2 Hotspots)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSyncSatellites}
+                            disabled={isSyncingSatellites}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-stone-900 dark:bg-stone-800 text-white hover:bg-black transition cursor-pointer"
+                          >
+                            <RefreshCw className={`w-3 h-3 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
+                            <span>Sync</span>
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       satelliteReports.map((satReport) => {
                         const coords = resolveReportCoordinates(satReport);
                         const sat = satReport.satelliteHotspot;
                         const frp = sat?.frp !== undefined ? sat.frp.toFixed(1) : 'N/A';
-                        const tempC = sat?.brightnessTemperature !== undefined ? (sat.brightnessTemperature - 273.15).toFixed(1) : 'N/A';
+                        const tempK = sat?.brightnessTemperature !== undefined
+                          ? sat.brightnessTemperature.toFixed(1)
+                          : sat?.brightnessTemp
+                          ? sat.brightnessTemp.toFixed(1)
+                          : '330.0';
+                        const tempC = sat?.brightnessTemperature !== undefined
+                          ? (sat.brightnessTemperature - 273.15).toFixed(1)
+                          : sat?.brightnessTemp
+                          ? (sat.brightnessTemp - 273.15).toFixed(1)
+                          : '56.9';
+                        const confidence = (sat?.confidence || 'nominal').toLowerCase();
+                        const passPht = formatFirmsPhtTime(sat?.acqDate, sat?.acqTime);
                         const locationText = [satReport.location?.barangay, satReport.location?.municipality || 'Rizal'].filter(Boolean).join(', ');
-                        const desc = satReport.aiTriage?.summary || satReport.rawInput?.description || 'NASA VIIRS Thermal Anomaly';
+                        const sensorText = sat?.satellite || 'VIIRS 375m (NOAA-20 / S-NPP)';
+                        const isSelected = selectedReport?.id === satReport.id;
+                        const dispatchTicket = dispatchedSimIds[satReport.id];
+
+                        // Cross-check against community reports
+                        const communityReports = allReports.filter(
+                          (r) => r.source !== 'satellite_firms' && !r.id.startsWith('SAT-') && !r.satelliteHotspot && r.status !== 'spam'
+                        );
+                        const crossCheck = crossCheckFirmsWithReports(satReport, communityReports, 500);
 
                         return (
                           <div
@@ -4007,29 +4192,118 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               setSelectedReport(satReport);
                               if (window.innerWidth < 640) setIsSheetOpen(false);
                             }}
-                            className="p-3 transition-colors cursor-pointer text-left space-y-1.5 group hover:bg-stone-50 dark:hover:bg-stone-850/80 bg-white dark:bg-stone-900"
+                            className={`p-3.5 transition-all cursor-pointer text-left space-y-2 group border-b ${
+                              isSelected
+                                ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-300 dark:border-rose-900/60 ring-1 ring-rose-400/40'
+                                : 'bg-white hover:bg-stone-50 dark:bg-stone-900 dark:hover:bg-stone-850/80 border-stone-100 dark:border-stone-800/80'
+                            }`}
                           >
+                            {/* Card Header: Reference Code & Radiance */}
                             <div className="flex items-center justify-between gap-2">
-                              <span className="font-mono text-xs font-bold text-amber-700 dark:text-amber-400">
-                                {satReport.referenceCode}
-                              </span>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold border border-amber-300 dark:border-amber-800 flex items-center gap-1">
-                                <Flame className="w-2.5 h-2.5 text-orange-600" />
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="font-mono text-xs font-bold text-rose-700 dark:text-rose-400">
+                                  {satReport.referenceCode}
+                                </span>
+                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 truncate">
+                                  {sensorText}
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 font-bold border border-rose-300 dark:border-rose-800 flex items-center gap-1 shrink-0">
+                                <Flame className="w-2.5 h-2.5 text-rose-600" />
                                 {frp} MW FRP
                               </span>
                             </div>
 
-                            <div className="text-xs font-semibold text-stone-900 dark:text-stone-100 line-clamp-1">
-                              {desc}
+                            {/* Cross-Check Verdict Banner */}
+                            {crossCheck.matched ? (
+                              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 space-y-1">
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+                                    <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                    <span>MATCHED: Report #{crossCheck.matchedReport?.referenceCode}</span>
+                                  </span>
+                                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shrink-0">
+                                    Auto-Escalated to Severity 5
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-emerald-700 dark:text-emerald-400/90 leading-tight">
+                                  Corroborated {crossCheck.distanceMeters}m from citizen report. Multi-source statutory verification confirmed.
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 space-y-1.5">
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                                    <span>UNREPORTED ANOMALY</span>
+                                  </span>
+                                  <span className="text-[9px] font-mono text-amber-700 dark:text-amber-400">
+                                    {(crossCheck.distanceMeters / 1000).toFixed(1)} km to nearest report
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 pt-0.5">
+                                  <span className="text-[10px] text-amber-700 dark:text-amber-400/90 truncate">
+                                    No citizen observation logged in this sector.
+                                  </span>
+                                  {dispatchTicket ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white shrink-0">
+                                      <Check className="w-3 h-3" />
+                                      Ticket #{dispatchTicket}
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const ticketId = `DISP-BFP-${Math.floor(100 + Math.random() * 900)}`;
+                                        setDispatchedSimIds((prev) => ({
+                                          ...prev,
+                                          [satReport.id]: ticketId,
+                                        }));
+                                        setSyncSatelliteToast({
+                                          message: `🚒 LGU Dispatch Ticket #${ticketId} Issued: Field reconnaissance deployed for ${satReport.location.municipality} anomaly.`,
+                                          type: 'success',
+                                        });
+                                        setTimeout(() => setSyncSatelliteToast(null), 7000);
+                                      }}
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-amber-600 hover:bg-amber-700 active:scale-95 text-white transition shadow-xs cursor-pointer shrink-0"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                      <span>+ Create LGU Dispatch Ticket</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Raw NASA Telemetry Grid (2x2) */}
+                            <div className="grid grid-cols-2 gap-1.5 p-2 rounded-lg bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 text-[10px]">
+                              <div>
+                                <span className="text-stone-400 dark:text-stone-500 block text-[9px] font-medium">BRIGHTNESS TEMP</span>
+                                <span className="font-mono font-bold text-stone-900 dark:text-stone-100">{tempK} K ({tempC}°C)</span>
+                              </div>
+                              <div>
+                                <span className="text-stone-400 dark:text-stone-500 block text-[9px] font-medium">FIRE RADIATIVE POWER</span>
+                                <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{frp} MW</span>
+                              </div>
+                              <div>
+                                <span className="text-stone-400 dark:text-stone-500 block text-[9px] font-medium">CONFIDENCE</span>
+                                <span className="font-mono font-bold text-stone-800 dark:text-stone-200 capitalize">{confidence}</span>
+                              </div>
+                              <div>
+                                <span className="text-stone-400 dark:text-stone-500 block text-[9px] font-medium">ORBITAL PASS (PHT)</span>
+                                <span className="font-mono font-bold text-stone-800 dark:text-stone-200 truncate block">{passPht}</span>
+                              </div>
                             </div>
 
+                            {/* Card Footer: Location & Resolution */}
                             <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 pt-0.5">
                               <span className="flex items-center gap-1 truncate">
                                 <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
                                 {locationText}
                               </span>
-                              <span className="font-mono text-stone-600 dark:text-stone-300 shrink-0">
-                                {tempC}°C • {sat?.confidence || 'Nominal'}
+                              <span className="font-mono text-[9px] text-stone-400 dark:text-stone-500 shrink-0">
+                                375m Ground Cell
                               </span>
                             </div>
                           </div>

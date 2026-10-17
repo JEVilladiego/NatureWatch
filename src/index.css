@@ -509,3 +509,149 @@
   box-shadow: 0 5px 16px -1px rgba(99, 102, 241, 0.6);
 }
 
+/* ==========================================================================
+   NASA FIRMS VIIRS 375m Grid Square & Tactical Reticle Styling
+   ========================================================================== */
+@keyframes firmsThermalPulse {
+  0% {
+    fill-opacity: 0.18;
+  }
+  50% {
+    fill-opacity: 0.28;
+  }
+  100% {
+    fill-opacity: 0.18;
+  }
+}
+
+@keyframes firmsReticlePing {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.85;
+  }
+  75%, 100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.firms-375m-grid-cell {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: firmsThermalPulse 3.5s ease-in-out infinite;
+}
+
+.firms-375m-grid-cell:hover {
+  fill-opacity: 0.42 !important;
+  stroke: #be123c !important;
+  stroke-width: 2.5px !important;
+}
+
+.firms-375m-grid-cell.selected {
+  fill-opacity: 0.46 !important;
+  stroke: #9f1239 !important;
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 0 8px rgba(244, 63, 94, 0.65));
+}
+
+.firms-center-reticle {
+  background: transparent !important;
+  border: none !important;
+}
+
+.firms-reticle-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+}
+
+.firms-reticle-ping {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f43f5e;
+  opacity: 0.45;
+  animation: firmsReticlePing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.firms-reticle-box {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1.5px solid #f43f5e;
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.5), inset 0 0 4px rgba(244, 63, 94, 0.4);
+  transition: transform 0.18s ease;
+}
+
+.firms-reticle-wrapper:hover .firms-reticle-box,
+.firms-reticle-wrapper.selected .firms-reticle-box {
+  transform: scale(1.18);
+  border-color: #fb7185;
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.8), inset 0 0 6px rgba(244, 63, 94, 0.6);
+}
+
+.firms-reticle-badge {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 800;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(244, 63, 94, 0.5);
+  padding: 1.5px 5.5px;
+  border-radius: 9999px;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  opacity: 0.92;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.firms-reticle-wrapper:hover .firms-reticle-badge,
+.firms-reticle-wrapper.selected .firms-reticle-badge {
+  opacity: 1;
+  transform: translateX(-50%) scale(1.05);
+  border-color: #f43f5e;
+  box-shadow: 0 3px 10px rgba(244, 63, 94, 0.4);
+}
+
+/* Custom FIRMS Popup */
+.firms-custom-popup .leaflet-popup-content-wrapper {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #fee2e2;
+  box-shadow: 0 10px 25px -5px rgba(225, 29, 72, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  padding: 6px;
+}
+
+.dark .firms-custom-popup .leaflet-popup-content-wrapper {
+  background: #1c1d22;
+  border: 1px solid #881337;
+  box-shadow: 0 10px 25px -5px rgba(225, 29, 72, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  color: #e2e8f0;
+}
+
+.firms-custom-popup .leaflet-popup-tip {
+  background: #ffffff;
+}
+
+.dark .firms-custom-popup .leaflet-popup-tip {
+  background: #1c1d22;
+}
+
+
