@@ -113,7 +113,7 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
             disabled={loading}
             className="w-full py-2.5 bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg transition shadow-2xs cursor-pointer"
           >
-            {loading ? 'Authenticating...' : 'Sign In with Firebase Auth'}
+            {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
       </div>
