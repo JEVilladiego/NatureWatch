@@ -38,6 +38,7 @@ import {
   Map as MapIcon,
   Globe,
   Mountain,
+  Monitor,
   Moon,
   Sun,
   Trash2,
@@ -766,6 +767,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Workbench filter popover state
   const [openFilterPopover, setOpenFilterPopover] = useState<'municipality' | 'severity' | 'category' | 'status' | null>(null);
   const workbenchFilterBarRef = useRef<HTMLDivElement>(null);
+
+  // Mobile Officer Desktop Recommendation Notice state
+  const [isMobileNoticeDismissed, setIsMobileNoticeDismissed] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('naturewatch_mobile_notice_dismissed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleDismissMobileNotice = () => {
+    setIsMobileNoticeDismissed(true);
+    try {
+      sessionStorage.setItem('naturewatch_mobile_notice_dismissed', 'true');
+    } catch {}
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -3044,6 +3061,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* ========================================================= */}
       {viewMode === 'workbench' && (
         <div className="flex flex-col gap-3 h-auto lg:h-[calc(100vh-5.5rem)] lg:min-h-[700px]">
+          {/* Mobile Officer Desktop Recommendation Banner */}
+          {!isMobileNoticeDismissed && (
+            <div className="lg:hidden px-3.5 py-2.5 rounded-xl bg-stone-100/90 dark:bg-stone-900/90 border border-stone-200/90 dark:border-stone-800 text-stone-800 dark:text-stone-200 shadow-2xs flex items-center justify-between gap-3 text-xs shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-stone-200/80 dark:bg-stone-800 flex items-center justify-center shrink-0 text-stone-700 dark:text-stone-300">
+                  <Monitor className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 leading-tight">
+                  <span className="font-semibold text-stone-950 dark:text-stone-100 block sm:inline sm:mr-1.5">
+                    {t.desktopRecommendedTitle}
+                  </span>
+                  <span className="text-stone-500 dark:text-stone-400 text-[11px] block sm:inline">
+                    {t.desktopRecommendedDesc}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleDismissMobileNotice}
+                className="p-1 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition cursor-pointer shrink-0"
+                title="Dismiss notice"
+                aria-label="Dismiss desktop recommendation notice"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* Unified Compact Command Bar */}
           <div
             ref={workbenchFilterBarRef}

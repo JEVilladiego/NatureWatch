@@ -113,6 +113,8 @@ export const translations = {
     themeDark: 'Dark',
     languageLabel: 'Wika',
     accountOfficerRole: 'Opisyal ng PG-ENRO',
+    desktopRecommendedTitle: 'Inirerekomenda ang Desktop',
+    desktopRecommendedDesc: 'Para sa buong multi-pane tactical GIS console at case dossier, buksan ang NatureWatch sa desktop browser.',
   },
   en: {
     appTitle: 'NatureWatch',
@@ -226,5 +228,7 @@ export const translations = {
     themeDark: 'Dark',
     languageLabel: 'Language',
     accountOfficerRole: 'PG-ENRO Officer',
+    desktopRecommendedTitle: 'Desktop Recommended',
+    desktopRecommendedDesc: 'For the complete multi-pane tactical GIS console and case dossier, access NatureWatch on a desktop browser.',
   },
 };
