@@ -23,6 +23,8 @@ export interface ExifSummary {
   distanceFromReportKm?: number | null;
   locationMismatch?: boolean;
   cameraModel?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   isPossibleSyntheticOrEdited?: boolean;
   notes?: string[];
 }

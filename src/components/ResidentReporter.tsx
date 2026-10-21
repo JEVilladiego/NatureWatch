@@ -244,9 +244,19 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         distanceFromReportKm: exifData.distanceFromReportKm ?? null,
         locationMismatch: exifData.locationMismatch ?? false,
         cameraModel: [exifData.cameraMake, exifData.cameraModel].filter(Boolean).join(' ') || null,
+        latitude: exifData.hardwareGps?.lat || null,
+        longitude: exifData.hardwareGps?.lng || null,
         isPossibleSyntheticOrEdited: exifData.isPossibleSyntheticOrEdited ?? false,
         notes: exifData.notes,
       };
+
+      // If photo has authentic camera hardware GPS and citizen has not manually dragged a custom pin,
+      // intelligently lock the report to the true physical location of the incident:
+      if (exifData.hardwareGps && locationSource !== 'gps') {
+        setCoordinates(exifData.hardwareGps);
+        setLocationSource('gps');
+        checkJurisdictionAndMunicipality(exifData.hardwareGps.lat, exifData.hardwareGps.lng);
+      }
 
       setSlots((prev) => ({
         ...prev,

@@ -1060,27 +1060,62 @@ export function resolveReportCoordinates(report: {
     municipality?: string;
     barangay?: string;
   };
+  rawInput?: {
+    exif?: {
+      latitude?: number | null;
+      longitude?: number | null;
+    } | null;
+  };
 }): { lat: number; lng: number } {
+  if (!report || !report.location) {
+    return { lat: 14.58, lng: 121.28 };
+  }
+
   const { lat, lng, source, municipality, barangay } = report.location;
 
-  // If GPS captured coordinates, preserve exact physical position
+  // 1. If photo has authentic camera hardware EXIF GPS, prioritize true physical camera location
+  if (
+    report.rawInput?.exif?.latitude &&
+    report.rawInput?.exif?.longitude &&
+    !isNaN(report.rawInput.exif.latitude) &&
+    !isNaN(report.rawInput.exif.longitude)
+  ) {
+    return {
+      lat: report.rawInput.exif.latitude,
+      lng: report.rawInput.exif.longitude,
+    };
+  }
+
+  // 2. If phone GPS captured coordinates, preserve exact physical position
   if (source === "gps" && lat && lng) {
     return { lat, lng };
   }
 
+  // 3. If municipality and barangay are specified, check if coordinates are at the generic municipality center
   if (municipality && barangay) {
     const brgyCoords = getBarangayCoordinates(municipality, barangay);
     if (brgyCoords) {
       const munCoords = MUNICIPALITY_COORDINATES[municipality];
       const isAtMunCenter =
         munCoords &&
-        Math.abs(lat - munCoords.lat) < 0.001 &&
-        Math.abs(lng - munCoords.lng) < 0.001;
+        Math.abs(lat - munCoords.lat) < 0.005 &&
+        Math.abs(lng - munCoords.lng) < 0.005;
 
       if (!lat || !lng || isAtMunCenter) {
         return brgyCoords;
       }
     }
+  }
+
+  // 4. Return physical/user pin if available
+  if (lat && lng) {
+    return { lat, lng };
+  }
+
+  // 5. Fallback to barangay centroid if available
+  if (municipality && barangay) {
+    const brgyCoords = getBarangayCoordinates(municipality, barangay);
+    if (brgyCoords) return brgyCoords;
   }
 
   return { lat: lat || 14.58, lng: lng || 121.28 };

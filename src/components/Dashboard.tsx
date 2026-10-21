@@ -114,6 +114,7 @@ import {
 import { Language, translations } from '../lib/i18n';
 import { useTheme } from '../lib/theme';
 import { authHeaders } from '../lib/auth';
+import { FieldInspectionModal } from './FieldInspectionModal';
 
 interface DashboardProps {
   lang: Language;
@@ -734,6 +735,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isReasoningExpanded, setIsReasoningExpanded] = useState<boolean>(false);
   const [isSavingUnified, setIsSavingUnified] = useState<boolean>(false);
   const [unifiedSuccess, setUnifiedSuccess] = useState<boolean>(false);
+  const [isInspectionModalOpen, setIsInspectionModalOpen] = useState<boolean>(false);
 
   const { theme, toggleTheme } = useTheme();
 
@@ -3972,7 +3974,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       "{selectedReport.rawInput.description}"
                     </p>
                     <div className="text-xs text-stone-500 dark:text-stone-400 font-mono pt-1">
-                      Loc: {selectedReport.location.lat.toFixed(4)}, {selectedReport.location.lng.toFixed(4)} • {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
+                      Loc: {resolveReportCoordinates(selectedReport).lat.toFixed(4)}, {resolveReportCoordinates(selectedReport).lng.toFixed(4)} • {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
                     </div>
                   </div>
 
@@ -4158,6 +4160,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     >
                       {isUpdatingStatus ? 'Updating...' : 'Log Status Transition'}
                     </button>
+                  </div>
+
+                  {/* Field Dispatch & Inspection Order */}
+                  <div className="p-3.5 bg-stone-100 dark:bg-stone-850 rounded-xl border border-stone-200/90 dark:border-stone-800 space-y-1.5 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => setIsInspectionModalOpen(true)}
+                      className="w-full py-2.5 px-3 bg-stone-900 hover:bg-black active:bg-stone-950 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-stone-800 dark:border-emerald-500"
+                      title="Generate official printable on-site worksheet and Viber/SMS dispatch"
+                    >
+                      <FileText className="w-4 h-4 text-emerald-400 dark:text-emerald-100 shrink-0" />
+                      <span>Generate Field Inspection Worksheet</span>
+                    </button>
+                    <p className="text-[10px] text-stone-500 dark:text-stone-400 text-center">
+                      Printable 1-page on-site worksheet & instant Viber/SMS dispatch format
+                    </p>
                   </div>
                 </>
               )}
@@ -6466,8 +6484,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <span className="truncate">
                             {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
                           </span>
-                          <span className="shrink-0">
-                            GPS: {selectedReport.location.lat.toFixed(4)}, {selectedReport.location.lng.toFixed(4)}
+                          <span className="shrink-0 font-mono">
+                            GPS: {resolveReportCoordinates(selectedReport).lat.toFixed(4)}, {resolveReportCoordinates(selectedReport).lng.toFixed(4)}
                           </span>
                         </div>
                       </div>
@@ -6707,6 +6725,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             </span>
                           </div>
                         )}
+
+                        {/* Field Dispatch & Inspection Order */}
+                        <div className="pt-2 border-t border-stone-200 dark:border-stone-800">
+                          <button
+                            type="button"
+                            onClick={() => setIsInspectionModalOpen(true)}
+                            className="w-full py-2 px-3 bg-stone-900 hover:bg-black active:bg-stone-950 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg transition flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-stone-800 dark:border-emerald-500"
+                            title="Generate official printable on-site worksheet and Viber/SMS dispatch"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-100 shrink-0" />
+                            <span>Field Inspection Worksheet</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                       </>
@@ -7813,6 +7844,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Field Inspection Dispatch Worksheet Modal */}
+      {isInspectionModalOpen && selectedReport && (
+        <FieldInspectionModal
+          report={selectedReport}
+          evidenceImages={evidenceImages}
+          lang={lang}
+          onClose={() => setIsInspectionModalOpen(false)}
+        />
       )}
     </div>
   );

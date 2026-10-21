@@ -727,4 +727,128 @@
   background: #1c1d22;
 }
 
+/* Print Optimization for Official Field Inspection Worksheets */
+@page {
+  size: A4 portrait;
+  margin: 10mm 12mm 10mm 12mm;
+}
+
+@media print {
+  /* 1. Reset root canvas and force exact color rendering */
+  html,
+  body {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 2. Hide everything in the main app when the worksheet modal is open */
+  body.is-printing-worksheet #root,
+  body:has(#field-inspection-modal-root) #root {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* 3. The portal container occupies the entire printed page flow */
+  #field-inspection-modal-root {
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    display: block !important;
+    z-index: auto !important;
+  }
+
+  /* 4. Hide on-screen UI buttons/toolbars */
+  .no-print,
+  .no-print * {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+  }
+
+  /* 5. Clean document card layout */
+  #field-inspection-printable {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* 6. Unconstrain inner scroll container so it flows across pages naturally */
+  #field-inspection-printable .print-scroll-reset {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+
+  /* 7. Page break guards */
+  .print-avoid-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* 8. Text contrast & border fidelity */
+  #field-inspection-printable * {
+    color: #111827 !important;
+    border-color: #9ca3af !important;
+  }
+
+  #field-inspection-printable .text-white,
+  #field-inspection-printable [class*="text-white"] {
+    color: #ffffff !important;
+  }
+
+  #field-inspection-printable .bg-stone-900,
+  #field-inspection-printable .bg-black {
+    background-color: #111827 !important;
+    color: #ffffff !important;
+  }
+
+  #field-inspection-printable .bg-amber-50 {
+    background-color: #fef3c7 !important;
+    color: #78350f !important;
+    border-color: #f59e0b !important;
+  }
+
+  #field-inspection-printable .text-amber-900,
+  #field-inspection-printable .text-amber-950 {
+    color: #78350f !important;
+  }
+
+  #field-inspection-printable .bg-stone-100 {
+    background-color: #f3f4f6 !important;
+  }
+
+  #field-inspection-printable .bg-stone-50 {
+    background-color: #f9fafb !important;
+  }
+}
 
