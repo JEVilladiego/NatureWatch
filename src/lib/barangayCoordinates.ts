@@ -486,6 +486,10 @@ export const RIZAL_BARANGAY_COORDINATES: Record<string, Record<string, { lat: nu
     "Tuna": {
       "lat": 14.3371,
       "lng": 121.2437
+    },
+    "Ocampo": {
+      "lat": 14.4842,
+      "lng": 121.2311
     }
   },
   "Jalajala": {
@@ -502,6 +506,10 @@ export const RIZAL_BARANGAY_COORDINATES: Record<string, Record<string, { lat: nu
       "lng": 121.3273
     },
     "Second District": {
+      "lat": 14.3505,
+      "lng": 121.3273
+    },
+    "Lukang": {
       "lat": 14.3505,
       "lng": 121.3273
     },
@@ -855,7 +863,15 @@ export const RIZAL_BARANGAY_COORDINATES: Record<string, Record<string, { lat: nu
       "lat": 14.7223,
       "lng": 121.3353
     },
+    "Sta. Ines": {
+      "lat": 14.7223,
+      "lng": 121.3353
+    },
     "Santo Niño": {
+      "lat": 14.6512,
+      "lng": 121.3577
+    },
+    "Sto. Niño": {
       "lat": 14.6512,
       "lng": 121.3577
     },
@@ -970,6 +986,9 @@ function normalizeName(str: string): string {
     .toLowerCase()
     .replace(/^brgy\.?\s+/i, "")
     .replace(/\s*\([^)]*\)/g, "")
+    .replace(/\bsta\.?\b/gi, "santa")
+    .replace(/\bsto\.?\b/gi, "santo")
+    .replace(/inez\b/gi, "ines")
     .replace(/[-_\s]+/g, "")
     .trim();
 }

@@ -9,7 +9,7 @@ export default route('GET', async (req, res) => {
   rateLimit(req, 30);
 
   const code = String(req.query.code || '').trim().toUpperCase();
-  if (!/^BK-[A-Z0-9]{5}$/.test(code)) throw new HttpError(400, 'Invalid reference code format.');
+  if (!/^(BK-[A-Z0-9]{5}|SAT-[A-Z0-9-]{6,12})$/.test(code)) throw new HttpError(400, 'Invalid reference code format.');
 
   const snap = await getDb().collection('reports').where('referenceCode', '==', code).limit(1).get();
   if (snap.empty) throw new HttpError(404, 'Reference code not found');

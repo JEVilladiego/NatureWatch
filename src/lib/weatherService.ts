@@ -159,7 +159,7 @@ export const RIZAL_LGU_PRESETS: RizalLguPreset[] = [
   },
   {
     id: 'rodriguez',
-    name: 'Rodriguez',
+    name: 'Rodriguez (Montalban)',
     shortName: 'Rodriguez',
     tag: 'Quarries',
     lat: 14.7333,

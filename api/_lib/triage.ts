@@ -1,3 +1,7 @@
+import dns from 'node:dns';
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {}
 import { GoogleGenAI, Type } from '@google/genai';
 import { z } from 'zod';
 import { FieldValue } from 'firebase-admin/firestore';
@@ -91,11 +95,10 @@ export type TriageOutcome = 'done' | 'failed' | 'processing' | 'skipped';
 async function callGemini(
   description: string,
   imageDataUrl: string | null,
-  model: string,
   weather: WeatherSnapshot | null = null,
   protectedZone: ProtectedAreaHit | null = null,
   airQuality: AirQualitySnapshot | null = null,
-) {
+): Promise<z.infer<typeof TriageSchema> & { modelUsed: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new HttpError(500, 'GEMINI_API_KEY is not configured.');
   const ai = new GoogleGenAI({ apiKey });
@@ -165,38 +168,59 @@ Elevate severity by +${protectedZone.severityBonus} level(s) (capped at 5). Expl
 
   contents.push({ text: promptText });
 
+  // Multi-model resilient fallback chain to guarantee high availability even during Google 503 capacity spikes
+  const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+  const modelsToTry = Array.from(new Set([
+    primaryModel,
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+  ])).filter(Boolean);
+
   let lastError: unknown;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const response = await ai.models.generateContent({
-        model,
-        contents,
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          temperature: 0.2,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              category: { type: Type.STRING, enum: [...CATEGORIES] },
-              severity: { type: Type.INTEGER, description: 'Severity scale from 1 to 5' },
-              confidence: { type: Type.NUMBER, description: 'Confidence score from 0.0 to 1.0' },
-              summary: { type: Type.STRING, description: 'Objective 1-2 sentence English summary of incident' },
-              reasoning: { type: Type.STRING, description: 'Concise explanation for officials only' },
+  for (const model of modelsToTry) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents,
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            temperature: 0.2,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                category: { type: Type.STRING, enum: [...CATEGORIES] },
+                severity: { type: Type.INTEGER, description: 'Severity scale from 1 to 5' },
+                confidence: { type: Type.NUMBER, description: 'Confidence score from 0.0 to 1.0' },
+                summary: { type: Type.STRING, description: 'Objective 1-2 sentence English summary of incident' },
+                reasoning: { type: Type.STRING, description: 'Concise explanation for officials only' },
+              },
+              required: ['category', 'severity', 'confidence', 'summary', 'reasoning'],
             },
-            required: ['category', 'severity', 'confidence', 'summary', 'reasoning'],
           },
-        },
-      });
-      const parsed = TriageSchema.parse(JSON.parse(response.text?.trim() || '{}'));
-      return {
-        ...parsed,
-        confidence: Math.max(0, Math.min(1, Number(parsed.confidence.toFixed(2)))),
-      };
-    } catch (err) {
-      lastError = err;
-      console.warn(`[Gemini Triage] Attempt ${attempt} failed:`, (err as Error)?.message || err);
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 1000));
+        });
+        const parsed = TriageSchema.parse(JSON.parse(response.text?.trim() || '{}'));
+        return {
+          ...parsed,
+          confidence: Math.max(0, Math.min(1, Number(parsed.confidence.toFixed(2)))),
+          modelUsed: model,
+        };
+      } catch (err: any) {
+        lastError = err;
+        const errMsg = err?.message || String(err);
+        const status = err?.status || err?.code;
+        console.warn(`[Gemini Triage] Model ${model} (attempt ${attempt}) failed:`, errMsg);
+
+        // If encountering high-demand spikes (503), quota rate-limits (429), or missing models (404),
+        // fail over immediately to the next candidate model in the chain
+        if (status === 503 || status === 429 || status === 404 || errMsg.includes('high demand') || errMsg.includes('not available')) {
+          console.warn(`[Gemini Triage] Fast failover from ${model} to next candidate model...`);
+          break;
+        }
+
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 1000));
+      }
     }
   }
   throw lastError;
@@ -233,7 +257,6 @@ export async function triageReport(reportId: string, opts: { retryFailed?: boole
   if (!claim.go) return claim.outcome;
 
   const data = claim.data;
-  const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 
   try {
     let imageDataUrl: string | null = null;
@@ -267,7 +290,13 @@ export async function triageReport(reportId: string, opts: { retryFailed?: boole
       }
     }
 
-    const result = await callGemini(String(data.rawInput?.description || ''), imageDataUrl, model, weather, protectedZone, airQuality);
+    const result = await callGemini(
+      String(data.rawInput?.description || ''),
+      imageDataUrl,
+      weather,
+      protectedZone,
+      airQuality,
+    );
 
     const isSpamDetected =
       Boolean(result.isSpam) ||
@@ -284,7 +313,7 @@ export async function triageReport(reportId: string, opts: { retryFailed?: boole
         confidence: result.confidence,
         summary: result.summary,
         reasoning: result.reasoning,
-        model,
+        model: result.modelUsed,
         triagedAt: new Date().toISOString(),
         weather: weather || null,
         airQuality: airQuality || null,

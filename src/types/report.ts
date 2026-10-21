@@ -96,7 +96,7 @@ export interface MgbQuarryTenementHit {
   tenementName?: string;
   operator?: string;
   commodity?: string;
-  permitType?: 'MPSA' | 'CSAG' | 'ISAG';
+  permitType?: 'MPSA' | 'MPP' | 'CSAG' | 'ISAG';
   regulatoryStatus?: string;
 }
 
@@ -311,8 +311,8 @@ export const RIZAL_BARANGAY_AREAS: Record<string, { label: string; barangays: re
     {
       label: 'Mainland',
       barangays: [
-        'Calahan', 'Dalig', 'Del Remedio', 'Iglesia', 'Looc', 'Nagsulo', 'Ocampo', 'Patunhay', 'Real',
-        'Sampad', 'San Roque',
+        'Calahan', 'Dalig', 'Del Remedio', 'Iglesia', 'Looc', 'Nagsulo', 'Patunhay', 'Real',
+        'Sampad', 'San Roque', 'Ticulio',
       ],
     },
     {
@@ -347,8 +347,8 @@ export const RIZAL_LGUS: Record<string, readonly string[]> = {
   ],
   Cardona: flattenAreas('Cardona'),
   Jalajala: [
-    'Bagumbong', 'Bayugo', 'Lubo', 'Lukang', 'Paalaman', 'Pagkalinawan', 'Palaypalay', 'Punta',
-    'Sipsipin', 'Special District', 'Third District',
+    'Bagumbong', 'Bayugo', 'Lubo', 'Paalaman', 'Pagkalinawan', 'Palaypalay', 'Punta',
+    'Second District', 'Sipsipin', 'Special District', 'Third District',
   ],
   Morong: [
     'Bombongan', 'Can-Cal-Lan', 'Lagundi', 'Maybancal', 'San Guillermo', 'San Jose', 'San Juan',

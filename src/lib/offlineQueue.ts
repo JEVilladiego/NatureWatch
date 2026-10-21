@@ -22,13 +22,22 @@ export function onPendingSyncChange(listener: (count: number) => void): () => vo
   };
 }
 
-/** Request AI triage for a saved report. Failures are fine: officials can retry from the dashboard. */
+/** Request AI triage for a saved report. Failures can be retried from the official dashboard. */
 export function requestTriage(reportId: string): void {
   fetch('/api/triage', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ reportId }),
-  }).catch(() => {});
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        console.warn(`[Triage] Automated triage request failed (${res.status}):`, text);
+      }
+    })
+    .catch((err) => {
+      console.warn('[Triage] Background triage trigger network error:', err);
+    });
 }
 
 /**

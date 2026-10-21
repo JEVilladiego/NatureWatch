@@ -93,6 +93,8 @@ import {
   checkMgbQuarryTenement,
   MgbQuarryFeatureProperties,
   fetchRizalMgbQuarriesGeoJSON,
+  fetchRizalProtectedZonesGeoJSON,
+  ProtectedZoneFeatureProperties,
   GeoJSONFeature,
 } from '../lib/geojsonService';
 import { calculateDistanceMeters } from '../lib/geohash';
@@ -194,7 +196,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     lat: 14.6711,
     lng: 121.2139,
     zoom: 12,
-    municipality: 'Rodriguez, Antipolo, San Mateo, Baras, Tanay',
+    municipality: 'Rodriguez, Antipolo City, Baras, San Mateo, Tanay',
     areaHectares: '26,125.60 ha',
     elevation: '120m – 1,469m ASL',
     legalBasis: 'Executive Order No. 33 (1904), Presidential Proclamation No. 296 (2011), Republic Act No. 11038',
@@ -207,7 +209,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     ],
     penalties: 'Mandatory criminal prosecution under RA 11038 Sec. 21 with fines up to ₱5,000,000 and 6–12 years imprisonment.',
     barangays: ['Mascap', 'Puray', 'San Rafael', 'Calawis', 'San Jose', 'San Juan', 'Pinugay', 'Pintong Bocawe', 'Cuyambay'],
-    ecosystemRole: 'Primary headwater catchment for Boso-Boso, Tayabasan, Wawa, and Puray sub-basins. Critical natural buffer mitigating flash floods down into Marikina and Metro Manila.',
+    ecosystemRole: 'Primary headwater catchment for Boso-Boso, Tayabasan, Wawa, and Puray sub-watersheds. Critical natural buffer mitigating flash floods down into Marikina and Metro Manila.',
     polygon: [
       [121.1750, 14.6550], [121.1920, 14.7150], [121.2150, 14.7600], [121.2480, 14.7950],
       [121.3150, 14.8150], [121.3650, 14.7850], [121.3850, 14.7400], [121.3700, 14.6650],
@@ -226,7 +228,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     lat: 14.6167,
     lng: 121.3667,
     zoom: 12,
-    municipality: 'Tanay (Rizal) / Gen. Nakar (Quezon)',
+    municipality: 'Tanay, Rizal / General Nakar, Quezon',
     areaHectares: '~27,608 ha',
     elevation: '200m – 1,200m ASL',
     legalBasis: 'Presidential Proclamation No. 573 (1969) / Initial NIPAS Component',
@@ -248,7 +250,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
   {
     id: 'pamitinan-protected-landscape',
     name: 'Pamitinan Protected Landscape (PPL)',
-    shortName: 'Pamitinan Landscape',
+    shortName: 'Pamitinan Protected Landscape',
     category: 'nipas',
     categoryLabel: 'DENR-NIPAS',
     type: 'Protected Landscape',
@@ -277,7 +279,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
   {
     id: 'hinulugang-taktak-park',
     name: 'Hinulugang Taktak Protected Landscape',
-    shortName: 'Hinulugang Taktak',
+    shortName: 'Hinulugang Taktak Park',
     category: 'nipas',
     categoryLabel: 'DENR-NIPAS',
     type: 'Protected Landscape',
@@ -288,7 +290,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     municipality: 'Antipolo City',
     areaHectares: '3.20 ha',
     elevation: '160m – 180m ASL',
-    legalBasis: 'Proclamation No. 330 (1952), RA 6964 (1990), Proclamation No. 412 (2000), RA 11038',
+    legalBasis: 'Proclamation No. 330 (1952), Republic Act No. 6964 (1990), Proclamation No. 412 (2000), RA 11038',
     prohibitions: [
       'Discharging untreated sewage & commercial runoff into Taktak River',
       'Littering, plastic waste abandonment & open burning',
@@ -305,7 +307,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
   {
     id: 'proc-1636-wildlife-sanctuary',
     name: 'National Park, Wildlife Sanctuary & Game Preserve (Proc. 1636)',
-    shortName: 'Proc. 1636 Sanctuary',
+    shortName: 'Proc. 1636 Wildlife Sanctuary',
     category: 'nipas',
     categoryLabel: 'DENR-NIPAS',
     type: 'Wildlife Sanctuary',
@@ -324,7 +326,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
       'Mineral prospecting & commercial extraction',
     ],
     penalties: 'Criminal penalties under Wildlife Resources Conservation Act (RA 9147) and NIPAS Act.',
-    barangays: ['Puray', 'Calawis', 'Cuyambay', 'Daraitan', 'Sierra Madre High Ridge'],
+    barangays: ['Puray', 'Calawis', 'Cuyambay', 'Daraitan', 'Eastern Sierra Madre Ridge'],
     ecosystemRole: 'Regional mega-biodiversity spine connecting the eastern highlands of Rizal to Bulacan, Laguna, and Quezon; habitat for endemic Philippine wildlife.',
     polygon: [
       [121.3600, 14.8500], [121.4200, 14.8800], [121.5100, 14.8400], [121.5200, 14.6500],
@@ -335,7 +337,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
   {
     id: 'la-mesa-watershed-buffer',
     name: 'La Mesa Watershed Reservation Buffer (Rizal Flank)',
-    shortName: 'La Mesa Buffer',
+    shortName: 'La Mesa Watershed Buffer',
     category: 'nipas',
     categoryLabel: 'DENR-NIPAS',
     type: 'Watershed Reservation',
@@ -343,7 +345,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     lat: 14.7150,
     lng: 121.1450,
     zoom: 13,
-    municipality: 'San Mateo & Rodriguez',
+    municipality: 'San Mateo, Rodriguez',
     areaHectares: '~2,700 ha (Buffer Corridor)',
     elevation: '100m – 350m ASL',
     legalBasis: 'Presidential Proclamation No. 1336 & Executive Order No. 601',
@@ -364,7 +366,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
   // LLDA ZOMAP
   {
     id: 'rayap-fish-sanctuary',
-    name: 'Rayap Fish Sanctuary (LLDA Central Bay)',
+    name: 'Rayap Fish Sanctuary (LLDA Central Bay Fish Sanctuary)',
     shortName: 'Rayap Fish Sanctuary',
     category: 'llda_zomap',
     categoryLabel: 'LLDA ZOMAP',
@@ -393,8 +395,8 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
   },
   {
     id: 'laguna-shoreland-buffer',
-    name: 'Laguna de Bay Protected Shoreland Buffer Zone (12.5m Contour)',
-    shortName: 'Laguna 12.5m Buffer',
+    name: 'Laguna de Bay Protected Shoreland Buffer Zone (12.5m Elevation)',
+    shortName: 'Laguna 12.5m Shoreland Buffer',
     category: 'llda_zomap',
     categoryLabel: 'LLDA ZOMAP',
     type: 'Shoreland Buffer',
@@ -402,10 +404,10 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     lat: 14.4500,
     lng: 121.2200,
     zoom: 11,
-    municipality: '9 Coastal LGUs across Rizal',
+    municipality: 'Taytay, Angono, Binangonan, Cardona, Morong, Baras, Tanay, Pililla, Jalajala',
     areaHectares: '~4,200 ha (Linear Lakeshore Corridor)',
     elevation: 'At or below 12.50m reglementary mark',
-    legalBasis: 'LLDA ZOMAP, Presidential Decree No. 1067, LLDA Res. 136',
+    legalBasis: 'LLDA ZOMAP, Presidential Decree No. 1067 (Water Code), LLDA Res. 136 (s. 2000)',
     prohibitions: [
       'Unauthorized reclamation & backfilling of shoreline wetlands',
       'Dumping municipal solid waste & construction debris',
@@ -413,8 +415,8 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
       'Building non-compliant structures within public easement',
     ],
     penalties: 'Administrative fines, summary eviction, and demolition by LLDA and Provincial Government of Rizal.',
-    barangays: ['Littoral wetlands across Taytay, Angono, Binangonan, Cardona, Morong, Baras, Tanay, Pililla, Jalajala'],
-    ecosystemRole: 'Natural flood attenuation buffer, filtration zone for terrestrial runoff entering Laguna de Bay, and coastal wetland bird habitat.',
+    barangays: ['Lakeshore littoral zone across all 9 coastal municipalities'],
+    ecosystemRole: 'Public shoreland buffer at or below 12.50m elevation across all 9 lakeshore LGUs of Rizal. Protects littoral wetlands and regulates flood plains.',
     polygon: [
       [121.1450, 14.5200], [121.1700, 14.5250], [121.1980, 14.4850], [121.2250, 14.4600],
       [121.2550, 14.4850], [121.2900, 14.4800], [121.3250, 14.4500], [121.3400, 14.4100],
@@ -434,10 +436,10 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     lat: 14.7889,
     lng: 121.3383,
     zoom: 12,
-    municipality: 'Rodriguez (Puray / San Rafael)',
+    municipality: 'Rodriguez (Montalban)',
     areaHectares: '170,572 ha (Regional KBA 9720)',
     elevation: '400m – 1,469m ASL (Highest in Rizal)',
-    legalBasis: 'DENR-BMB National KBA Directory, RA 8371 (IPRA)',
+    legalBasis: 'DENR-BMB National Key Biodiversity Area Directory (KBA No. 9720), RA 8371 (IPRA)',
     prohibitions: [
       'Unlawful entry into ancestral domain without Free, Prior and Informed Consent (FPIC)',
       'Poaching endemic montane wildlife & rare orchid harvesting',
@@ -463,19 +465,19 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     lat: 14.5986,
     lng: 121.3183,
     zoom: 13,
-    municipality: 'Baras & Tanay',
+    municipality: 'Baras, Tanay',
     areaHectares: '~2,700 ha (Lot A & Restoration Area)',
     elevation: '300m – 680m ASL',
-    legalBasis: 'DENR-Masungi Reforestation Agreement, DAO 96-37, Cave Protection Act',
+    legalBasis: 'DENR-Masungi Reforestation Agreement / Karst Conservation, DAO 96-37',
     prohibitions: [
       'Quarrying, limestone blasting & mechanical rock crushing',
       'Illegal fencing, barbed wire enclosures & land-grabbing',
       'Armed intimidation of environmental rangers & personnel',
       'Unpermitted construction of private resorts & piggery waste',
     ],
-    penalties: 'Permanent revocation of ECCs, criminal charges under NIPAS Act, Cave Act (RA 9072), and Provincial Ordinances.',
+    penalties: 'Permanent revocation of ECCs, criminal charges under the NIPAS Act, and Provincial Ordinances.',
     barangays: ['Pinugay (Baras)', 'Cuyambay (Tanay)'],
-    ecosystemRole: '66-million-year-old Paleocene limestone karst sanctuary acting as natural water catchment divide between the Marikina River and Kaliwa River systems.',
+    ecosystemRole: 'Ancient Paleocene–Eocene limestone karst formation and watershed headwater divide between Marikina and Kaliwa.',
     polygon: [
       [121.3020, 14.5880], [121.3120, 14.6150], [121.3340, 14.6160], [121.3400, 14.5940],
       [121.3250, 14.5820], [121.3080, 14.5810], [121.3020, 14.5880]
@@ -483,8 +485,8 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
   },
   {
     id: 'angono-binangonan-petroglyphs',
-    name: 'Angono–Binangonan Petroglyphs Site & Micro-Forest',
-    shortName: 'Petroglyphs Reserve',
+    name: 'Angono–Binangonan Petroglyphs Site & Micro-Forest Reserve',
+    shortName: 'Petroglyphs Cultural Reserve',
     category: 'kba_georeserve',
     categoryLabel: 'KBA / Karst',
     type: 'Cultural-Ecological Reserve',
@@ -492,10 +494,10 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     lat: 14.5328,
     lng: 121.1872,
     zoom: 15,
-    municipality: 'Binangonan & Angono',
+    municipality: 'Binangonan, Angono',
     areaHectares: '~12 ha (Core & Forest Buffer)',
     elevation: '140m – 210m ASL',
-    legalBasis: 'Presidential Decree No. 260 (1973), Proclamation No. 2146',
+    legalBasis: 'Presidential Decree No. 260 (1973, National Cultural Treasure), Proclamation No. 2146',
     prohibitions: [
       'Defacing, scratching, or painting rock art panels',
       'Vandalism, graffiti & unauthorized archaeological digging',
@@ -514,7 +516,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
   {
     id: 'mt-tagapo-sanctuary',
     name: 'Mount Tagapo Local Forest & Ecotourism Zone',
-    shortName: 'Mt. Tagapo Sanctuary',
+    shortName: 'Mount Tagapo Sanctuary',
     category: 'local_mountain',
     categoryLabel: 'Local Mountain',
     type: 'Local Mountain Reserve',
@@ -522,10 +524,10 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     lat: 14.3310,
     lng: 121.2280,
     zoom: 13,
-    municipality: 'Binangonan & Cardona (Talim)',
+    municipality: 'Binangonan, Cardona (Talim Island)',
     areaHectares: '~1,200 ha (Talim Mountain Spine)',
     elevation: '438 MASL',
-    legalBasis: 'Binangonan & Cardona Municipal Ecological Reserve Ordinances',
+    legalBasis: 'Municipal Ecological Reserve Ordinances (Binangonan & Cardona)',
     prohibitions: [
       'Tree cutting & harvesting endemic bamboo/timber',
       'Open burning (siga) & setting brushfires on grass slopes',
@@ -544,7 +546,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
   {
     id: 'mt-sembrano-watershed',
     name: 'Mount Sembrano Watershed & Forest Reserve',
-    shortName: 'Mt. Sembrano Watershed',
+    shortName: 'Mount Sembrano Watershed',
     category: 'local_mountain',
     categoryLabel: 'Local Mountain',
     type: 'Municipal Watershed',
@@ -552,10 +554,10 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     lat: 14.3856,
     lng: 121.3639,
     zoom: 13,
-    municipality: 'Pililla & Jalajala',
+    municipality: 'Pililla, Jalajala',
     areaHectares: '~2,400 ha (Peninsula Ridge)',
     elevation: '743m – 745m ASL',
-    legalBasis: 'Pililla & Jalajala Municipal Environmental Ordinances',
+    legalBasis: 'Municipal Environmental Ordinances (Pililla & Jalajala), Upland Watershed Co-Management Framework',
     prohibitions: [
       'Kaingin (slash-and-burn) on steep mountain slopes',
       'Illegal charcoal kilns & clearing of mango/forest groves',
@@ -576,15 +578,15 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     shortName: 'Mt. Balagbag Foothills',
     category: 'local_mountain',
     categoryLabel: 'Local Mountain',
-    type: 'Local Ecotourism Buffer',
+    type: 'Local Mountain Reserve',
     color: '#475569',
     lat: 14.8219,
     lng: 121.1761,
     zoom: 13,
-    municipality: 'Rodriguez (San Isidro)',
+    municipality: 'Rodriguez (Montalban)',
     areaHectares: '~1,800 ha (Northern Foothills)',
     elevation: '350m – 777m ASL',
-    legalBasis: 'Rodriguez Municipal Ecotourism & Watershed Buffer Resolution',
+    legalBasis: 'Rodriguez Municipal Ecotourism & Watershed Buffer Resolution, Southern Ipo-Angat Buffer Corridor',
     prohibitions: [
       'Unlicensed off-road 4x4 / motorcycle trail destruction',
       'Kaingin & land clearing along Ipo-Angat perimeter',
@@ -593,7 +595,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     ],
     penalties: 'Impoundment of off-road vehicles and local municipal environmental citations.',
     barangays: ['San Isidro (Sitio Balagbag / Macaingalan)'],
-    ecosystemRole: 'Headwater corridor linking Rodriguez with the southern boundary of the Ipo-Angat watershed reserve, safeguarding Metro Manila drinking catchments.',
+    ecosystemRole: 'Upland headwater corridor in northwestern Rodriguez bordering San Jose del Monte (Bulacan) and Ipo Watershed.',
     polygon: [
       [121.1580, 14.8080], [121.1620, 14.8380], [121.1850, 14.8450], [121.1960, 14.8280],
       [121.1880, 14.8050], [121.1680, 14.8020], [121.1580, 14.8080]
@@ -605,7 +607,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     shortName: 'Daranak Falls Sanctuary',
     category: 'local_mountain',
     categoryLabel: 'Local Mountain',
-    type: 'Municipal Sanctuary',
+    type: 'Local Mountain Reserve',
     color: '#0d9488',
     lat: 14.5428,
     lng: 121.3533,
@@ -613,7 +615,7 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
     municipality: 'Tanay',
     areaHectares: '~150 ha',
     elevation: '220m – 340m ASL',
-    legalBasis: 'Tanay Municipal Environmental Protection Ordinance No. 2',
+    legalBasis: 'Tanay Municipal Environmental Protection Ordinance No. 2, Tanay Ecotourism Master Plan',
     prohibitions: [
       'Dumping solid or chemical waste into Daranak River',
       'Defacing rock formations & limestone cliff faces',
@@ -1014,6 +1016,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
       .catch((err) => {
         console.warn('Failed to load MGB quarries geojson:', err);
       });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Live protected-zone records (GeoJSON is the source of truth). Reports store a snapshot of the
+  // zone taken at triage time, so display fields are re-resolved from here by id to avoid stale text.
+  const [liveProtectedZones, setLiveProtectedZones] = useState<Record<string, ProtectedZoneFeatureProperties>>({});
+  useEffect(() => {
+    let isMounted = true;
+    fetchRizalProtectedZonesGeoJSON()
+      .then((coll) => {
+        if (!isMounted || !coll?.features) return;
+        const byId: Record<string, ProtectedZoneFeatureProperties> = {};
+        for (const f of coll.features) byId[f.properties.id] = f.properties;
+        setLiveProtectedZones(byId);
+      })
+      .catch((err) => console.warn('Failed to load protected zones geojson:', err));
     return () => {
       isMounted = false;
     };
@@ -1569,8 +1589,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   // Protected Ecological Zone alert banner
-  const renderProtectedZoneBadge = (zone?: ProtectedZoneHit | null, compact?: boolean) => {
-    if (!zone) return null;
+  const renderProtectedZoneBadge = (zoneSnapshot?: ProtectedZoneHit | null, compact?: boolean) => {
+    if (!zoneSnapshot) return null;
+    const live = liveProtectedZones[zoneSnapshot.id];
+    const zone: ProtectedZoneHit = live
+      ? {
+          ...zoneSnapshot,
+          name: live.name,
+          shortName: live.shortName,
+          category: live.category ?? zoneSnapshot.category,
+          type: live.type,
+          severityBonus: live.severityBonus,
+          municipality: live.municipality,
+          legalBasis: live.legalBasis ?? zoneSnapshot.legalBasis,
+          legalNote: live.legalNote,
+        }
+      : zoneSnapshot;
     let catLabel = 'Statutory Reserve';
     if (zone.category === 'nipas') catLabel = 'DENR-NIPAS Protected Area';
     else if (zone.category === 'llda_zomap') catLabel = 'LLDA Aquatic Sanctuary / Buffer';
@@ -1911,7 +1945,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             )}
           </div>
           <div className="text-[10px] text-stone-500 dark:text-stone-400 leading-relaxed pt-1 border-t border-stone-200/80 dark:border-stone-800">
-            Coordinates intersect an authorized MGB Region IV-A concession ({hit.areaHectares}). Officers should verify whether on-ground activities exceed permitted boundaries, bench depths, or Environmental Compliance Certificate (ECC) conditions.
+            Coordinates intersect an authorized MGB Region IV-A concession{hit.areaHectares ? ` (${hit.areaHectares})` : ''}. Officers should verify whether on-ground activities exceed permitted boundaries, bench depths, or Environmental Compliance Certificate (ECC) conditions.
           </div>
         </div>
       );
@@ -5680,7 +5714,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 pt-0.5">
                               <span className="flex items-center gap-1 truncate">
                                 <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
-                                {p.barangay ? `${p.barangay}, ` : ''}{p.municipality}
+                                {`${p.barangay || 'Barangay not recorded'}, `}{p.municipality}
                               </span>
                               <span className="font-mono text-stone-700 dark:text-stone-300 font-semibold shrink-0">
                                 {p.areaHectares}
@@ -7094,7 +7128,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </h3>
                     <div className="flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400 mt-1">
                       <MapPin className="w-3 h-3 shrink-0 text-stone-400" />
-                      <span className="truncate">{qp.barangay ? `${qp.barangay}, ` : ''}{qp.municipality}, Rizal</span>
+                      <span className="truncate">{`${qp.barangay || 'Barangay not recorded'}, `}{qp.municipality}, Rizal</span>
                     </div>
                   </div>
                 </div>

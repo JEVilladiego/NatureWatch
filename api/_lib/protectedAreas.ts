@@ -269,7 +269,7 @@ export const RIZAL_PROTECTED_ZONES: ProtectedZoneRecord[] = [
     municipality: 'Baras, Tanay',
     legalBasis: 'DENR-Masungi Reforestation Agreement / Karst Conservation, DAO 96-37',
     legalNote:
-      '~2,700-hectare ancient Eocene limestone karst formation and watershed headwater divide between Marikina and Kaliwa. Quarrying, blasting, unauthorized fencing, and land speculation are strictly prohibited under special conservation status.',
+      '~2,700-hectare ancient Paleocene–Eocene limestone karst formation and watershed headwater divide between Marikina and Kaliwa. Quarrying, blasting, unauthorized fencing, and land speculation are strictly prohibited under special conservation status.',
     center: [14.5986, 121.3183],
     polygon: [
       [121.3020, 14.5880],
