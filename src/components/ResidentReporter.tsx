@@ -46,7 +46,6 @@ import { LeafletMap, BasemapMode } from './LeafletMap';
 import { getBarangayCoordinates, findNearestBarangay } from '../lib/barangayCoordinates';
 import { isPointInRizal, findMunicipalityByPoint, findProtectedZoneByCoordinates, type ProtectedZoneFeatureProperties } from '../lib/geojsonService';
 import { Language, translations } from '../lib/i18n';
-import { useTheme } from '../lib/theme';
 
 // Default Rizal Province center
 const RIZAL_COORDS = { lat: 14.5800, lng: 121.2800 };
@@ -74,7 +73,6 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   onReportCreated,
 }) => {
   const t = translations[lang];
-  const { theme } = useTheme();
 
   // 3-Slot Structured Evidence State
   const [slots, setSlots] = useState<Record<EvidenceSlotRole, EvidenceSlotItem | null>>({

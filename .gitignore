@@ -35,6 +35,3 @@ serviceAccount*.json
 .firebase/
 .vercel
 .env*
-
-
-scripts/

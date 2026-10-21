@@ -3,7 +3,7 @@
  * Rizal Province • PG-ENRO
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar, type Tab } from './components/Navbar';
 import { ResidentReporter } from './components/ResidentReporter';
 import { PublicStatusPage } from './components/PublicStatusPage';

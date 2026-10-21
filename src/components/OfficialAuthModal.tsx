@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Lock, Mail, X, Check, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, X, AlertCircle } from 'lucide-react';
 import { auth } from '../lib/firebase';
-import { isOfficialUser, checkOfficialStatus } from '../lib/auth';
+import { checkOfficialStatus } from '../lib/auth';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
 interface OfficialAuthModalProps {

@@ -2,26 +2,22 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ShieldAlert,
-  Filter,
   CheckCircle,
   AlertTriangle,
   Clock,
   MapPin,
   Sparkles,
   Edit3,
-  Database,
   Search,
   Eye,
   RefreshCw,
   Layers,
-  BarChart3,
   Check,
   X,
   FileText,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  ChevronUp,
   ZoomIn,
   Plus,
   Minus,
@@ -34,16 +30,11 @@ import {
   Wind,
   Droplets,
   ShieldCheck,
-  LogOut,
   Map as MapIcon,
   Globe,
   Mountain,
   Monitor,
-  Moon,
-  Sun,
   Trash2,
-  Camera,
-  Upload,
   Trees,
   Scale,
   Flame,
@@ -52,10 +43,8 @@ import {
   Factory,
   Activity,
   CloudSun,
-  Cloud,
   Compass,
   FlaskConical,
-  Send,
 } from 'lucide-react';
 import {
   generateFirmsSimulationReports,
@@ -69,7 +58,6 @@ import {
   fetchFullAtmosphericTelemetry,
   fetchAllRizalLgusTelemetry,
   getAqiMeta,
-  getWeatherInterpretation,
   getWindFlowTrajectory,
   computeEmpiricalWeatherIndices,
 } from '../lib/weatherService';
@@ -83,7 +71,6 @@ import {
   MUNICIPALITY_COORDINATES,
   WeatherContext,
   AirQualitySnapshot,
-  SatelliteHotspotData,
   ProtectedZoneHit,
   ReportImageItem,
 } from '../types/report';
@@ -98,11 +85,10 @@ import {
   GeoJSONFeature,
 } from '../lib/geojsonService';
 import { calculateDistanceMeters } from '../lib/geohash';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { db } from '../lib/firebase';
 import {
   collection,
   query,
-  where,
   orderBy,
   limit,
   onSnapshot,
@@ -112,7 +98,6 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import { Language, translations } from '../lib/i18n';
-import { useTheme } from '../lib/theme';
 import { authHeaders } from '../lib/auth';
 import { FieldInspectionModal } from './FieldInspectionModal';
 
@@ -635,13 +620,11 @@ const RIZAL_PROTECTED_ZONES_CATALOG: CuratedProtectedZoneItem[] = [
 
 export const Dashboard: React.FC<DashboardProps> = ({
   lang,
-  setLang,
   officialUser,
   onOpenLogin,
   viewMode: controlledViewMode,
   onViewModeChange,
   onNavigateTab,
-  onLogout,
 }) => {
   const t = translations[lang];
 
@@ -677,8 +660,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   // LikasMap-inspired Full Map layout states
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
-  const [isLegendExpanded, setIsLegendExpanded] = useState<boolean>(true);
   const [isLayersPanelOpen, setIsLayersPanelOpen] = useState<boolean>(false);
 
   // Reports state
@@ -737,7 +718,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [unifiedSuccess, setUnifiedSuccess] = useState<boolean>(false);
   const [isInspectionModalOpen, setIsInspectionModalOpen] = useState<boolean>(false);
 
-  const { theme, toggleTheme } = useTheme();
 
   // Map viewport & layer state
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 14.5800, lng: 121.2800 });
@@ -2637,7 +2617,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   // Dedicated Aerospace-Grade Container Detail for NASA FIRMS Spaceborne Telemetry
-  const renderFirmsDossierDetail = (report: IncidentReport, isDrawer: boolean) => {
+  const renderFirmsDossierDetail = (report: IncidentReport, _isDrawer?: boolean) => {
     const coords = resolveReportCoordinates(report);
     const sat = report.satelliteHotspot;
     const frp = sat?.frp !== undefined ? sat.frp.toFixed(2) : 'N/A';
@@ -3039,11 +3019,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     );
   }
 
-  const activeCategory =
-    selectedReport?.final?.category || selectedReport?.aiTriage?.category || 'other';
-  const activeSeverity =
-    selectedReport?.final?.severity || selectedReport?.aiTriage?.severity || 3;
-  const activeMetadata = CATEGORIES[activeCategory as IncidentCategory] || CATEGORIES.other;
+
 
   return (
     <div className={viewMode === 'full_map' ? 'w-full h-full relative overflow-hidden flex-1' : 'w-full max-w-[1720px] mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-3 space-y-3'}>
@@ -3513,7 +3489,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* Queue List Stream */}
               <div className="divide-y divide-stone-100 dark:divide-stone-850 flex-1 overflow-y-auto">
-                {filteredReports.length === 0 ? (
+                {loading ? (
+                  <div className="p-8 text-center text-xs text-stone-500 dark:text-stone-400 flex items-center justify-center gap-2">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Loading incident reports...</span>
+                  </div>
+                ) : filteredReports.length === 0 ? (
                   <div className="p-8 text-center text-xs text-stone-500 dark:text-stone-400">
                     No incident reports match your current filters.
                   </div>
@@ -4874,7 +4855,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                   {/* Scrollable Incident Stream */}
                   <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-850 custom-scrollbar overscroll-contain">
-                    {filteredReports.length === 0 ? (
+                    {loading ? (
+                      <div className="p-8 text-center text-xs text-stone-500 dark:text-stone-400 flex items-center justify-center gap-2">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Loading incident reports...</span>
+                      </div>
+                    ) : filteredReports.length === 0 ? (
                       <div className="p-8 text-center text-xs text-stone-500 dark:text-stone-400 space-y-1">
                         <p className="font-semibold text-stone-700 dark:text-stone-300">No incident reports found</p>
                         <p className="text-stone-400 dark:text-stone-500">Try adjusting your municipality or severity filters.</p>
@@ -5672,7 +5658,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                       return filtered.map((feat) => {
                         const p = feat.properties;
-                        const center = getQuarryCenter(feat);
                         const isMpp = p.permitType === 'MPP';
                         const isCancelled = p.status === 'Cancelled';
                         const isExploration = p.status === 'Exploration';

@@ -128,7 +128,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   choroplethCounts = {},
   maskNonRizal,
   fitProvinceKey,
-  showProtectedZones = true,
+  showProtectedZones: _showProtectedZones = true,
   selectedProtectedZoneId = null,
   onSelectProtectedZone,
   onMapBackgroundClick,

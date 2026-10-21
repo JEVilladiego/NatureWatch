@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search,
-  CheckCircle,
-  Clock,
   AlertCircle,
   ShieldCheck,
   ArrowLeft,

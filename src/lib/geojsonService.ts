@@ -379,7 +379,7 @@ export function getGeometryBounds(geometry: GeoJSONGeometry): [[number, number],
  *   - 4 reports: 80% opacity
  *   - 5+ reports: 100% opacity
  */
-export function getChoroplethStyle(count: number, maxCount: number, isHovered = false) {
+export function getChoroplethStyle(count: number, _maxCount?: number, isHovered = false) {
   if (count === 0) {
     return {
       fillColor: '#059669',

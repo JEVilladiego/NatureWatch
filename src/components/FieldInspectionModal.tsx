@@ -5,18 +5,13 @@ import {
   Printer,
   Copy,
   Check,
-  MapPin,
-  Calendar,
-  AlertTriangle,
   Shield,
-  Compass,
   Wind,
   Droplets,
   ExternalLink,
-  Camera,
 } from 'lucide-react';
 import { IncidentReport, ReportImageItem, CATEGORIES } from '../types/report';
-import { Language, translations } from '../lib/i18n';
+import { Language } from '../lib/i18n';
 import { resolveReportCoordinates } from '../lib/barangayCoordinates';
 
 interface FieldInspectionModalProps {
@@ -33,7 +28,6 @@ export const FieldInspectionModal: React.FC<FieldInspectionModalProps> = ({
   onClose,
 }) => {
   const [copied, setCopied] = useState<boolean>(false);
-  const t = translations[lang] || translations.en;
 
   // Close on Escape key press
   useEffect(() => {

@@ -3,7 +3,7 @@ try {
   dns.setDefaultResultOrder('ipv4first');
 } catch {}
 import { getDb } from './admin.js';
-import { findProtectedAreaByPoint, type ProtectedAreaHit } from './protectedAreas.js';
+import { findProtectedAreaByPoint } from './protectedAreas.js';
 
 // Rizal Province bounding box [West, South, East, North]
 const RIZAL_BBOX = '121.09,14.27,121.46,14.84';

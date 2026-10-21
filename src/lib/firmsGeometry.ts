@@ -1,5 +1,5 @@
 import { calculateDistanceMeters } from './geohash';
-import type { IncidentReport, SatelliteHotspotData } from '../types/report';
+import type { IncidentReport } from '../types/report';
 
 /**
  * Calculates the Leaflet bounding box coordinates [[southWestLat, southWestLng], [northEastLat, northEastLng]]
