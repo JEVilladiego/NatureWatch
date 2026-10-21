@@ -46,11 +46,10 @@ const NavTab: React.FC<{ active: boolean; onClick: () => void; label: string; ic
     type="button"
     onClick={onClick}
     aria-current={active ? 'page' : undefined}
-    className={`relative h-9 px-3 flex items-center gap-1.5 text-xs font-semibold tracking-wide transition-all duration-200 ease-out cursor-pointer rounded-lg active:scale-95 select-none ${FOCUS_RING} ${
-      active
-        ? 'bg-stone-100 text-stone-900 font-bold dark:bg-stone-900 dark:text-white'
-        : 'text-stone-500 hover:text-stone-900 hover:bg-stone-50 dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-stone-900/60'
-    }`}
+    className={`relative h-9 px-3 flex items-center gap-1.5 text-xs font-semibold tracking-wide transition-all duration-200 ease-out cursor-pointer rounded-lg active:scale-95 select-none ${FOCUS_RING} ${active
+      ? 'bg-stone-100 text-stone-900 font-bold dark:bg-stone-900 dark:text-white'
+      : 'text-stone-500 hover:text-stone-900 hover:bg-stone-50 dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-stone-900/60'
+      }`}
   >
     {icon && (
       <span className={`w-3.5 h-3.5 transition-colors duration-200 ${active ? 'text-stone-900 dark:text-white' : 'text-stone-400 dark:text-stone-500'}`}>
@@ -60,9 +59,8 @@ const NavTab: React.FC<{ active: boolean; onClick: () => void; label: string; ic
     <span>{label}</span>
     <span
       aria-hidden="true"
-      className={`absolute inset-x-2 -bottom-1 h-0.5 rounded-full bg-stone-900 dark:bg-emerald-500 origin-center transition-all duration-250 ease-out ${
-        active ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
-      }`}
+      className={`absolute inset-x-2 -bottom-1 h-0.5 rounded-full bg-stone-900 dark:bg-emerald-500 origin-center transition-all duration-250 ease-out ${active ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
+        }`}
     />
   </button>
 );
@@ -79,13 +77,12 @@ const MobileRow: React.FC<{
     type="button"
     onClick={onClick}
     aria-current={active ? 'page' : undefined}
-    className={`w-full min-h-12 flex items-center gap-3 px-4 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${FOCUS_RING} ${
-      active
-        ? 'bg-stone-100 text-stone-950 font-semibold dark:bg-stone-900 dark:text-white'
-        : tone === 'danger'
-          ? 'text-stone-700 font-medium hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/30'
-          : 'text-stone-700 font-medium hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-900'
-    }`}
+    className={`w-full min-h-12 flex items-center gap-3 px-4 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${FOCUS_RING} ${active
+      ? 'bg-stone-100 text-stone-950 font-semibold dark:bg-stone-900 dark:text-white'
+      : tone === 'danger'
+        ? 'text-stone-700 font-medium hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/30'
+        : 'text-stone-700 font-medium hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-900'
+      }`}
   >
     <span className={active ? 'text-stone-900 dark:text-white' : 'text-stone-400 dark:text-stone-500'}>{icon}</span>
     <span>{label}</span>
@@ -156,14 +153,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = officialUser
     ? [
-        { id: 'workbench', label: t.officerNavWorkbench, icon: <Layout className="w-5 h-5" /> },
-        { id: 'map', label: t.officerNavMap, icon: <MapIcon className="w-5 h-5" /> },
-        { id: 'status', label: t.officerNavStatus, icon: <Search className="w-5 h-5" /> },
-      ]
+      { id: 'workbench', label: t.officerNavWorkbench, icon: <Layout className="w-5 h-5" /> },
+      { id: 'map', label: t.officerNavMap, icon: <MapIcon className="w-5 h-5" /> },
+      { id: 'status', label: t.officerNavStatus, icon: <Search className="w-5 h-5" /> },
+    ]
     : [
-        { id: 'report', label: t.navReport, icon: <MapPin className="w-5 h-5" /> },
-        { id: 'status', label: t.navStatus, icon: <FileText className="w-5 h-5" /> },
-      ];
+      { id: 'report', label: t.navReport, icon: <MapPin className="w-5 h-5" /> },
+      { id: 'status', label: t.navStatus, icon: <FileText className="w-5 h-5" /> },
+    ];
 
   const goTo = (tab: Tab) => {
     setCurrentTab(tab);
@@ -192,11 +189,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         type="button"
         onClick={() => setLang('fil')}
         aria-pressed={lang === 'fil'}
-        className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${FOCUS_RING} ${
-          lang === 'fil'
-            ? 'text-stone-900 dark:text-stone-100 font-bold bg-white dark:bg-stone-750 shadow-2xs'
-            : 'text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
-        }`}
+        className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${FOCUS_RING} ${lang === 'fil'
+          ? 'text-stone-900 dark:text-stone-100 font-bold bg-white dark:bg-stone-750 shadow-2xs'
+          : 'text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
+          }`}
       >
         FIL
       </button>
@@ -205,11 +201,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         type="button"
         onClick={() => setLang('en')}
         aria-pressed={lang === 'en'}
-        className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${FOCUS_RING} ${
-          lang === 'en'
-            ? 'text-stone-900 dark:text-stone-100 font-bold bg-white dark:bg-stone-750 shadow-2xs'
-            : 'text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
-        }`}
+        className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${FOCUS_RING} ${lang === 'en'
+          ? 'text-stone-900 dark:text-stone-100 font-bold bg-white dark:bg-stone-750 shadow-2xs'
+          : 'text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
+          }`}
       >
         EN
       </button>
@@ -227,14 +222,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={() => goTo(officialUser ? 'map' : 'report')}
-            className={`flex items-center gap-2.5 select-none cursor-pointer rounded-md ${FOCUS_RING}`}
+            className={`flex items-center gap-0.1 select-none cursor-pointer rounded-md ${FOCUS_RING}`}
             title="NatureWatch"
           >
-            <span className="w-7 h-7 rounded-lg bg-tagapo-800 dark:bg-emerald-600 text-white flex items-center justify-center shadow-2xs">
-              <ShieldCheck className="w-4 h-4" strokeWidth={2.2} />
-            </span>
+            <img
+              src="/naturewatch_logo.png"
+              alt="NatureWatch Logo"
+              className="w-13 h-12 object-contain shrink-0"
+            />
             <span className="font-bold text-[17px] tracking-tight text-stone-950 dark:text-white">
-              NatureWatch
+              NatureWatch &nbsp;
             </span>
             {officialUser && (
               <span className="hidden md:flex items-center gap-2.5 text-xs text-stone-500 dark:text-stone-400">
@@ -295,9 +292,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => setIsUserMenuOpen((open) => !open)}
                     aria-expanded={isUserMenuOpen}
                     aria-haspopup="menu"
-                    className={`flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-stone-100 dark:hover:bg-stone-900 active:scale-95 transition-all duration-150 cursor-pointer select-none border border-transparent hover:border-stone-200 dark:hover:border-stone-800 ${
-                      isUserMenuOpen ? 'bg-stone-100 dark:bg-stone-850 border-stone-200 dark:border-stone-800 ring-2 ring-stone-900/10 dark:ring-white/10' : ''
-                    } ${FOCUS_RING}`}
+                    className={`flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-stone-100 dark:hover:bg-stone-900 active:scale-95 transition-all duration-150 cursor-pointer select-none border border-transparent hover:border-stone-200 dark:hover:border-stone-800 ${isUserMenuOpen ? 'bg-stone-100 dark:bg-stone-850 border-stone-200 dark:border-stone-800 ring-2 ring-stone-900/10 dark:ring-white/10' : ''
+                      } ${FOCUS_RING}`}
                     title="Account & System Preferences"
                   >
                     <span className="w-7 h-7 rounded-full bg-stone-900 dark:bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shadow-2xs">
@@ -307,9 +303,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                       {username}
                     </span>
                     <ChevronDown
-                      className={`w-3.5 h-3.5 text-stone-400 dark:text-stone-500 transition-transform duration-200 ease-out ${
-                        isUserMenuOpen ? 'rotate-180 text-stone-700 dark:text-stone-300' : 'rotate-0'
-                      }`}
+                      className={`w-3.5 h-3.5 text-stone-400 dark:text-stone-500 transition-transform duration-200 ease-out ${isUserMenuOpen ? 'rotate-180 text-stone-700 dark:text-stone-300' : 'rotate-0'
+                        }`}
                     />
                   </button>
 
@@ -351,11 +346,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                           <button
                             type="button"
                             onClick={() => theme !== 'light' && toggleTheme()}
-                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                              theme === 'light'
-                                ? 'bg-white text-stone-950 shadow-xs ring-1 ring-stone-200/60 font-bold'
-                                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
-                            }`}
+                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${theme === 'light'
+                              ? 'bg-white text-stone-950 shadow-xs ring-1 ring-stone-200/60 font-bold'
+                              : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                              }`}
                           >
                             <Sun className={`w-3.5 h-3.5 ${theme === 'light' ? 'text-amber-500' : 'text-stone-400'}`} />
                             <span>Light</span>
@@ -363,11 +357,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                           <button
                             type="button"
                             onClick={() => theme !== 'dark' && toggleTheme()}
-                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                              theme === 'dark'
-                                ? 'bg-stone-800 text-white shadow-xs ring-1 ring-stone-700 font-bold'
-                                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
-                            }`}
+                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${theme === 'dark'
+                              ? 'bg-stone-800 text-white shadow-xs ring-1 ring-stone-700 font-bold'
+                              : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                              }`}
                           >
                             <Moon className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-emerald-400' : 'text-stone-400'}`} />
                             <span>Dark</span>
@@ -388,11 +381,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                             type="button"
                             onClick={() => setLang('fil')}
                             aria-pressed={lang === 'fil'}
-                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                              lang === 'fil'
-                                ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-white shadow-xs ring-1 ring-stone-200/60 dark:ring-stone-700 font-bold'
-                                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
-                            }`}
+                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${lang === 'fil'
+                              ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-white shadow-xs ring-1 ring-stone-200/60 dark:ring-stone-700 font-bold'
+                              : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                              }`}
                           >
                             <span>Filipino</span>
                             <span className="text-[9px] text-stone-400 dark:text-stone-500 font-mono">FIL</span>
@@ -401,11 +393,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                             type="button"
                             onClick={() => setLang('en')}
                             aria-pressed={lang === 'en'}
-                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                              lang === 'en'
-                                ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-white shadow-xs ring-1 ring-stone-200/60 dark:ring-stone-700 font-bold'
-                                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
-                            }`}
+                            className={`flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${lang === 'en'
+                              ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-white shadow-xs ring-1 ring-stone-200/60 dark:ring-stone-700 font-bold'
+                              : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                              }`}
                           >
                             <span>English</span>
                             <span className="text-[9px] text-stone-400 dark:text-stone-500 font-mono">EN</span>
@@ -493,11 +484,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => theme !== 'light' && toggleTheme()}
-                className={`min-h-11 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer ${FOCUS_RING} ${
-                  theme === 'light'
-                    ? 'bg-stone-900 text-white font-semibold'
-                    : 'text-stone-600 dark:text-stone-400 ring-1 ring-stone-200 dark:ring-stone-800 hover:bg-stone-50 dark:hover:bg-stone-900'
-                }`}
+                className={`min-h-11 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer ${FOCUS_RING} ${theme === 'light'
+                  ? 'bg-stone-900 text-white font-semibold'
+                  : 'text-stone-600 dark:text-stone-400 ring-1 ring-stone-200 dark:ring-stone-800 hover:bg-stone-50 dark:hover:bg-stone-900'
+                  }`}
               >
                 <Sun className="w-4 h-4" />
                 <span>Light</span>
@@ -505,11 +495,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => theme !== 'dark' && toggleTheme()}
-                className={`min-h-11 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer ${FOCUS_RING} ${
-                  theme === 'dark'
-                    ? 'bg-emerald-600 text-white font-semibold'
-                    : 'text-stone-600 dark:text-stone-400 ring-1 ring-stone-200 dark:ring-stone-800 hover:bg-stone-50 dark:hover:bg-stone-900'
-                }`}
+                className={`min-h-11 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer ${FOCUS_RING} ${theme === 'dark'
+                  ? 'bg-emerald-600 text-white font-semibold'
+                  : 'text-stone-600 dark:text-stone-400 ring-1 ring-stone-200 dark:ring-stone-800 hover:bg-stone-50 dark:hover:bg-stone-900'
+                  }`}
               >
                 <Moon className="w-4 h-4" />
                 <span>Dark</span>
@@ -526,11 +515,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="button"
                   onClick={() => setLang(code)}
                   aria-pressed={lang === code}
-                  className={`min-h-11 rounded-lg text-sm font-medium transition-colors cursor-pointer ${FOCUS_RING} ${
-                    lang === code
-                      ? 'bg-stone-900 dark:bg-emerald-700 text-white font-semibold'
-                      : 'text-stone-600 dark:text-stone-400 ring-1 ring-stone-200 dark:ring-stone-800 hover:bg-stone-50 dark:hover:bg-stone-900'
-                  }`}
+                  className={`min-h-11 rounded-lg text-sm font-medium transition-colors cursor-pointer ${FOCUS_RING} ${lang === code
+                    ? 'bg-stone-900 dark:bg-emerald-700 text-white font-semibold'
+                    : 'text-stone-600 dark:text-stone-400 ring-1 ring-stone-200 dark:ring-stone-800 hover:bg-stone-50 dark:hover:bg-stone-900'
+                    }`}
                 >
                   {code === 'fil' ? 'Filipino' : 'English'}
                 </button>

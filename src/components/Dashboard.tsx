@@ -765,7 +765,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setIsMobileNoticeDismissed(true);
     try {
       sessionStorage.setItem('naturewatch_mobile_notice_dismissed', 'true');
-    } catch {}
+    } catch { }
   };
 
   useEffect(() => {
@@ -1576,16 +1576,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const live = liveProtectedZones[zoneSnapshot.id];
     const zone: ProtectedZoneHit = live
       ? {
-          ...zoneSnapshot,
-          name: live.name,
-          shortName: live.shortName,
-          category: live.category ?? zoneSnapshot.category,
-          type: live.type,
-          severityBonus: live.severityBonus,
-          municipality: live.municipality,
-          legalBasis: live.legalBasis ?? zoneSnapshot.legalBasis,
-          legalNote: live.legalNote,
-        }
+        ...zoneSnapshot,
+        name: live.name,
+        shortName: live.shortName,
+        category: live.category ?? zoneSnapshot.category,
+        type: live.type,
+        severityBonus: live.severityBonus,
+        municipality: live.municipality,
+        legalBasis: live.legalBasis ?? zoneSnapshot.legalBasis,
+        legalNote: live.legalNote,
+      }
       : zoneSnapshot;
     let catLabel = 'Statutory Reserve';
     if (zone.category === 'nipas') catLabel = 'DENR-NIPAS Protected Area';
@@ -1661,13 +1661,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const tempK = sat?.brightnessTemperature !== undefined
       ? sat.brightnessTemperature.toFixed(1)
       : sat?.brightnessTemp
-      ? sat.brightnessTemp.toFixed(1)
-      : 'N/A';
+        ? sat.brightnessTemp.toFixed(1)
+        : 'N/A';
     const tempC = sat?.brightnessTemperature !== undefined
       ? (sat.brightnessTemperature - 273.15).toFixed(1)
       : sat?.brightnessTemp
-      ? (sat.brightnessTemp - 273.15).toFixed(1)
-      : 'N/A';
+        ? (sat.brightnessTemp - 273.15).toFixed(1)
+        : 'N/A';
     const confidence = sat?.confidence || 'Nominal';
     const passPht = formatFirmsPhtTime(sat?.acqDate, sat?.acqTime);
     const sensor = sat?.satellite || sat?.instrument || 'VIIRS 375m (S-NPP / NOAA-20)';
@@ -2578,10 +2578,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Check if current selected report originates from NASA FIRMS satellite telemetry
   const isSatReport = Boolean(
     selectedReport &&
-      (selectedReport.source === 'satellite_firms' ||
-        selectedReport.id.startsWith('SAT-') ||
-        selectedReport.id.startsWith('firms_sim_') ||
-        Boolean(selectedReport.satelliteHotspot))
+    (selectedReport.source === 'satellite_firms' ||
+      selectedReport.id.startsWith('SAT-') ||
+      selectedReport.id.startsWith('firms_sim_') ||
+      Boolean(selectedReport.satelliteHotspot))
   );
 
   // Deploy Bureau of Fire Protection & MENRO field reconnaissance ticket for satellite hotspot
@@ -2595,18 +2595,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setSelectedReport((prev) =>
       prev && prev.id === satReport.id
         ? {
-            ...prev,
-            status: 'in_progress',
-            statusHistory: [
-              ...(prev.statusHistory || []),
-              {
-                status: 'in_progress',
-                changedBy: 'PG-ENRO Operations Desk',
-                changedAt: new Date().toISOString(),
-                notes: `LGU Dispatch Ticket #${ticketId}: Bureau of Fire Protection (BFP) and MENRO emergency reconnaissance team deployed to anomaly coordinates.`,
-              },
-            ],
-          }
+          ...prev,
+          status: 'in_progress',
+          statusHistory: [
+            ...(prev.statusHistory || []),
+            {
+              status: 'in_progress',
+              changedBy: 'PG-ENRO Operations Desk',
+              changedAt: new Date().toISOString(),
+              notes: `LGU Dispatch Ticket #${ticketId}: Bureau of Fire Protection (BFP) and MENRO emergency reconnaissance team deployed to anomaly coordinates.`,
+            },
+          ],
+        }
         : prev
     );
     setSyncSatelliteToast({
@@ -2624,14 +2624,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const tempK = sat?.brightnessTemperature !== undefined
       ? sat.brightnessTemperature.toFixed(1)
       : sat?.brightnessTemp
-      ? sat.brightnessTemp.toFixed(1)
-      : '330.0';
+        ? sat.brightnessTemp.toFixed(1)
+        : '330.0';
     const tempKNum = sat?.brightnessTemperature || sat?.brightnessTemp || 330;
     const tempC = sat?.brightnessTemperature !== undefined
       ? (sat.brightnessTemperature - 273.15).toFixed(1)
       : sat?.brightnessTemp
-      ? (sat.brightnessTemp - 273.15).toFixed(1)
-      : '56.9';
+        ? (sat.brightnessTemp - 273.15).toFixed(1)
+        : '56.9';
     const confidence = (sat?.confidence || 'nominal').toLowerCase();
     const passPht = formatFirmsPhtTime(sat?.acqDate, sat?.acqTime);
     const sensor = sat?.satellite || sat?.instrument || 'VIIRS 375m (NOAA-20 / S-NPP)';
@@ -2920,20 +2920,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     key={status}
                     type="button"
                     onClick={() => setNewStatus(status)}
-                    className={`py-1.5 px-2 rounded-md text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5 ${
-                      isActive
+                    className={`py-1.5 px-2 rounded-md text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5 ${isActive
                         ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs font-semibold'
                         : 'text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100'
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        status === 'resolved'
+                      className={`w-1.5 h-1.5 rounded-full ${status === 'resolved'
                           ? 'bg-emerald-500'
                           : status === 'in_progress'
-                          ? 'bg-amber-500'
-                          : 'bg-rose-500'
-                      }`}
+                            ? 'bg-amber-500'
+                            : 'bg-rose-500'
+                        }`}
                     />
                     <span className="capitalize">{status.replace(/_/g, ' ')}</span>
                   </button>
@@ -3046,11 +3044,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {syncSatelliteToast && (
         <div
           role="status"
-          className={`p-3 rounded-xl flex items-center justify-between gap-2 shadow-md text-xs font-medium z-50 ${
-            syncSatelliteToast.type === 'success'
+          className={`p-3 rounded-xl flex items-center justify-between gap-2 shadow-md text-xs font-medium z-50 ${syncSatelliteToast.type === 'success'
               ? 'bg-emerald-50 border border-emerald-200 text-emerald-900 dark:bg-emerald-950/80 dark:border-emerald-800 dark:text-emerald-200'
               : 'bg-rose-50 border border-rose-200 text-rose-900 dark:bg-rose-950/80 dark:border-rose-800 dark:text-rose-200'
-          } ${viewMode === 'full_map' ? 'absolute top-16 left-1/2 -translate-x-1/2 max-w-md w-full' : 'mb-3'}`}
+            } ${viewMode === 'full_map' ? 'absolute top-16 left-1/2 -translate-x-1/2 max-w-md w-full' : 'mb-3'}`}
         >
           <div className="flex items-center gap-2">
             <Satellite className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -3160,11 +3157,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setOpenFilterPopover(openFilterPopover === 'municipality' ? null : 'municipality')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${
-                      municipalityFilter !== 'all'
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${municipalityFilter !== 'all'
                         ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100 font-semibold'
                         : 'bg-stone-50 dark:bg-stone-950 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-850'
-                    }`}
+                      }`}
                   >
                     <MapPin className="w-3 h-3 shrink-0 opacity-70" />
                     <span className="max-w-[90px] truncate">
@@ -3186,11 +3182,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           setMapZoom(11);
                           setOpenFilterPopover(null);
                         }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
-                          municipalityFilter === 'all'
+                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${municipalityFilter === 'all'
                             ? 'bg-stone-100 dark:bg-stone-800 text-stone-950 dark:text-white font-semibold'
                             : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850'
-                        }`}
+                          }`}
                       >
                         <span>{t.allMunicipalitiesFilter}</span>
                         {municipalityFilter === 'all' && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
@@ -3207,11 +3202,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             }
                             setOpenFilterPopover(null);
                           }}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
-                            municipalityFilter === mun
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${municipalityFilter === mun
                               ? 'bg-stone-100 dark:bg-stone-800 text-stone-950 dark:text-white font-semibold'
                               : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850'
-                          }`}
+                            }`}
                         >
                           <span>{mun}</span>
                           {municipalityFilter === mun && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
@@ -3226,18 +3220,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setOpenFilterPopover(openFilterPopover === 'severity' ? null : 'severity')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${
-                      severityFilter !== 'all'
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${severityFilter !== 'all'
                         ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100 font-semibold'
                         : 'bg-stone-50 dark:bg-stone-950 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-850'
-                    }`}
+                      }`}
                   >
                     <span>
                       {severityFilter === 'all'
                         ? (lang === 'fil' ? 'Panganib' : 'Severity')
                         : severityFilter === 'urgent'
-                        ? 'Urgent (4-5)'
-                        : `Sev ${severityFilter}`}
+                          ? 'Urgent (4-5)'
+                          : `Sev ${severityFilter}`}
                     </span>
                     <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${openFilterPopover === 'severity' ? 'rotate-180' : ''}`} />
                   </button>
@@ -3263,11 +3256,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             setSeverityFilter(item.id);
                             setOpenFilterPopover(null);
                           }}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
-                            severityFilter === item.id
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${severityFilter === item.id
                               ? 'bg-stone-100 dark:bg-stone-800 text-stone-950 dark:text-white font-semibold'
                               : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850'
-                          }`}
+                            }`}
                         >
                           <span>{item.label}</span>
                           {severityFilter === item.id && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
@@ -3282,11 +3274,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setOpenFilterPopover(openFilterPopover === 'category' ? null : 'category')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${
-                      categoryFilter !== 'all'
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${categoryFilter !== 'all'
                         ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100 font-semibold'
                         : 'bg-stone-50 dark:bg-stone-950 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-850'
-                    }`}
+                      }`}
                   >
                     <span className="max-w-[85px] truncate">
                       {categoryFilter === 'all'
@@ -3307,11 +3298,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           setCategoryFilter('all');
                           setOpenFilterPopover(null);
                         }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
-                          categoryFilter === 'all'
+                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${categoryFilter === 'all'
                             ? 'bg-stone-100 dark:bg-stone-800 text-stone-950 dark:text-white font-semibold'
                             : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850'
-                        }`}
+                          }`}
                       >
                         <span>{lang === 'fil' ? 'Lahat ng Kategorya' : 'All Categories'}</span>
                         {categoryFilter === 'all' && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
@@ -3324,11 +3314,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             setCategoryFilter(key);
                             setOpenFilterPopover(null);
                           }}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
-                            categoryFilter === key
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${categoryFilter === key
                               ? 'bg-stone-100 dark:bg-stone-800 text-stone-950 dark:text-white font-semibold'
                               : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850'
-                          }`}
+                            }`}
                         >
                           <span>{lang === 'fil' ? cat.labelFil : cat.labelEn}</span>
                           {categoryFilter === key && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
@@ -3343,11 +3332,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setOpenFilterPopover(openFilterPopover === 'status' ? null : 'status')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${
-                      statusFilter !== 'all'
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${statusFilter !== 'all'
                         ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100 font-semibold'
                         : 'bg-stone-50 dark:bg-stone-950 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-850'
-                    }`}
+                      }`}
                   >
                     <span className="max-w-[80px] truncate capitalize">
                       {statusFilter === 'all'
@@ -3376,11 +3364,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             setStatusFilter(item.id as any);
                             setOpenFilterPopover(null);
                           }}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
-                            statusFilter === item.id
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${statusFilter === item.id
                               ? 'bg-stone-100 dark:bg-stone-800 text-stone-950 dark:text-white font-semibold'
                               : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850'
-                          }`}
+                            }`}
                         >
                           <span>{item.label}</span>
                           {statusFilter === item.id && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
@@ -3451,11 +3438,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setQueueTab('active')}
-                    className={`text-xs font-semibold px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
-                      queueTab === 'active'
+                    className={`text-xs font-semibold px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${queueTab === 'active'
                         ? 'bg-stone-900 text-white shadow-2xs dark:bg-stone-100 dark:text-stone-900'
                         : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-200/60 dark:hover:bg-stone-800'
-                    }`}
+                      }`}
                   >
                     <span>{lang === 'fil' ? 'Aktibo' : 'Active'}</span>
                     <span className="font-mono text-[10px] opacity-80">({activeReportsCount})</span>
@@ -3464,18 +3450,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setQueueTab('spam')}
-                    className={`text-xs font-semibold px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
-                      queueTab === 'spam'
+                    className={`text-xs font-semibold px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${queueTab === 'spam'
                         ? 'bg-rose-900 text-white shadow-2xs dark:bg-rose-950 dark:border dark:border-rose-800'
                         : 'text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'
-                    }`}
+                      }`}
                   >
                     <AlertTriangle className="w-3 h-3" />
                     <span>{lang === 'fil' ? 'Spam' : 'Spam'}</span>
                     {spamReportsCount > 0 && (
-                      <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                        queueTab === 'spam' ? 'bg-rose-800 text-rose-100' : 'bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300'
-                      }`}>
+                      <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full font-bold ${queueTab === 'spam' ? 'bg-rose-800 text-rose-100' : 'bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300'
+                        }`}>
                         {spamReportsCount}
                       </span>
                     )}
@@ -3514,9 +3498,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           setMapCenter(coords);
                           setMapZoom(14);
                         }}
-                        className={`p-3 hover:bg-stone-50 dark:hover:bg-stone-850/60 cursor-pointer transition flex items-start justify-between gap-2.5 ${
-                          isSelected ? 'bg-stone-100/90 dark:bg-stone-800/80 ring-1 ring-stone-900/10 dark:ring-stone-700 font-medium' : ''
-                        }`}
+                        className={`p-3 hover:bg-stone-50 dark:hover:bg-stone-850/60 cursor-pointer transition flex items-start justify-between gap-2.5 ${isSelected ? 'bg-stone-100/90 dark:bg-stone-800/80 ring-1 ring-stone-900/10 dark:ring-stone-700 font-medium' : ''
+                          }`}
                       >
                         <div className="space-y-1 flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -3549,13 +3532,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                         <div className="flex flex-col items-end gap-1 shrink-0">
                           <span
-                            className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold ${
-                              sev >= 4
+                            className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold ${sev >= 4
                                 ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900'
                                 : sev === 3
-                                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900'
-                                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
-                            }`}
+                                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900'
+                                  : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
+                              }`}
                           >
                             SEV {sev}
                           </span>
@@ -3594,11 +3576,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       key={bm}
                       type="button"
                       onClick={() => setBasemapMode(bm)}
-                      className={`px-2 py-1 rounded-lg transition cursor-pointer capitalize ${
-                        basemapMode === bm
+                      className={`px-2 py-1 rounded-lg transition cursor-pointer capitalize ${basemapMode === bm
                           ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 font-semibold shadow-2xs'
                           : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
-                      }`}
+                        }`}
                     >
                       {bm === 'street' ? 'Street' : bm === 'satellite' ? 'Satellite' : 'Terrain'}
                     </button>
@@ -3709,15 +3690,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         )}
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 inline-flex items-center gap-1.5 capitalize">
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              selectedReport.status === 'resolved'
+                            className={`w-1.5 h-1.5 rounded-full ${selectedReport.status === 'resolved'
                                 ? 'bg-emerald-500'
                                 : selectedReport.status === 'in_progress'
-                                ? 'bg-amber-500'
-                                : selectedReport.status === 'spam'
-                                ? 'bg-rose-700'
-                                : 'bg-rose-500'
-                            }`}
+                                  ? 'bg-amber-500'
+                                  : selectedReport.status === 'spam'
+                                    ? 'bg-rose-700'
+                                    : 'bg-rose-500'
+                              }`}
                           />
                           {selectedReport.status.replace(/_/g, ' ')}
                         </span>
@@ -3732,441 +3712,439 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
                     </div>
 
-                  {isSatReport ? (
-                    renderFirmsDossierDetail(selectedReport, false)
-                  ) : (
-                    <>
-                      {/* SPAM / QUARANTINE WARNING BANNER */}
-                  {(selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam) && (
-                    <div className="p-3.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-900 rounded-xl space-y-2.5 text-xs text-rose-950 dark:text-rose-200 shadow-2xs">
-                      <div className="flex items-start gap-2.5">
-                        <AlertTriangle className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0 mt-0.5" />
-                        <div className="space-y-0.5 min-w-0">
-                          <span className="font-bold uppercase tracking-wide text-rose-900 dark:text-rose-300 block text-[11px]">
-                            Quarantined in Spam Queue
-                          </span>
-                          <p className="text-[11px] text-rose-800 dark:text-rose-300/80 leading-snug">
-                            {selectedReport.aiTriage?.authenticity?.forensicNotes ||
-                              'Flagged as suspected troll submission, AI-generated synthetic media, or unverified incident.'}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 pt-1 border-t border-rose-200 dark:border-rose-900">
-                        <button
-                          type="button"
-                          onClick={handleRestoreReport}
-                          disabled={isRestoringReport || isDeletingReport}
-                          className="flex-1 py-1.5 px-2.5 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
-                        >
-                          <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
-                          <span>{isRestoringReport ? 'Restoring...' : t.retrieveBtn}</span>
-                        </button>
-
-                        {!showDeleteConfirm ? (
-                          <button
-                            type="button"
-                            onClick={() => setShowDeleteConfirm(true)}
-                            disabled={isRestoringReport || isDeletingReport}
-                            className="flex-1 py-1.5 px-2.5 bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>{t.deletePermanentlyBtn}</span>
-                          </button>
-                        ) : (
-                          <div className="flex-1 flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={handleDeletePermanently}
-                              disabled={isDeletingReport}
-                              className="flex-1 py-1.5 px-2 bg-rose-900 hover:bg-black text-white font-bold text-[11px] rounded-lg transition cursor-pointer flex items-center justify-center gap-1 animate-pulse"
-                            >
-                              {isDeletingReport ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                              <span>Confirm Delete</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setShowDeleteConfirm(false)}
-                              className="py-1.5 px-2 border border-rose-300 dark:border-rose-800 bg-white dark:bg-stone-800 hover:bg-rose-100 dark:hover:bg-stone-700 text-rose-800 dark:text-rose-300 text-[11px] font-semibold rounded-lg transition cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Linked duplicate cluster notice */}
-                  {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId ? (
-                    <div className="p-3 bg-stone-50 dark:bg-stone-950/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-1 text-xs text-stone-700 dark:text-stone-300">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 font-semibold text-stone-900 dark:text-stone-100">
-                          <Layers className="w-4 h-4 text-stone-700 dark:text-stone-300" />
-                          <span>{t.duplicateClusterDetected}</span>
-                        </div>
-                        <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-300/60 dark:border-stone-700">
-                          Linked Cluster
-                        </span>
-                      </div>
-                      <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-400">
-                        {t.duplicateClusterDesc}
-                      </p>
-                    </div>
-                  ) : null}
-
-                  {/* Photo Display (Secured Image Preview) */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="font-display text-xs font-bold uppercase tracking-wide text-stone-600 dark:text-stone-400 block">
-                        Incident Evidence Photos
-                      </label>
-                      {evidenceImages.length > 0 && (
-                        <span className="text-[10px] font-mono text-stone-500 dark:text-stone-400 font-medium">
-                          Photo {activePhotoIndex + 1} of {evidenceImages.length}
-                        </span>
-                      )}
-                    </div>
-                    <div className="relative rounded-xl overflow-hidden bg-stone-950 aspect-video flex items-center justify-center border border-stone-200 dark:border-stone-800">
-                      {photoDataUrl ? (
-                        <img
-                          src={photoDataUrl}
-                          alt="Incident evidence"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="text-center p-4 text-stone-400 dark:text-stone-500 text-xs">
-                          <Eye className="w-6 h-6 mx-auto mb-1 text-stone-500 dark:text-stone-400" />
-                          <span>{selectedReport.rawInput.hasImage ? 'Loading photo...' : 'No photo was submitted'}</span>
-                        </div>
-                      )}
-                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-stone-900/80 backdrop-blur-xs text-[9px] font-mono text-stone-300 rounded border border-white/10 flex items-center gap-1">
-                        <ShieldCheck className="w-2.5 h-2.5 text-stone-400" />
-                        <span>RA 10173 SECURED</span>
-                      </div>
-                    </div>
-
-                    {/* Multi-Photo Evidence Deck Thumbnails */}
-                    {evidenceImages.length > 1 && (
-                      <div className="flex items-center gap-2 pt-1 overflow-x-auto">
-                        {evidenceImages.map((img, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setActivePhotoIndex(idx);
-                              setPhotoDataUrl(img.data);
-                            }}
-                            className={`relative w-16 h-14 rounded-lg overflow-hidden border-2 shrink-0 transition cursor-pointer ${
-                              activePhotoIndex === idx
-                                ? 'border-stone-900 dark:border-emerald-500 ring-2 ring-stone-900/20 dark:ring-emerald-500/20 shadow-2xs'
-                                : 'border-stone-200 dark:border-stone-700 opacity-70 hover:opacity-100'
-                            }`}
-                          >
-                            <img src={img.data} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
-                            <span className="absolute bottom-0 inset-x-0 bg-stone-950/80 text-white text-[8px] font-mono text-center py-0.2 capitalize truncate px-0.5">
-                              {img.role.replace('_', ' ')}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Forensic & Authenticity Metadata Card */}
-                  <div className="p-3.5 bg-stone-50 dark:bg-stone-950/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-2">
-                    <div className="flex items-center justify-between text-[11px] font-display font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
-                      <div className="flex items-center gap-1.5">
-                        <ShieldAlert className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />
-                        <span>Forensic & Authenticity Inspector</span>
-                      </div>
-                      {selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam ? (
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
-                          SPAM / TROLL
-                        </span>
-                      ) : selectedReport.rawInput.captureMethod === 'live_camera' ? (
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                          LIVE CAMERA
-                        </span>
-                      ) : (
-                        <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
-                          DEVICE UPLOAD
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="p-2 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800">
-                        <span className="text-[10px] font-medium text-stone-500 dark:text-stone-400 block">Capture Source</span>
-                        <span className="font-semibold text-stone-900 dark:text-stone-100 capitalize">
-                          {selectedReport.rawInput.captureMethod ? selectedReport.rawInput.captureMethod.replace('_', ' ') : 'Single Photo'}
-                        </span>
-                      </div>
-                      <div className="p-2 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800">
-                        <span className="text-[10px] font-medium text-stone-500 dark:text-stone-400 block">Evidence Photos</span>
-                        <span className="font-semibold text-stone-900 dark:text-stone-100">
-                          {selectedReport.rawInput.imageCount || (selectedReport.rawInput.hasImage ? 1 : 0)} photo(s)
-                        </span>
-                      </div>
-                    </div>
-
-                    {selectedReport.rawInput.exif && (
-                      <div className="p-2.5 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800 space-y-1 text-xs">
-                        {selectedReport.rawInput.exif.cameraModel && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-stone-500 dark:text-stone-400 text-[11px]">Hardware Camera:</span>
-                            <span className="font-mono text-stone-800 dark:text-stone-200 font-semibold text-[11px]">{selectedReport.rawInput.exif.cameraModel}</span>
-                          </div>
-                        )}
-                        {selectedReport.rawInput.exif.distanceFromReportKm !== null && selectedReport.rawInput.exif.distanceFromReportKm !== undefined && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-stone-500 dark:text-stone-400 text-[11px]">EXIF vs Pin Distance:</span>
-                            <span className={`font-mono font-semibold text-[11px] ${selectedReport.rawInput.exif.distanceFromReportKm > 5 ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                              {selectedReport.rawInput.exif.distanceFromReportKm} km
-                            </span>
-                          </div>
-                        )}
-                        {selectedReport.rawInput.exif.capturedAt && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-stone-500 dark:text-stone-400 text-[11px]">EXIF Timestamp:</span>
-                            <span className="font-mono text-stone-700 dark:text-stone-300 text-[11px]">{selectedReport.rawInput.exif.capturedAt}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {selectedReport.aiTriage?.authenticity?.forensicNotes && (
-                      <div className="text-[11px] text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-900 p-2 rounded-lg leading-relaxed border border-stone-200/70 dark:border-stone-800">
-                        <span className="font-semibold text-stone-800 dark:text-stone-200">Forensic Analysis: </span>
-                        {selectedReport.aiTriage.authenticity.forensicNotes}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Resident Description */}
-                  <div className="p-3.5 bg-stone-50 dark:bg-stone-950/60 rounded-xl border border-stone-200/80 dark:border-stone-800 space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px] font-display font-bold uppercase tracking-wide text-stone-600 dark:text-stone-400">
-                      <span>Resident Description</span>
-                      <span className="text-[9px] font-mono text-stone-500 dark:text-stone-400 bg-stone-200/70 dark:bg-stone-800 px-1.5 py-0.2 rounded border border-stone-300/60 dark:border-stone-700">
-                        Untrusted Input
-                      </span>
-                    </div>
-                    <p className="text-xs text-stone-900 dark:text-stone-100 italic leading-relaxed border-l-2 border-stone-300 dark:border-stone-700 pl-2.5 py-0.5">
-                      "{selectedReport.rawInput.description}"
-                    </p>
-                    <div className="text-xs text-stone-500 dark:text-stone-400 font-mono pt-1">
-                      Loc: {resolveReportCoordinates(selectedReport).lat.toFixed(4)}, {resolveReportCoordinates(selectedReport).lng.toFixed(4)} • {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
-                    </div>
-                  </div>
-
-                  {/* AI Multimodal Triage Assessment */}
-                  <div className="p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800 space-y-2.5 shadow-2xs">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200">
-                        <Sparkles className="w-4 h-4 text-tagapo-800 dark:text-emerald-400" />
-                        <span>{t.aiTriageTitle}</span>
-                      </div>
-                      {selectedReport.aiTriage && (
-                        <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
-                          {t.aiConfidence}: {(selectedReport.aiTriage.confidence * 100).toFixed(0)}%
-                        </span>
-                      )}
-                    </div>
-
-                    {selectedReport.triageStatus === 'failed' ? (
-                      <div className="space-y-2">
-                        <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 rounded-lg text-rose-800 dark:text-rose-300 text-xs font-bold border border-rose-200 dark:border-rose-900 flex items-center gap-2">
-                          <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
-                          <span>{t.needsReviewBadge}</span>
-                        </div>
-                        {retryTriageButton}
-                      </div>
-                    ) : selectedReport.aiTriage ? (
-                      <div className="space-y-2 text-xs">
-                        <div>
-                          <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block">
-                            {t.aiSummary}
-                          </span>
-                          <p className="text-stone-900 dark:text-stone-100 font-semibold mt-0.5">
-                            {selectedReport.aiTriage.summary}
-                          </p>
-                        </div>
-
-                        {renderSatelliteHotspotCard(selectedReport)}
-
-                        {renderProtectedZoneBadge(selectedReport.aiTriage.protectedZone)}
-
-                        {renderMgbQuarryCard(selectedReport)}
-
-                        {renderAirQualityCard(selectedReport.aiTriage?.airQuality, selectedReport.id)}
-
-                        <div className="pt-2 border-t border-stone-200/70 dark:border-stone-800">
-                          <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block">
-                            {t.aiReasoning}
-                          </span>
-                          <p className="text-stone-700 dark:text-stone-300 text-xs mt-0.5 leading-relaxed">
-                            {selectedReport.aiTriage.reasoning}
-                          </p>
-                        </div>
-
-                        {renderWeatherWidget(selectedReport.aiTriage?.weather, selectedReport.id)}
-
-                        <div className="text-[11px] text-stone-400 dark:text-stone-500 font-mono">
-                          Engine: {selectedReport.aiTriage.model}
-                        </div>
-                      </div>
+                    {isSatReport ? (
+                      renderFirmsDossierDetail(selectedReport, false)
                     ) : (
-                      <div className="space-y-2">
-                        <p className="text-xs text-stone-500 dark:text-stone-400 italic">Triage in progress...</p>
-                        {retryTriageButton}
-                      </div>
+                      <>
+                        {/* SPAM / QUARANTINE WARNING BANNER */}
+                        {(selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam) && (
+                          <div className="p-3.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-900 rounded-xl space-y-2.5 text-xs text-rose-950 dark:text-rose-200 shadow-2xs">
+                            <div className="flex items-start gap-2.5">
+                              <AlertTriangle className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0 mt-0.5" />
+                              <div className="space-y-0.5 min-w-0">
+                                <span className="font-bold uppercase tracking-wide text-rose-900 dark:text-rose-300 block text-[11px]">
+                                  Quarantined in Spam Queue
+                                </span>
+                                <p className="text-[11px] text-rose-800 dark:text-rose-300/80 leading-snug">
+                                  {selectedReport.aiTriage?.authenticity?.forensicNotes ||
+                                    'Flagged as suspected troll submission, AI-generated synthetic media, or unverified incident.'}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1 border-t border-rose-200 dark:border-rose-900">
+                              <button
+                                type="button"
+                                onClick={handleRestoreReport}
+                                disabled={isRestoringReport || isDeletingReport}
+                                className="flex-1 py-1.5 px-2.5 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                              >
+                                <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+                                <span>{isRestoringReport ? 'Restoring...' : t.retrieveBtn}</span>
+                              </button>
+
+                              {!showDeleteConfirm ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowDeleteConfirm(true)}
+                                  disabled={isRestoringReport || isDeletingReport}
+                                  className="flex-1 py-1.5 px-2.5 bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>{t.deletePermanentlyBtn}</span>
+                                </button>
+                              ) : (
+                                <div className="flex-1 flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={handleDeletePermanently}
+                                    disabled={isDeletingReport}
+                                    className="flex-1 py-1.5 px-2 bg-rose-900 hover:bg-black text-white font-bold text-[11px] rounded-lg transition cursor-pointer flex items-center justify-center gap-1 animate-pulse"
+                                  >
+                                    {isDeletingReport ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                                    <span>Confirm Delete</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                    className="py-1.5 px-2 border border-rose-300 dark:border-rose-800 bg-white dark:bg-stone-800 hover:bg-rose-100 dark:hover:bg-stone-700 text-rose-800 dark:text-rose-300 text-[11px] font-semibold rounded-lg transition cursor-pointer"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Linked duplicate cluster notice */}
+                        {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId ? (
+                          <div className="p-3 bg-stone-50 dark:bg-stone-950/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-1 text-xs text-stone-700 dark:text-stone-300">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 font-semibold text-stone-900 dark:text-stone-100">
+                                <Layers className="w-4 h-4 text-stone-700 dark:text-stone-300" />
+                                <span>{t.duplicateClusterDetected}</span>
+                              </div>
+                              <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-300/60 dark:border-stone-700">
+                                Linked Cluster
+                              </span>
+                            </div>
+                            <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-400">
+                              {t.duplicateClusterDesc}
+                            </p>
+                          </div>
+                        ) : null}
+
+                        {/* Photo Display (Secured Image Preview) */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="font-display text-xs font-bold uppercase tracking-wide text-stone-600 dark:text-stone-400 block">
+                              Incident Evidence Photos
+                            </label>
+                            {evidenceImages.length > 0 && (
+                              <span className="text-[10px] font-mono text-stone-500 dark:text-stone-400 font-medium">
+                                Photo {activePhotoIndex + 1} of {evidenceImages.length}
+                              </span>
+                            )}
+                          </div>
+                          <div className="relative rounded-xl overflow-hidden bg-stone-950 aspect-video flex items-center justify-center border border-stone-200 dark:border-stone-800">
+                            {photoDataUrl ? (
+                              <img
+                                src={photoDataUrl}
+                                alt="Incident evidence"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="text-center p-4 text-stone-400 dark:text-stone-500 text-xs">
+                                <Eye className="w-6 h-6 mx-auto mb-1 text-stone-500 dark:text-stone-400" />
+                                <span>{selectedReport.rawInput.hasImage ? 'Loading photo...' : 'No photo was submitted'}</span>
+                              </div>
+                            )}
+                            <div className="absolute top-2 left-2 px-2 py-0.5 bg-stone-900/80 backdrop-blur-xs text-[9px] font-mono text-stone-300 rounded border border-white/10 flex items-center gap-1">
+                              <ShieldCheck className="w-2.5 h-2.5 text-stone-400" />
+                              <span>RA 10173 SECURED</span>
+                            </div>
+                          </div>
+
+                          {/* Multi-Photo Evidence Deck Thumbnails */}
+                          {evidenceImages.length > 1 && (
+                            <div className="flex items-center gap-2 pt-1 overflow-x-auto">
+                              {evidenceImages.map((img, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => {
+                                    setActivePhotoIndex(idx);
+                                    setPhotoDataUrl(img.data);
+                                  }}
+                                  className={`relative w-16 h-14 rounded-lg overflow-hidden border-2 shrink-0 transition cursor-pointer ${activePhotoIndex === idx
+                                      ? 'border-stone-900 dark:border-emerald-500 ring-2 ring-stone-900/20 dark:ring-emerald-500/20 shadow-2xs'
+                                      : 'border-stone-200 dark:border-stone-700 opacity-70 hover:opacity-100'
+                                    }`}
+                                >
+                                  <img src={img.data} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                                  <span className="absolute bottom-0 inset-x-0 bg-stone-950/80 text-white text-[8px] font-mono text-center py-0.2 capitalize truncate px-0.5">
+                                    {img.role.replace('_', ' ')}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Forensic & Authenticity Metadata Card */}
+                        <div className="p-3.5 bg-stone-50 dark:bg-stone-950/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-2">
+                          <div className="flex items-center justify-between text-[11px] font-display font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
+                            <div className="flex items-center gap-1.5">
+                              <ShieldAlert className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />
+                              <span>Forensic & Authenticity Inspector</span>
+                            </div>
+                            {selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam ? (
+                              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                SPAM / TROLL
+                              </span>
+                            ) : selectedReport.rawInput.captureMethod === 'live_camera' ? (
+                              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                LIVE CAMERA
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
+                                DEVICE UPLOAD
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="p-2 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800">
+                              <span className="text-[10px] font-medium text-stone-500 dark:text-stone-400 block">Capture Source</span>
+                              <span className="font-semibold text-stone-900 dark:text-stone-100 capitalize">
+                                {selectedReport.rawInput.captureMethod ? selectedReport.rawInput.captureMethod.replace('_', ' ') : 'Single Photo'}
+                              </span>
+                            </div>
+                            <div className="p-2 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800">
+                              <span className="text-[10px] font-medium text-stone-500 dark:text-stone-400 block">Evidence Photos</span>
+                              <span className="font-semibold text-stone-900 dark:text-stone-100">
+                                {selectedReport.rawInput.imageCount || (selectedReport.rawInput.hasImage ? 1 : 0)} photo(s)
+                              </span>
+                            </div>
+                          </div>
+
+                          {selectedReport.rawInput.exif && (
+                            <div className="p-2.5 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800 space-y-1 text-xs">
+                              {selectedReport.rawInput.exif.cameraModel && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-stone-500 dark:text-stone-400 text-[11px]">Hardware Camera:</span>
+                                  <span className="font-mono text-stone-800 dark:text-stone-200 font-semibold text-[11px]">{selectedReport.rawInput.exif.cameraModel}</span>
+                                </div>
+                              )}
+                              {selectedReport.rawInput.exif.distanceFromReportKm !== null && selectedReport.rawInput.exif.distanceFromReportKm !== undefined && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-stone-500 dark:text-stone-400 text-[11px]">EXIF vs Pin Distance:</span>
+                                  <span className={`font-mono font-semibold text-[11px] ${selectedReport.rawInput.exif.distanceFromReportKm > 5 ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                                    {selectedReport.rawInput.exif.distanceFromReportKm} km
+                                  </span>
+                                </div>
+                              )}
+                              {selectedReport.rawInput.exif.capturedAt && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-stone-500 dark:text-stone-400 text-[11px]">EXIF Timestamp:</span>
+                                  <span className="font-mono text-stone-700 dark:text-stone-300 text-[11px]">{selectedReport.rawInput.exif.capturedAt}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {selectedReport.aiTriage?.authenticity?.forensicNotes && (
+                            <div className="text-[11px] text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-900 p-2 rounded-lg leading-relaxed border border-stone-200/70 dark:border-stone-800">
+                              <span className="font-semibold text-stone-800 dark:text-stone-200">Forensic Analysis: </span>
+                              {selectedReport.aiTriage.authenticity.forensicNotes}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Resident Description */}
+                        <div className="p-3.5 bg-stone-50 dark:bg-stone-950/60 rounded-xl border border-stone-200/80 dark:border-stone-800 space-y-1.5">
+                          <div className="flex items-center justify-between text-[11px] font-display font-bold uppercase tracking-wide text-stone-600 dark:text-stone-400">
+                            <span>Resident Description</span>
+                            <span className="text-[9px] font-mono text-stone-500 dark:text-stone-400 bg-stone-200/70 dark:bg-stone-800 px-1.5 py-0.2 rounded border border-stone-300/60 dark:border-stone-700">
+                              Untrusted Input
+                            </span>
+                          </div>
+                          <p className="text-xs text-stone-900 dark:text-stone-100 italic leading-relaxed border-l-2 border-stone-300 dark:border-stone-700 pl-2.5 py-0.5">
+                            "{selectedReport.rawInput.description}"
+                          </p>
+                          <div className="text-xs text-stone-500 dark:text-stone-400 font-mono pt-1">
+                            Loc: {resolveReportCoordinates(selectedReport).lat.toFixed(4)}, {resolveReportCoordinates(selectedReport).lng.toFixed(4)} • {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
+                          </div>
+                        </div>
+
+                        {/* AI Multimodal Triage Assessment */}
+                        <div className="p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800 space-y-2.5 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200">
+                              <Sparkles className="w-4 h-4 text-tagapo-800 dark:text-emerald-400" />
+                              <span>{t.aiTriageTitle}</span>
+                            </div>
+                            {selectedReport.aiTriage && (
+                              <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
+                                {t.aiConfidence}: {(selectedReport.aiTriage.confidence * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </div>
+
+                          {selectedReport.triageStatus === 'failed' ? (
+                            <div className="space-y-2">
+                              <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 rounded-lg text-rose-800 dark:text-rose-300 text-xs font-bold border border-rose-200 dark:border-rose-900 flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                                <span>{t.needsReviewBadge}</span>
+                              </div>
+                              {retryTriageButton}
+                            </div>
+                          ) : selectedReport.aiTriage ? (
+                            <div className="space-y-2 text-xs">
+                              <div>
+                                <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block">
+                                  {t.aiSummary}
+                                </span>
+                                <p className="text-stone-900 dark:text-stone-100 font-semibold mt-0.5">
+                                  {selectedReport.aiTriage.summary}
+                                </p>
+                              </div>
+
+                              {renderSatelliteHotspotCard(selectedReport)}
+
+                              {renderProtectedZoneBadge(selectedReport.aiTriage.protectedZone)}
+
+                              {renderMgbQuarryCard(selectedReport)}
+
+                              {renderAirQualityCard(selectedReport.aiTriage?.airQuality, selectedReport.id)}
+
+                              <div className="pt-2 border-t border-stone-200/70 dark:border-stone-800">
+                                <span className="font-display text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block">
+                                  {t.aiReasoning}
+                                </span>
+                                <p className="text-stone-700 dark:text-stone-300 text-xs mt-0.5 leading-relaxed">
+                                  {selectedReport.aiTriage.reasoning}
+                                </p>
+                              </div>
+
+                              {renderWeatherWidget(selectedReport.aiTriage?.weather, selectedReport.id)}
+
+                              <div className="text-[11px] text-stone-400 dark:text-stone-500 font-mono">
+                                Engine: {selectedReport.aiTriage.model}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <p className="text-xs text-stone-500 dark:text-stone-400 italic">Triage in progress...</p>
+                              {retryTriageButton}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Human-in-the-Loop Override Form */}
+                        <div className="p-4 bg-stone-50 dark:bg-stone-950/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-xs font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                              <Edit3 className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300" />
+                              <span>{t.humanOverrideTitle}</span>
+                            </h3>
+                            {selectedReport.final && (
+                              <span className="font-mono text-[10px] font-medium px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
+                                Human Verified
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                                {t.overrideCategory}
+                              </label>
+                              <select
+                                value={overrideCategory}
+                                onChange={(e) => setOverrideCategory(e.target.value as any)}
+                                className="w-full text-xs px-2.5 py-2 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500"
+                              >
+                                {Object.entries(CATEGORIES).map(([key, cat]) => (
+                                  <option key={key} value={key}>
+                                    {lang === 'fil' ? cat.labelFil : cat.labelEn}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                                {t.overrideSeverity}
+                              </label>
+                              <select
+                                value={overrideSeverity}
+                                onChange={(e) => setOverrideSeverity(Number(e.target.value) as any)}
+                                className="w-full text-xs px-2.5 py-2 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 font-bold"
+                              >
+                                <option value="1">1 - Minor / Cosmetic</option>
+                                <option value="2">2 - Low Concern</option>
+                                <option value="3">3 - Moderate</option>
+                                <option value="4">4 - High Hazard</option>
+                                <option value="5">5 - Critical Emergency</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                              {t.officerNotes}
+                            </label>
+                            <textarea
+                              value={officerNotes}
+                              onChange={(e) => setOfficerNotes(e.target.value)}
+                              rows={2}
+                              placeholder="Enter assessment findings or regulatory directives..."
+                              className="w-full text-xs px-3 py-2 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleSaveOverride}
+                            disabled={isSavingOverride}
+                            className="w-full py-2.5 bg-stone-900 hover:bg-black active:bg-stone-950 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{isSavingOverride ? 'Saving...' : t.saveOverrideBtn}</span>
+                          </button>
+
+                          {overrideSuccess && (
+                            <p className="text-xs text-stone-900 dark:text-emerald-400 font-semibold text-center">
+                              Final assessment saved and applied to live dashboard!
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Status Transition Workflow */}
+                        <div className="p-4 bg-stone-50 dark:bg-stone-950/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-3">
+                          <label className="text-xs font-semibold text-stone-800 dark:text-stone-200 block">
+                            Update Incident Status
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {(['pending', 'in_progress', 'resolved'] as ReportStatus[]).map((st) => (
+                              <button
+                                key={st}
+                                type="button"
+                                onClick={() => setNewStatus(st)}
+                                className={`py-2 text-xs font-semibold rounded-lg border transition cursor-pointer ${newStatus === st
+                                    ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-500 shadow-xs'
+                                    : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800'
+                                  }`}
+                              >
+                                {st.replace(/_/g, ' ')}
+                              </button>
+                            ))}
+                          </div>
+
+                          <input
+                            type="text"
+                            value={statusChangeNotes}
+                            onChange={(e) => setStatusChangeNotes(e.target.value)}
+                            placeholder="Notes (e.g. 'Field team dispatched', 'Cleanup finished')..."
+                            className="w-full text-xs px-3 py-2 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={handleUpdateStatus}
+                            disabled={isUpdatingStatus || newStatus === selectedReport.status}
+                            className="w-full py-2.5 bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-700 disabled:bg-stone-200 dark:disabled:bg-stone-800 text-white font-semibold text-xs rounded-lg transition shadow-xs cursor-pointer"
+                          >
+                            {isUpdatingStatus ? 'Updating...' : 'Log Status Transition'}
+                          </button>
+                        </div>
+
+                        {/* Field Dispatch & Inspection Order */}
+                        <div className="p-3.5 bg-stone-100 dark:bg-stone-850 rounded-xl border border-stone-200/90 dark:border-stone-800 space-y-1.5 shadow-2xs">
+                          <button
+                            type="button"
+                            onClick={() => setIsInspectionModalOpen(true)}
+                            className="w-full py-2.5 px-3 bg-stone-900 hover:bg-black active:bg-stone-950 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-stone-800 dark:border-emerald-500"
+                            title="Generate official printable on-site worksheet and Viber/SMS dispatch"
+                          >
+                            <FileText className="w-4 h-4 text-emerald-400 dark:text-emerald-100 shrink-0" />
+                            <span>Generate Field Inspection Worksheet</span>
+                          </button>
+                          <p className="text-[10px] text-stone-500 dark:text-stone-400 text-center">
+                            Printable 1-page on-site worksheet & instant Viber/SMS dispatch format
+                          </p>
+                        </div>
+                      </>
                     )}
                   </div>
-
-                  {/* Human-in-the-Loop Override Form */}
-                  <div className="p-4 bg-stone-50 dark:bg-stone-950/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                        <Edit3 className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300" />
-                        <span>{t.humanOverrideTitle}</span>
-                      </h3>
-                      {selectedReport.final && (
-                        <span className="font-mono text-[10px] font-medium px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
-                          Human Verified
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
-                          {t.overrideCategory}
-                        </label>
-                        <select
-                          value={overrideCategory}
-                          onChange={(e) => setOverrideCategory(e.target.value as any)}
-                          className="w-full text-xs px-2.5 py-2 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500"
-                        >
-                          {Object.entries(CATEGORIES).map(([key, cat]) => (
-                            <option key={key} value={key}>
-                              {lang === 'fil' ? cat.labelFil : cat.labelEn}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
-                          {t.overrideSeverity}
-                        </label>
-                        <select
-                          value={overrideSeverity}
-                          onChange={(e) => setOverrideSeverity(Number(e.target.value) as any)}
-                          className="w-full text-xs px-2.5 py-2 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 font-bold"
-                        >
-                          <option value="1">1 - Minor / Cosmetic</option>
-                          <option value="2">2 - Low Concern</option>
-                          <option value="3">3 - Moderate</option>
-                          <option value="4">4 - High Hazard</option>
-                          <option value="5">5 - Critical Emergency</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
-                        {t.officerNotes}
-                      </label>
-                      <textarea
-                        value={officerNotes}
-                        onChange={(e) => setOfficerNotes(e.target.value)}
-                        rows={2}
-                        placeholder="Enter assessment findings or regulatory directives..."
-                        className="w-full text-xs px-3 py-2 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleSaveOverride}
-                      disabled={isSavingOverride}
-                      className="w-full py-2.5 bg-stone-900 hover:bg-black active:bg-stone-950 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>{isSavingOverride ? 'Saving...' : t.saveOverrideBtn}</span>
-                    </button>
-
-                    {overrideSuccess && (
-                      <p className="text-xs text-stone-900 dark:text-emerald-400 font-semibold text-center">
-                        Final assessment saved and applied to live dashboard!
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Status Transition Workflow */}
-                  <div className="p-4 bg-stone-50 dark:bg-stone-950/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-3">
-                    <label className="text-xs font-semibold text-stone-800 dark:text-stone-200 block">
-                      Update Incident Status
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(['pending', 'in_progress', 'resolved'] as ReportStatus[]).map((st) => (
-                        <button
-                          key={st}
-                          type="button"
-                          onClick={() => setNewStatus(st)}
-                          className={`py-2 text-xs font-semibold rounded-lg border transition cursor-pointer ${
-                            newStatus === st
-                              ? 'bg-stone-900 dark:bg-emerald-600 text-white border-stone-900 dark:border-emerald-500 shadow-xs'
-                              : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800'
-                          }`}
-                        >
-                          {st.replace(/_/g, ' ')}
-                        </button>
-                      ))}
-                    </div>
-
-                    <input
-                      type="text"
-                      value={statusChangeNotes}
-                      onChange={(e) => setStatusChangeNotes(e.target.value)}
-                      placeholder="Notes (e.g. 'Field team dispatched', 'Cleanup finished')..."
-                      className="w-full text-xs px-3 py-2 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={handleUpdateStatus}
-                      disabled={isUpdatingStatus || newStatus === selectedReport.status}
-                      className="w-full py-2.5 bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-700 disabled:bg-stone-200 dark:disabled:bg-stone-800 text-white font-semibold text-xs rounded-lg transition shadow-xs cursor-pointer"
-                    >
-                      {isUpdatingStatus ? 'Updating...' : 'Log Status Transition'}
-                    </button>
-                  </div>
-
-                  {/* Field Dispatch & Inspection Order */}
-                  <div className="p-3.5 bg-stone-100 dark:bg-stone-850 rounded-xl border border-stone-200/90 dark:border-stone-800 space-y-1.5 shadow-2xs">
-                    <button
-                      type="button"
-                      onClick={() => setIsInspectionModalOpen(true)}
-                      className="w-full py-2.5 px-3 bg-stone-900 hover:bg-black active:bg-stone-950 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-stone-800 dark:border-emerald-500"
-                      title="Generate official printable on-site worksheet and Viber/SMS dispatch"
-                    >
-                      <FileText className="w-4 h-4 text-emerald-400 dark:text-emerald-100 shrink-0" />
-                      <span>Generate Field Inspection Worksheet</span>
-                    </button>
-                    <p className="text-[10px] text-stone-500 dark:text-stone-400 text-center">
-                      Printable 1-page on-site worksheet & instant Viber/SMS dispatch format
-                    </p>
-                  </div>
-                </>
+                </motion.div>
               )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  </div>
-)}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================= */}
       {/* VIEW MODE 2: FULL MAP CANVAS (GOOGLE / APPLE MAPS GIS UI) */}
@@ -4251,12 +4229,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     if (onNavigateTab) onNavigateTab('workbench');
                     else handleViewModeChange('workbench');
                   }}
-                  className="flex items-center gap-2 select-none px-1 py-0.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer text-left"
+                  className="flex items-center gap-1.5 select-none px-1 py-0.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer text-left"
                   title="NatureWatch Operations"
                 >
-                  <span className="w-6 h-6 rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 flex items-center justify-center shadow-2xs shrink-0">
-                    <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2.2} />
-                  </span>
+                  <img
+                    src="/naturewatch_logo.png"
+                    alt="NatureWatch"
+                    className="w-7 h-7 object-contain shrink-0"
+                  />
                   <div className="flex flex-col">
                     <span className="font-bold text-xs tracking-tight text-stone-950 dark:text-stone-100 leading-tight">
                       NatureWatch
@@ -4533,11 +4513,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       if (hasDraggedChips.current) return;
                       handleToggleDrawerTab('queue');
                     }}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
-                      isSheetOpen && ((activeLeftDrawerTab === 'queue' && !selectedReport) || (selectedReport && !isSatReport))
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${isSheetOpen && ((activeLeftDrawerTab === 'queue' && !selectedReport) || (selectedReport && !isSatReport))
                         ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-xs'
                         : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-750 hover:bg-stone-50 dark:hover:bg-stone-800 shadow-2xs'
-                    }`}
+                      }`}
                     title="Citizen Incident Reports Queue"
                   >
                     <Layers className="w-3.5 h-3.5 shrink-0" />
@@ -4552,11 +4531,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       if (hasDraggedChips.current) return;
                       handleToggleDrawerTab('firms');
                     }}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
-                      isSheetOpen && ((activeLeftDrawerTab === 'firms' && !selectedReport) || isSatReport)
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${isSheetOpen && ((activeLeftDrawerTab === 'firms' && !selectedReport) || isSatReport)
                         ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-xs'
                         : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-750 hover:bg-stone-50 dark:hover:bg-stone-800 shadow-2xs'
-                    }`}
+                      }`}
                     title="NASA FIRMS Satellite Thermal Watchdog"
                   >
                     <Satellite className="w-3.5 h-3.5 shrink-0" />
@@ -4571,11 +4549,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       if (hasDraggedChips.current) return;
                       handleToggleDrawerTab('protected_zones');
                     }}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
-                      isSheetOpen && !selectedReport && activeLeftDrawerTab === 'protected_zones'
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${isSheetOpen && !selectedReport && activeLeftDrawerTab === 'protected_zones'
                         ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-xs'
                         : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-750 hover:bg-stone-50 dark:hover:bg-stone-800 shadow-2xs'
-                    }`}
+                      }`}
                     title="Protected Ecological Reserves & Watersheds"
                   >
                     <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
@@ -4590,11 +4567,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       if (hasDraggedChips.current) return;
                       handleToggleDrawerTab('quarries');
                     }}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
-                      isSheetOpen && !selectedReport && activeLeftDrawerTab === 'quarries'
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${isSheetOpen && !selectedReport && activeLeftDrawerTab === 'quarries'
                         ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-xs'
                         : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-750 hover:bg-stone-50 dark:hover:bg-stone-800 shadow-2xs'
-                    }`}
+                      }`}
                     title="MGB Permitted Mining & Quarry Concessions"
                   >
                     <Pickaxe className="w-3.5 h-3.5 shrink-0" />
@@ -4609,11 +4585,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       if (hasDraggedChips.current) return;
                       handleToggleDrawerTab('weather');
                     }}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
-                      isSheetOpen && !selectedReport && activeLeftDrawerTab === 'weather'
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${isSheetOpen && !selectedReport && activeLeftDrawerTab === 'weather'
                         ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-xs'
                         : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-750 hover:bg-stone-50 dark:hover:bg-stone-800 shadow-2xs'
-                    }`}
+                      }`}
                     title="Real-Time Weather & Atmospheric Air Quality Telemetry"
                   >
                     <CloudSun className="w-3.5 h-3.5 shrink-0" />
@@ -4649,2087 +4624,2063 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   className="mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xl rounded-xl overflow-hidden max-h-[calc(100vh-190px)] min-h-0 flex flex-col"
                 >
                   <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                  {!selectedReport ? (
-                    <div key="intelligence-drawer" className="flex flex-col flex-1 min-h-0 overflow-hidden animate-sheet-morph">
-                    {/* TAB 1: INCIDENT QUEUE */}
-                    {activeLeftDrawerTab === 'queue' && (
-                      <div key="tab-queue" className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                        {/* Queue Header & Active Summary */}
-                        <div className="px-3.5 py-2.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-2 shrink-0">
-                          <div className="flex items-center gap-2">
-                            <Layers className="w-4 h-4 text-tagapo-700 dark:text-emerald-400" />
-                            <span className="font-bold text-xs text-stone-900 dark:text-stone-100">
-                              Citizen Incident Reports
-                            </span>
-                            <span className="font-mono text-[11px] text-stone-500 dark:text-stone-400">
-                              ({filteredReports.length})
-                            </span>
+                    {!selectedReport ? (
+                      <div key="intelligence-drawer" className="flex flex-col flex-1 min-h-0 overflow-hidden animate-sheet-morph">
+                        {/* TAB 1: INCIDENT QUEUE */}
+                        {activeLeftDrawerTab === 'queue' && (
+                          <div key="tab-queue" className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                            {/* Queue Header & Active Summary */}
+                            <div className="px-3.5 py-2.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-2 shrink-0">
+                              <div className="flex items-center gap-2">
+                                <Layers className="w-4 h-4 text-tagapo-700 dark:text-emerald-400" />
+                                <span className="font-bold text-xs text-stone-900 dark:text-stone-100">
+                                  Citizen Incident Reports
+                                </span>
+                                <span className="font-mono text-[11px] text-stone-500 dark:text-stone-400">
+                                  ({filteredReports.length})
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleCloseDrawer}
+                                className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer shrink-0"
+                                title="Close Queue"
+                                aria-label="Close Queue"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+
+
+                            {/* Quick telemetry chips & LGU horizontal scroll */}
+                            <div className="px-3 py-2 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 space-y-2 shrink-0">
+                              {/* Active count badge summary & Queue Tab Switcher */}
+                              <div className="flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-1 bg-stone-200/70 dark:bg-stone-850 p-0.5 rounded-lg border border-stone-200/60 dark:border-stone-800">
+                                  <button
+                                    type="button"
+                                    onClick={() => setQueueTab('active')}
+                                    className={`px-2 py-0.5 rounded-md text-xs transition cursor-pointer flex items-center gap-1 ${queueTab === 'active'
+                                        ? 'bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 font-semibold shadow-2xs'
+                                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 font-medium'
+                                      }`}
+                                  >
+                                    <span>Active</span>
+                                    <span className="font-mono text-[10px] opacity-80">({activeReportsCount})</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setQueueTab('spam')}
+                                    className={`px-2 py-0.5 rounded-md text-xs transition cursor-pointer flex items-center gap-1 ${queueTab === 'spam'
+                                        ? 'bg-white dark:bg-stone-900 text-rose-700 dark:text-rose-400 font-semibold shadow-2xs'
+                                        : 'text-stone-600 dark:text-stone-400 hover:text-rose-600 dark:hover:text-rose-400 font-medium'
+                                      }`}
+                                  >
+                                    <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                                    <span>Spam</span>
+                                    {spamReportsCount > 0 && (
+                                      <span className="font-mono text-[9px] px-1 py-0.2 rounded font-bold bg-stone-100 dark:bg-stone-800 text-rose-700 dark:text-rose-300 border border-stone-200 dark:border-stone-700">
+                                        {spamReportsCount}
+                                      </span>
+                                    )}
+                                  </button>
+                                </div>
+
+                                <div className="flex items-center gap-2 text-[11px] font-mono font-medium">
+                                  <span className="text-stone-700 dark:text-stone-300"><span className="text-emerald-600 font-bold">●</span> {stats.openCount}</span>
+                                  <span className="text-rose-700 dark:text-rose-400"><span className="text-rose-600 font-bold">●</span> {stats.urgentCount}</span>
+                                </div>
+                              </div>
+
+                              {/* Horizontal LGU Filter Chips */}
+                              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickJump('all')}
+                                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer whitespace-nowrap ${municipalityFilter === 'all'
+                                      ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs'
+                                      : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800'
+                                    }`}
+                                >
+                                  All LGUs
+                                </button>
+                                {RIZAL_MUNICIPALITIES.map((mun) => {
+                                  const isSelected = municipalityFilter === mun;
+                                  const shortName = mun.replace('Municipality of ', '').replace('City of ', '');
+                                  return (
+                                    <button
+                                      key={mun}
+                                      type="button"
+                                      onClick={() => handleQuickJump(mun)}
+                                      className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer whitespace-nowrap ${isSelected
+                                          ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs'
+                                          : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800'
+                                        }`}
+                                    >
+                                      {shortName}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Secondary Filters: Category & Severity */}
+                              <div className="grid grid-cols-2 gap-2 pt-0.5">
+                                <select
+                                  value={categoryFilter}
+                                  onChange={(e) => setCategoryFilter(e.target.value)}
+                                  className="text-[11px] font-semibold px-2 py-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-stone-300 truncate"
+                                >
+                                  <option value="all">{lang === 'fil' ? 'Lahat ng Kategorya' : 'All Categories'}</option>
+                                  {Object.entries(CATEGORIES).map(([key, cat]) => (
+                                    <option key={key} value={key}>
+                                      {lang === 'fil' ? cat.labelFil : cat.labelEn}
+                                    </option>
+                                  ))}
+                                </select>
+
+                                <select
+                                  value={severityFilter}
+                                  onChange={(e) => setSeverityFilter(e.target.value)}
+                                  className="text-[11px] font-semibold px-2 py-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-stone-300 truncate"
+                                >
+                                  <option value="all">{lang === 'fil' ? 'Lahat ng Panganib' : 'All Severities'}</option>
+                                  <option value="urgent">{lang === 'fil' ? 'Kagyat (4-5)' : 'Urgent (4-5)'}</option>
+                                  <option value="1">1 - {lang === 'fil' ? 'Maliit' : 'Minor'}</option>
+                                  <option value="2">2 - {lang === 'fil' ? 'Mababa' : 'Low'}</option>
+                                  <option value="3">3 - {lang === 'fil' ? 'Katamtaman' : 'Moderate'}</option>
+                                  <option value="4">4 - {lang === 'fil' ? 'Mataas' : 'High'}</option>
+                                  <option value="5">5 - {lang === 'fil' ? 'Kritikal' : 'Critical'}</option>
+                                </select>
+                              </div>
+
+                              {/* Active Cluster Pill Banner */}
+                              {activeClusterFilter && (
+                                <div className="flex items-center justify-between px-2.5 py-1.5 bg-stone-100 dark:bg-stone-850 border border-stone-200 dark:border-stone-750 rounded-lg text-xs">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <Layers className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300 shrink-0" />
+                                    <span className="font-semibold text-stone-900 dark:text-stone-100 truncate">
+                                      Cluster: {activeClusterFilter.label}
+                                    </span>
+                                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-750 text-stone-700 dark:text-stone-300 font-medium shrink-0">
+                                      {filteredReports.length}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveClusterFilter(null)}
+                                    className="text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-0.5 rounded transition cursor-pointer shrink-0 ml-1"
+                                    title="Clear cluster filter"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* Active Protected Zone Pill Banner */}
+                              {activeProtectedZoneFilter && (
+                                <div className="flex items-center justify-between px-2.5 py-1.5 bg-stone-100 dark:bg-stone-850 border border-stone-200 dark:border-stone-750 rounded-lg text-xs">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <ShieldAlert className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300 shrink-0" />
+                                    <span className="font-semibold text-stone-900 dark:text-stone-100 truncate">
+                                      Zone: {RIZAL_PROTECTED_ZONES_CATALOG.find((z) => z.id === activeProtectedZoneFilter)?.shortName || 'Protected Reserve'}
+                                    </span>
+                                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-750 text-stone-700 dark:text-stone-300 font-medium shrink-0">
+                                      {filteredReports.length}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveProtectedZoneFilter(null)}
+                                    className="text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-0.5 rounded transition cursor-pointer shrink-0 ml-1"
+                                    title="Clear zone filter"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+
+                              {(activeClusterFilter || activeProtectedZoneFilter || municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
+                                <div className="flex items-center justify-between pt-0.5">
+                                  <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">Filters active</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveClusterFilter(null);
+                                      setActiveProtectedZoneFilter(null);
+                                      setMunicipalityFilter('all');
+                                      setStatusFilter('all');
+                                      setCategoryFilter('all');
+                                      setSeverityFilter('all');
+                                      setSearchTerm('');
+                                      setMapCenter({ lat: 14.5800, lng: 121.2800 });
+                                      setMapZoom(11);
+                                    }}
+                                    className="text-[11px] font-semibold text-rose-700 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300 cursor-pointer"
+                                  >
+                                    Reset Filters
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Scrollable Incident Stream */}
+                            <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-850 custom-scrollbar overscroll-contain">
+                              {loading ? (
+                                <div className="p-8 text-center text-xs text-stone-500 dark:text-stone-400 flex items-center justify-center gap-2">
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Loading incident reports...</span>
+                                </div>
+                              ) : filteredReports.length === 0 ? (
+                                <div className="p-8 text-center text-xs text-stone-500 dark:text-stone-400 space-y-1">
+                                  <p className="font-semibold text-stone-700 dark:text-stone-300">No incident reports found</p>
+                                  <p className="text-stone-400 dark:text-stone-500">Try adjusting your municipality or severity filters.</p>
+                                </div>
+                              ) : (
+                                filteredReports.map((report) => {
+                                  const sev = report.final?.severity || report.aiTriage?.severity || 3;
+                                  const cat = report.final?.category || report.aiTriage?.category || 'other';
+                                  const catMeta = CATEGORIES[cat as IncidentCategory] || CATEGORIES.other;
+
+                                  return (
+                                    <div
+                                      key={report.id}
+                                      onClick={() => {
+                                        setSelectedReport(report);
+                                        const coords = resolveReportCoordinates(report);
+                                        setMapCenter(coords);
+                                        setMapZoom(14);
+                                      }}
+                                      className="p-3 cursor-pointer transition hover:bg-stone-50 dark:hover:bg-stone-850/60 flex items-start justify-between gap-2.5 group"
+                                    >
+                                      <div className="space-y-1 flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 group-hover:text-stone-700 dark:group-hover:text-stone-300 transition-colors">
+                                            {report.referenceCode}
+                                          </span>
+                                          <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded border ${catMeta.badgeColor}`}>
+                                            {lang === 'fil' ? catMeta.labelFil : catMeta.labelEn}
+                                          </span>
+                                          {report.duplicateClusterId && (
+                                            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border border-amber-200/70 dark:border-amber-900 flex items-center gap-0.5">
+                                              <Layers className="w-2.5 h-2.5" />
+                                              Cluster
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        <p className="text-xs text-stone-600 dark:text-stone-300 line-clamp-2 leading-relaxed">
+                                          {report.aiTriage?.summary || report.rawInput.description}
+                                        </p>
+
+                                        <div className="flex items-center gap-1.5 text-[10px] text-stone-400 dark:text-stone-500 font-mono pt-0.5">
+                                          <span className="truncate">
+                                            {[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
+                                          </span>
+                                          <span>•</span>
+                                          <span className="shrink-0">{new Date(report.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex flex-col items-end gap-1.5 shrink-0 pt-0.5">
+                                        <span
+                                          className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${sev >= 4
+                                              ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900'
+                                              : sev === 3
+                                                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900'
+                                                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
+                                            }`}
+                                        >
+                                          SEV {sev}
+                                        </span>
+                                        {report.status === 'resolved' ? (
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            Closed
+                                          </span>
+                                        ) : report.status === 'in_progress' ? (
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                            In Prog
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-rose-700 dark:text-rose-400">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                            Pending
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={handleCloseDrawer}
-                            className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer shrink-0"
-                            title="Close Queue"
-                            aria-label="Close Queue"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
+                        )}
 
+                        {/* TAB 2: NASA FIRMS SATELLITE WATCHDOG */}
+                        {activeLeftDrawerTab === 'firms' && (
+                          <div key="tab-firms" className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                            {/* FIRMS Header with Sync Satellites button */}
+                            <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-2 shrink-0">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center shrink-0">
+                                  <Satellite className="w-4 h-4 text-stone-700 dark:text-stone-300" />
+                                </div>
+                                <div>
+                                  <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight">
+                                    NASA FIRMS Watchdog
+                                  </h4>
+                                  <span className="text-[10px] text-stone-500 dark:text-stone-400 block">
+                                    VIIRS 375m Thermal Anomaly Detection
+                                  </span>
+                                </div>
+                              </div>
 
-                  {/* Quick telemetry chips & LGU horizontal scroll */}
-                  <div className="px-3 py-2 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 space-y-2 shrink-0">
-                    {/* Active count badge summary & Queue Tab Switcher */}
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1 bg-stone-200/70 dark:bg-stone-850 p-0.5 rounded-lg border border-stone-200/60 dark:border-stone-800">
-                        <button
-                          type="button"
-                          onClick={() => setQueueTab('active')}
-                          className={`px-2 py-0.5 rounded-md text-xs transition cursor-pointer flex items-center gap-1 ${
-                            queueTab === 'active'
-                              ? 'bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 font-semibold shadow-2xs'
-                              : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 font-medium'
-                          }`}
-                        >
-                          <span>Active</span>
-                          <span className="font-mono text-[10px] opacity-80">({activeReportsCount})</span>
-                        </button>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {/* Simulation / Historical Replay Mode Toggle */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsFirmsReplayMode((prev) => {
+                                      const next = !prev;
+                                      setSyncSatelliteToast({
+                                        message: next
+                                          ? '🧪 Historical Replay: Injected 2 VIIRS 375m anomalies for live demo pitch.'
+                                          : '🛰️ Live Satellite Mode: Synthetic anomalies cleared.',
+                                        type: 'success',
+                                      });
+                                      setTimeout(() => setSyncSatelliteToast(null), 5000);
+                                      return next;
+                                    });
+                                  }}
+                                  className={`px-2 py-1.5 rounded-lg text-xs font-semibold active:scale-95 transition-all shadow-xs cursor-pointer flex items-center gap-1.5 border shrink-0 ${isFirmsReplayMode
+                                      ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100'
+                                      : 'bg-white hover:bg-stone-100 dark:bg-stone-900 dark:hover:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300'
+                                    }`}
+                                  title="Toggle Historical Replay / Anomaly Simulation (Shortcut: Shift+S)"
+                                >
+                                  <FlaskConical className={`w-3.5 h-3.5 ${isFirmsReplayMode ? 'text-amber-400 dark:text-amber-600' : 'text-stone-500'}`} />
+                                  <span>{isFirmsReplayMode ? 'Replay Active' : 'Demo Replay'}</span>
+                                </button>
 
-                        <button
-                          type="button"
-                          onClick={() => setQueueTab('spam')}
-                          className={`px-2 py-0.5 rounded-md text-xs transition cursor-pointer flex items-center gap-1 ${
-                            queueTab === 'spam'
-                              ? 'bg-white dark:bg-stone-900 text-rose-700 dark:text-rose-400 font-semibold shadow-2xs'
-                              : 'text-stone-600 dark:text-stone-400 hover:text-rose-600 dark:hover:text-rose-400 font-medium'
-                          }`}
-                        >
-                          <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
-                          <span>Spam</span>
-                          {spamReportsCount > 0 && (
-                            <span className="font-mono text-[9px] px-1 py-0.2 rounded font-bold bg-stone-100 dark:bg-stone-800 text-rose-700 dark:text-rose-300 border border-stone-200 dark:border-stone-700">
-                              {spamReportsCount}
-                            </span>
-                          )}
-                        </button>
-                      </div>
+                                <button
+                                  type="button"
+                                  onClick={handleSyncSatellites}
+                                  disabled={isSyncingSatellites}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-stone-900 hover:bg-black dark:bg-stone-100 dark:hover:bg-white dark:text-stone-900 active:scale-95 transition-all shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shrink-0"
+                                  title="Sync NASA FIRMS VIIRS satellite thermal hotspots for Rizal Province"
+                                >
+                                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
+                                  <span>{isSyncingSatellites ? 'Syncing...' : 'Sync Satellites'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleCloseDrawer}
+                                  className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                                  title="Close FIRMS"
+                                  aria-label="Close FIRMS"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
 
-                      <div className="flex items-center gap-2 text-[11px] font-mono font-medium">
-                        <span className="text-stone-700 dark:text-stone-300"><span className="text-emerald-600 font-bold">●</span> {stats.openCount}</span>
-                        <span className="text-rose-700 dark:text-rose-400"><span className="text-rose-600 font-bold">●</span> {stats.urgentCount}</span>
-                      </div>
-                    </div>
-
-                    {/* Horizontal LGU Filter Chips */}
-                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-                      <button
-                        type="button"
-                        onClick={() => handleQuickJump('all')}
-                        className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
-                          municipalityFilter === 'all'
-                            ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs'
-                            : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800'
-                        }`}
-                      >
-                        All LGUs
-                      </button>
-                      {RIZAL_MUNICIPALITIES.map((mun) => {
-                        const isSelected = municipalityFilter === mun;
-                        const shortName = mun.replace('Municipality of ', '').replace('City of ', '');
-                        return (
-                          <button
-                            key={mun}
-                            type="button"
-                            onClick={() => handleQuickJump(mun)}
-                            className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
-                              isSelected
-                                ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs'
-                                : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800'
-                            }`}
-                          >
-                            {shortName}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Secondary Filters: Category & Severity */}
-                    <div className="grid grid-cols-2 gap-2 pt-0.5">
-                      <select
-                        value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
-                        className="text-[11px] font-semibold px-2 py-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-stone-300 truncate"
-                      >
-                        <option value="all">{lang === 'fil' ? 'Lahat ng Kategorya' : 'All Categories'}</option>
-                        {Object.entries(CATEGORIES).map(([key, cat]) => (
-                          <option key={key} value={key}>
-                            {lang === 'fil' ? cat.labelFil : cat.labelEn}
-                          </option>
-                        ))}
-                      </select>
-
-                      <select
-                        value={severityFilter}
-                        onChange={(e) => setSeverityFilter(e.target.value)}
-                        className="text-[11px] font-semibold px-2 py-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-stone-300 truncate"
-                      >
-                        <option value="all">{lang === 'fil' ? 'Lahat ng Panganib' : 'All Severities'}</option>
-                        <option value="urgent">{lang === 'fil' ? 'Kagyat (4-5)' : 'Urgent (4-5)'}</option>
-                        <option value="1">1 - {lang === 'fil' ? 'Maliit' : 'Minor'}</option>
-                        <option value="2">2 - {lang === 'fil' ? 'Mababa' : 'Low'}</option>
-                        <option value="3">3 - {lang === 'fil' ? 'Katamtaman' : 'Moderate'}</option>
-                        <option value="4">4 - {lang === 'fil' ? 'Mataas' : 'High'}</option>
-                        <option value="5">5 - {lang === 'fil' ? 'Kritikal' : 'Critical'}</option>
-                      </select>
-                    </div>
-
-                    {/* Active Cluster Pill Banner */}
-                    {activeClusterFilter && (
-                      <div className="flex items-center justify-between px-2.5 py-1.5 bg-stone-100 dark:bg-stone-850 border border-stone-200 dark:border-stone-750 rounded-lg text-xs">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <Layers className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300 shrink-0" />
-                          <span className="font-semibold text-stone-900 dark:text-stone-100 truncate">
-                            Cluster: {activeClusterFilter.label}
-                          </span>
-                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-750 text-stone-700 dark:text-stone-300 font-medium shrink-0">
-                            {filteredReports.length}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setActiveClusterFilter(null)}
-                          className="text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-0.5 rounded transition cursor-pointer shrink-0 ml-1"
-                          title="Clear cluster filter"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Active Protected Zone Pill Banner */}
-                    {activeProtectedZoneFilter && (
-                      <div className="flex items-center justify-between px-2.5 py-1.5 bg-stone-100 dark:bg-stone-850 border border-stone-200 dark:border-stone-750 rounded-lg text-xs">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <ShieldAlert className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300 shrink-0" />
-                          <span className="font-semibold text-stone-900 dark:text-stone-100 truncate">
-                            Zone: {RIZAL_PROTECTED_ZONES_CATALOG.find((z) => z.id === activeProtectedZoneFilter)?.shortName || 'Protected Reserve'}
-                          </span>
-                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-750 text-stone-700 dark:text-stone-300 font-medium shrink-0">
-                            {filteredReports.length}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setActiveProtectedZoneFilter(null)}
-                          className="text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-0.5 rounded transition cursor-pointer shrink-0 ml-1"
-                          title="Clear zone filter"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
-
-                    {(activeClusterFilter || activeProtectedZoneFilter || municipalityFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || severityFilter !== 'all' || searchTerm) && (
-                      <div className="flex items-center justify-between pt-0.5">
-                        <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">Filters active</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveClusterFilter(null);
-                            setActiveProtectedZoneFilter(null);
-                            setMunicipalityFilter('all');
-                            setStatusFilter('all');
-                            setCategoryFilter('all');
-                            setSeverityFilter('all');
-                            setSearchTerm('');
-                            setMapCenter({ lat: 14.5800, lng: 121.2800 });
-                            setMapZoom(11);
-                          }}
-                          className="text-[11px] font-semibold text-rose-700 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300 cursor-pointer"
-                        >
-                          Reset Filters
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Scrollable Incident Stream */}
-                  <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-850 custom-scrollbar overscroll-contain">
-                    {loading ? (
-                      <div className="p-8 text-center text-xs text-stone-500 dark:text-stone-400 flex items-center justify-center gap-2">
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Loading incident reports...</span>
-                      </div>
-                    ) : filteredReports.length === 0 ? (
-                      <div className="p-8 text-center text-xs text-stone-500 dark:text-stone-400 space-y-1">
-                        <p className="font-semibold text-stone-700 dark:text-stone-300">No incident reports found</p>
-                        <p className="text-stone-400 dark:text-stone-500">Try adjusting your municipality or severity filters.</p>
-                      </div>
-                    ) : (
-                      filteredReports.map((report) => {
-                        const sev = report.final?.severity || report.aiTriage?.severity || 3;
-                        const cat = report.final?.category || report.aiTriage?.category || 'other';
-                        const catMeta = CATEGORIES[cat as IncidentCategory] || CATEGORIES.other;
-
-                        return (
-                          <div
-                            key={report.id}
-                            onClick={() => {
-                              setSelectedReport(report);
-                              const coords = resolveReportCoordinates(report);
-                              setMapCenter(coords);
-                              setMapZoom(14);
-                            }}
-                            className="p-3 cursor-pointer transition hover:bg-stone-50 dark:hover:bg-stone-850/60 flex items-start justify-between gap-2.5 group"
-                          >
-                            <div className="space-y-1 flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 group-hover:text-stone-700 dark:group-hover:text-stone-300 transition-colors">
-                                  {report.referenceCode}
-                                </span>
-                                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded border ${catMeta.badgeColor}`}>
-                                  {lang === 'fil' ? catMeta.labelFil : catMeta.labelEn}
-                                </span>
-                                {report.duplicateClusterId && (
-                                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border border-amber-200/70 dark:border-amber-900 flex items-center gap-0.5">
-                                    <Layers className="w-2.5 h-2.5" />
-                                    Cluster
+                            {/* FIRMS Telemetry Overview */}
+                            <div className="px-3 py-2 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 shrink-0">
+                              <div className="grid grid-cols-3 gap-2 text-center p-2 rounded-lg bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
+                                <div>
+                                  <span className="text-[9px] font-bold uppercase text-stone-400 dark:text-stone-500 block">
+                                    Active Hotspots
+                                  </span>
+                                  <span className="text-xs font-bold text-stone-900 dark:text-stone-100 font-mono mt-0.5 block">
+                                    {satelliteReports.length}
+                                  </span>
+                                </div>
+                                <div className="border-x border-stone-200 dark:border-stone-800">
+                                  <span className="text-[9px] font-bold uppercase text-stone-400 dark:text-stone-500 block">
+                                    Peak Radiance
+                                  </span>
+                                  <span className="text-xs font-bold text-rose-600 dark:text-rose-400 font-mono mt-0.5 block">
+                                    {satelliteReports.length > 0
+                                      ? `${Math.max(...satelliteReports.map((r) => r.satelliteHotspot?.frp || 0)).toFixed(1)} MW`
+                                      : '0.0 MW'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-[9px] font-bold uppercase text-stone-400 dark:text-stone-500 block">
+                                    Footprint
+                                  </span>
+                                  <span className="text-xs font-bold text-stone-900 dark:text-stone-100 font-mono mt-0.5 block truncate">
+                                    375m Ground Cell
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-[10px] text-stone-500 dark:text-stone-400 text-center pt-1.5 flex items-center justify-center gap-1.5">
+                                <span>Near real-time orbital feeds via NASA LANCE / EOSDIS</span>
+                                {isFirmsReplayMode && (
+                                  <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                    SIMULATION MODE
                                   </span>
                                 )}
                               </div>
+                            </div>
 
-                              <p className="text-xs text-stone-600 dark:text-stone-300 line-clamp-2 leading-relaxed">
-                                {report.aiTriage?.summary || report.rawInput.description}
-                              </p>
+                            {/* List of Satellite Hotspots */}
+                            <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar overscroll-contain">
+                              {satelliteReports.length === 0 ? (
+                                <div className="p-8 text-center space-y-3">
+                                  <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center mx-auto text-amber-600 dark:text-amber-400">
+                                    <Satellite className="w-6 h-6" />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <p className="text-xs font-bold text-stone-800 dark:text-stone-200">
+                                      No Active Satellite Hotspots
+                                    </p>
+                                    <p className="text-[11px] text-stone-500 dark:text-stone-400 max-w-xs mx-auto leading-relaxed">
+                                      No thermal anomalies or forest fire hotspots currently detected by VIIRS over Rizal Province.
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center justify-center gap-2 pt-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setIsFirmsReplayMode(true);
+                                        setSyncSatelliteToast({
+                                          message: '🧪 Historical Replay: Injected 2 VIIRS 375m anomalies for live demo pitch.',
+                                          type: 'success',
+                                        });
+                                        setTimeout(() => setSyncSatelliteToast(null), 5000);
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition cursor-pointer shadow-xs"
+                                    >
+                                      <FlaskConical className="w-3.5 h-3.5" />
+                                      <span>Load Demo Replay (2 Hotspots)</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleSyncSatellites}
+                                      disabled={isSyncingSatellites}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-stone-900 dark:bg-stone-800 text-white hover:bg-black transition cursor-pointer"
+                                    >
+                                      <RefreshCw className={`w-3 h-3 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
+                                      <span>Sync</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                satelliteReports.map((satReport) => {
+                                  const coords = resolveReportCoordinates(satReport);
+                                  const sat = satReport.satelliteHotspot;
+                                  const frp = sat?.frp !== undefined ? sat.frp.toFixed(1) : 'N/A';
+                                  const tempK = sat?.brightnessTemperature !== undefined
+                                    ? sat.brightnessTemperature.toFixed(1)
+                                    : sat?.brightnessTemp
+                                      ? sat.brightnessTemp.toFixed(1)
+                                      : '330.0';
+                                  const tempC = sat?.brightnessTemperature !== undefined
+                                    ? (sat.brightnessTemperature - 273.15).toFixed(1)
+                                    : sat?.brightnessTemp
+                                      ? (sat.brightnessTemp - 273.15).toFixed(1)
+                                      : '56.9';
+                                  const confidence = (sat?.confidence || 'nominal').toLowerCase();
+                                  const passPht = formatFirmsPhtTime(sat?.acqDate, sat?.acqTime);
+                                  const locationText = [satReport.location?.barangay, satReport.location?.municipality || 'Rizal'].filter(Boolean).join(', ');
+                                  const sensorText = sat?.satellite || 'VIIRS 375m (NOAA-20 / S-NPP)';
+                                  const isSelected = Boolean(selectedReport && (selectedReport as IncidentReport).id === satReport.id);
+                                  const dispatchTicket = dispatchedSimIds[satReport.id];
 
-                              <div className="flex items-center gap-1.5 text-[10px] text-stone-400 dark:text-stone-500 font-mono pt-0.5">
-                                <span className="truncate">
-                                  {[report.location.barangay, report.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
-                                </span>
-                                <span>•</span>
-                                <span className="shrink-0">{new Date(report.createdAt).toLocaleDateString()}</span>
+                                  // Cross-check against community reports
+                                  const communityReports = allReports.filter(
+                                    (r) => r.source !== 'satellite_firms' && !r.id.startsWith('SAT-') && !r.satelliteHotspot && r.status !== 'spam'
+                                  );
+                                  const crossCheck = crossCheckFirmsWithReports(satReport, communityReports, 500);
+
+                                  return (
+                                    <div
+                                      key={satReport.id}
+                                      onClick={() => {
+                                        setMapCenter({ lat: coords.lat, lng: coords.lng });
+                                        setMapZoom(14);
+                                        setSelectedReport(satReport);
+                                        if (window.innerWidth < 640) setIsSheetOpen(false);
+                                      }}
+                                      className={`p-3.5 transition-all cursor-pointer text-left space-y-2 group border-b border-stone-200 dark:border-stone-800 ${isSelected
+                                          ? 'bg-stone-100 dark:bg-stone-850 border-l-[3px] border-l-stone-900 dark:border-l-stone-100'
+                                          : 'bg-white hover:bg-stone-50 dark:bg-stone-900 dark:hover:bg-stone-850/60 border-l-[3px] border-l-transparent'
+                                        }`}
+                                    >
+                                      {/* Card Header: Reference Code & Radiance */}
+                                      <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                          <span className="font-mono text-xs font-bold text-stone-900 dark:text-stone-100">
+                                            {satReport.referenceCode}
+                                          </span>
+                                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 truncate">
+                                            {sensorText}
+                                          </span>
+                                        </div>
+                                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 font-bold border border-stone-200 dark:border-stone-700 flex items-center gap-1 shrink-0">
+                                          <Flame className="w-2.5 h-2.5 text-rose-600" />
+                                          {frp} MW FRP
+                                        </span>
+                                      </div>
+
+                                      {/* Cross-Check Verdict Banner */}
+                                      {crossCheck.matched ? (
+                                        <div className="p-2 rounded-lg bg-stone-100 dark:bg-stone-850 border border-stone-200 dark:border-stone-750 space-y-1">
+                                          <div className="flex items-center justify-between gap-1.5">
+                                            <span className="text-[10px] font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1">
+                                              <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                              <span>MATCHED: Report #{crossCheck.matchedReport?.referenceCode}</span>
+                                            </span>
+                                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-750 text-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700 shrink-0">
+                                              Auto-Escalated (Sev 5)
+                                            </span>
+                                          </div>
+                                          <p className="text-[10px] text-stone-600 dark:text-stone-400 leading-tight">
+                                            Corroborated {crossCheck.distanceMeters}m from citizen report. Multi-source statutory verification confirmed.
+                                          </p>
+                                        </div>
+                                      ) : (
+                                        <div className="p-2 rounded-lg bg-stone-100 dark:bg-stone-850 border border-stone-200 dark:border-stone-750 space-y-1.5">
+                                          <div className="flex items-center justify-between gap-1.5">
+                                            <span className="text-[10px] font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1">
+                                              <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                                              <span>UNREPORTED ANOMALY</span>
+                                            </span>
+                                            <span className="text-[9px] font-mono text-stone-500 dark:text-stone-400">
+                                              {(crossCheck.distanceMeters / 1000).toFixed(1)} km to nearest report
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center justify-between gap-2 pt-0.5">
+                                            <span className="text-[10px] text-stone-600 dark:text-stone-400 truncate">
+                                              No citizen observation logged in this sector.
+                                            </span>
+                                            {dispatchTicket ? (
+                                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shrink-0">
+                                                <Check className="w-3 h-3" />
+                                                Ticket #{dispatchTicket}
+                                              </span>
+                                            ) : (
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleCreateDispatchTicket(satReport);
+                                                }}
+                                                className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-stone-900 hover:bg-black dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900 transition shadow-xs cursor-pointer shrink-0"
+                                              >
+                                                <Plus className="w-3 h-3" />
+                                                <span>+ Create Dispatch Ticket</span>
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Raw NASA Telemetry Grid (2x2) */}
+                                      <div className="grid grid-cols-2 gap-1.5 p-2 rounded-lg bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 text-[10px]">
+                                        <div>
+                                          <span className="text-stone-400 dark:text-stone-500 block text-[9px] font-medium">BRIGHTNESS TEMP</span>
+                                          <span className="font-mono font-bold text-stone-900 dark:text-stone-100">{tempK} K ({tempC}°C)</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-stone-400 dark:text-stone-500 block text-[9px] font-medium">FIRE RADIATIVE POWER</span>
+                                          <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{frp} MW</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-stone-400 dark:text-stone-500 block text-[9px] font-medium">CONFIDENCE</span>
+                                          <span className="font-mono font-bold text-stone-800 dark:text-stone-200 capitalize">{confidence}</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-stone-400 dark:text-stone-500 block text-[9px] font-medium">ORBITAL PASS (PHT)</span>
+                                          <span className="font-mono font-bold text-stone-800 dark:text-stone-200 truncate block">{passPht}</span>
+                                        </div>
+                                      </div>
+
+                                      {/* Card Footer: Location & Resolution */}
+                                      <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 pt-0.5">
+                                        <span className="flex items-center gap-1 truncate">
+                                          <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+                                          {locationText}
+                                        </span>
+                                        <span className="font-mono text-[9px] text-stone-400 dark:text-stone-500 shrink-0">
+                                          375m Ground Cell
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* TAB 3: PROTECTED RESERVES & WATERSHEDS */}
+                        {activeLeftDrawerTab === 'protected_zones' && (
+                          <div key="tab-reserves" className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                            {/* Reserves Header & Search */}
+                            <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2 shrink-0">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center shrink-0">
+                                    <ShieldAlert className="w-4 h-4 text-stone-700 dark:text-stone-300" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight">
+                                      Protected Reserves & Buffers
+                                    </h4>
+                                    <span className="text-[10px] text-stone-500 dark:text-stone-400 block">
+                                      15 Curated Ecological Zones
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 font-semibold">
+                                    15 Zones
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={handleCloseDrawer}
+                                    className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                                    title="Close Reserves"
+                                    aria-label="Close Reserves"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="relative">
+                                <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <input
+                                  type="text"
+                                  value={protectedZoneSearchTerm}
+                                  onChange={(e) => setProtectedZoneSearchTerm(e.target.value)}
+                                  placeholder="Filter reserves by name or municipality..."
+                                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white dark:bg-stone-950 dark:hover:bg-stone-950 dark:focus:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 focus:border-stone-900 dark:focus:border-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-stone-100 transition placeholder:text-stone-400 dark:placeholder:text-stone-600"
+                                />
+                                {protectedZoneSearchTerm && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setProtectedZoneSearchTerm('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 cursor-pointer"
+                                    title="Clear search"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
                               </div>
                             </div>
 
-                            <div className="flex flex-col items-end gap-1.5 shrink-0 pt-0.5">
-                              <span
-                                className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
-                                  sev >= 4
-                                    ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900'
-                                    : sev === 3
-                                    ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900'
-                                    : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
-                                }`}
-                              >
-                                SEV {sev}
-                              </span>
-                              {report.status === 'resolved' ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                  Closed
+                            {/* Category filter chips */}
+                            <div className="px-3 py-2 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 shrink-0">
+                              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar text-xs">
+                                {[
+                                  { id: 'all', label: 'All (15)' },
+                                  { id: 'nipas', label: 'NIPAS (6)' },
+                                  { id: 'llda_zomap', label: 'LLDA (2)' },
+                                  { id: 'kba_georeserve', label: 'KBA (3)' },
+                                  { id: 'local_mountain', label: 'Local (4)' },
+                                ].map((cat) => (
+                                  <button
+                                    key={cat.id}
+                                    type="button"
+                                    onClick={() => setActiveZoneCatFilter(cat.id as any)}
+                                    className={`px-2 py-1 rounded-md text-xs font-semibold shrink-0 transition cursor-pointer whitespace-nowrap ${activeZoneCatFilter === cat.id
+                                        ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs'
+                                        : 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white'
+                                      }`}
+                                  >
+                                    {cat.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Active Reserve Highlight Status Bar */}
+                            {selectedProtectedZoneId && (
+                              <div className="px-3 py-1.5 bg-stone-100 dark:bg-stone-850 border-b border-stone-200 dark:border-stone-750 flex items-center justify-between text-xs shrink-0">
+                                <span className="text-[11px] font-medium text-stone-800 dark:text-stone-200 truncate pr-2">
+                                  Highlighting: <strong className="font-semibold">{selectedProtectedZone?.shortName || selectedProtectedZone?.name}</strong>
                                 </span>
-                              ) : report.status === 'in_progress' ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 dark:text-amber-400">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                  In Prog
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedProtectedZoneId(null)}
+                                  className="text-[10px] font-semibold text-stone-900 dark:text-stone-100 hover:underline cursor-pointer shrink-0"
+                                >
+                                  Show all reserves
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Interactive Zone List */}
+                            <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar overscroll-contain">
+                              {RIZAL_PROTECTED_ZONES_CATALOG
+                                .filter((zone) => activeZoneCatFilter === 'all' || zone.category === activeZoneCatFilter)
+                                .filter((zone) => {
+                                  if (!protectedZoneSearchTerm.trim()) return true;
+                                  const q = protectedZoneSearchTerm.toLowerCase();
+                                  return (
+                                    zone.name.toLowerCase().includes(q) ||
+                                    zone.shortName.toLowerCase().includes(q) ||
+                                    zone.municipality.toLowerCase().includes(q)
+                                  );
+                                })
+                                .map((zone) => {
+                                  const isSelected = selectedProtectedZoneId === zone.id;
+                                  const threatReports = reportsByProtectedZone[zone.id] || [];
+                                  const activeThreats = threatReports.filter((r) => r.status !== 'resolved');
+
+                                  return (
+                                    <div
+                                      key={zone.id}
+                                      onClick={() => {
+                                        if (selectedProtectedZoneId === zone.id) {
+                                          setSelectedProtectedZoneId(null);
+                                        } else {
+                                          setMapCenter({ lat: zone.lat, lng: zone.lng });
+                                          setMapZoom(zone.zoom);
+                                          setSelectedProtectedZoneId(zone.id);
+                                          if (window.innerWidth < 640) setIsSheetOpen(false);
+                                        }
+                                      }}
+                                      className={`p-3 transition-colors cursor-pointer text-left space-y-1.5 group ${isSelected
+                                          ? 'bg-stone-100 dark:bg-stone-850 border-l-[3px] border-l-stone-900 dark:border-l-stone-100'
+                                          : 'hover:bg-stone-50 dark:hover:bg-stone-850/60 bg-white dark:bg-stone-900 border-l-[3px] border-l-transparent'
+                                        }`}
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="flex items-center gap-1.5 min-w-0">
+                                          <span
+                                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                                            style={{ backgroundColor: zone.color }}
+                                          />
+                                          <span className="font-semibold text-xs text-stone-900 dark:text-stone-100 truncate">
+                                            {zone.name}
+                                          </span>
+                                        </span>
+                                        {activeThreats.length > 0 ? (
+                                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 font-bold border border-rose-300 dark:border-rose-800 shrink-0">
+                                            {activeThreats.length} Active
+                                          </span>
+                                        ) : (
+                                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-medium border border-stone-200 dark:border-stone-700 shrink-0">
+                                            Clear
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      <div className="flex items-center justify-between text-[11px] text-stone-600 dark:text-stone-400">
+                                        <span className="truncate">{zone.municipality}</span>
+                                        <span className="font-mono text-[10px] text-stone-500 dark:text-stone-400 shrink-0">
+                                          {zone.areaHectares}
+                                        </span>
+                                      </div>
+
+                                      {zone.legalBasis && (
+                                        <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
+                                          {zone.legalBasis}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* TAB 4: MGB PERMITTED QUARRIES & PROCESSING CADASTRE */}
+                        {activeLeftDrawerTab === 'quarries' && (
+                          <div key="tab-quarries" className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                            {/* Quarries Header & Statistics */}
+                            <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2.5 shrink-0">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center shrink-0">
+                                    <Pickaxe className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight truncate">
+                                      MGB Mining & Processing Cadastre
+                                    </h4>
+                                    <span className="text-[10px] text-stone-500 dark:text-stone-400 block truncate">
+                                      DENR Region IV-A Authorized Concessions & Plants
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 font-bold border border-stone-200 dark:border-stone-700">
+                                    {mgbQuarriesFeatures.length || 45} Total
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={handleCloseDrawer}
+                                    className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                                    title="Close Cadastre"
+                                    aria-label="Close Cadastre"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Cadastre Metric Summary Strip */}
+                              <div className="grid grid-cols-3 gap-1.5 text-center p-1.5 bg-stone-50 dark:bg-stone-950/70 rounded-lg border border-stone-200 dark:border-stone-800">
+                                <div className="px-1">
+                                  <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">MPSAs</span>
+                                  <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+                                    30 (6,214 ha)
+                                  </span>
+                                </div>
+                                <div className="px-1 border-x border-stone-200 dark:border-stone-800">
+                                  <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">MPP Plants</span>
+                                  <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+                                    15 Units
+                                  </span>
+                                </div>
+                                <div className="px-1">
+                                  <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Cancelled</span>
+                                  <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
+                                    2 Tenements
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Faceted Filter 1: Permit Category Pills */}
+                              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setQuarryTypeFilter('all')}
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer shrink-0 border ${quarryTypeFilter === 'all'
+                                      ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs font-semibold'
+                                      : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800'
+                                    }`}
+                                >
+                                  All ({mgbQuarriesFeatures.length || 45})
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setQuarryTypeFilter('mpsa')}
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer shrink-0 border ${quarryTypeFilter === 'mpsa'
+                                      ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs font-semibold'
+                                      : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800'
+                                    }`}
+                                >
+                                  MPSA Extraction (30)
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setQuarryTypeFilter('mpp')}
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer shrink-0 border ${quarryTypeFilter === 'mpp'
+                                      ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs font-semibold'
+                                      : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800'
+                                    }`}
+                                >
+                                  MPP Processing (15)
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setQuarryTypeFilter('cancelled')}
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer shrink-0 border ${quarryTypeFilter === 'cancelled'
+                                      ? 'bg-rose-700 text-white border-rose-700 shadow-2xs font-semibold'
+                                      : 'bg-white dark:bg-stone-900 text-rose-600 dark:text-rose-400 border-stone-200 dark:border-stone-800 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+                                    }`}
+                                >
+                                  Cancelled (2)
+                                </button>
+                              </div>
+
+                              {/* Faceted Filter 2: Municipality Chips */}
+                              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 text-[10px]">
+                                {[
+                                  { id: 'all', label: 'All LGUs' },
+                                  { id: 'rodriguez', label: 'Rodriguez' },
+                                  { id: 'antipolo', label: 'Antipolo' },
+                                  { id: 'teresa', label: 'Teresa' },
+                                  { id: 'angono', label: 'Angono' },
+                                  { id: 'baras', label: 'Baras' },
+                                  { id: 'tanay', label: 'Tanay' },
+                                  { id: 'morong', label: 'Morong' },
+                                  { id: 'binangonan', label: 'Binangonan' },
+                                ].map((m) => (
+                                  <button
+                                    key={m.id}
+                                    type="button"
+                                    onClick={() => setQuarryMunicipalityFilter(m.id)}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-medium transition cursor-pointer shrink-0 border ${quarryMunicipalityFilter === m.id
+                                        ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 font-semibold shadow-2xs'
+                                        : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800'
+                                      }`}
+                                  >
+                                    {m.label}
+                                  </button>
+                                ))}
+                              </div>
+
+                              {/* Search Input */}
+                              <div className="relative">
+                                <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <input
+                                  type="text"
+                                  value={quarrySearchTerm}
+                                  onChange={(e) => setQuarrySearchTerm(e.target.value)}
+                                  placeholder="Search operator, permit no., commodity, barangay..."
+                                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white dark:bg-stone-950 dark:hover:bg-stone-950 dark:focus:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 focus:border-stone-900 dark:focus:border-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-stone-100 transition placeholder:text-stone-400 dark:placeholder:text-stone-600"
+                                />
+                                {quarrySearchTerm && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setQuarrySearchTerm('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 cursor-pointer"
+                                    title="Clear search"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Regulatory Authority Notice */}
+                            <div className="px-3 py-1.5 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 text-[9.5px] text-stone-600 dark:text-stone-400 flex items-center justify-between shrink-0 font-mono">
+                              <span>MGB MTMD Registries (MRMS 002A & APR-2024-MPP-2A)</span>
+                              <span className="text-stone-700 dark:text-stone-300 font-semibold">CALABARZON</span>
+                            </div>
+
+                            {/* Active Filter Map Synchronization Notice & Reset */}
+                            {(quarryTypeFilter !== 'all' || quarryMunicipalityFilter !== 'all' || !!quarrySearchTerm.trim()) && (
+                              <div className="px-3 py-1 bg-stone-100 dark:bg-stone-850 border-b border-stone-200 dark:border-stone-750 text-[10px] text-stone-700 dark:text-stone-300 flex items-center justify-between shrink-0">
+                                <span className="font-medium flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-stone-900 dark:bg-stone-100" />
+                                  Map & drawer synchronized
                                 </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-rose-700 dark:text-rose-400">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                                  Pending
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setQuarryTypeFilter('all');
+                                    setQuarryMunicipalityFilter('all');
+                                    setQuarrySearchTerm('');
+                                  }}
+                                  className="text-stone-900 dark:text-stone-100 font-semibold hover:underline cursor-pointer"
+                                >
+                                  Reset filters
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Concession Cards List */}
+                            <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar overscroll-contain">
+                              {(() => {
+                                const filtered = mgbQuarriesFeatures.filter((feat) => {
+                                  const p = feat.properties;
+
+                                  // Type filter
+                                  if (quarryTypeFilter === 'mpsa' && p.permitType !== 'MPSA') return false;
+                                  if (quarryTypeFilter === 'mpp' && p.permitType !== 'MPP') return false;
+                                  if (quarryTypeFilter === 'cancelled' && p.status !== 'Cancelled') return false;
+
+                                  // Municipality filter
+                                  if (quarryMunicipalityFilter !== 'all') {
+                                    const munMatch = p.municipality.toLowerCase().includes(quarryMunicipalityFilter.toLowerCase());
+                                    if (!munMatch) return false;
+                                  }
+
+                                  // Search term filter
+                                  if (quarrySearchTerm.trim()) {
+                                    const q = quarrySearchTerm.toLowerCase();
+                                    const match =
+                                      p.name.toLowerCase().includes(q) ||
+                                      p.operator.toLowerCase().includes(q) ||
+                                      (p.holder && p.holder.toLowerCase().includes(q)) ||
+                                      p.permitNumber.toLowerCase().includes(q) ||
+                                      p.municipality.toLowerCase().includes(q) ||
+                                      (p.barangay && p.barangay.toLowerCase().includes(q)) ||
+                                      p.commodity.toLowerCase().includes(q);
+                                    if (!match) return false;
+                                  }
+
+                                  return true;
+                                });
+
+                                if (filtered.length === 0) {
+                                  return (
+                                    <div className="py-12 px-4 text-center space-y-2">
+                                      <Pickaxe className="w-8 h-8 text-stone-300 dark:text-stone-600 mx-auto" />
+                                      <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">
+                                        No matching concessions found
+                                      </p>
+                                      <p className="text-[11px] text-stone-400">
+                                        Try clearing filters or search terms.
+                                      </p>
+                                    </div>
+                                  );
+                                }
+
+                                return filtered.map((feat) => {
+                                  const p = feat.properties;
+                                  const isMpp = p.permitType === 'MPP';
+                                  const isCancelled = p.status === 'Cancelled';
+                                  const isExploration = p.status === 'Exploration';
+                                  const isSelected = Boolean(selectedQuarryId && (p.id === selectedQuarryId || feat.id === selectedQuarryId || p.permitNumber === selectedQuarryId));
+
+                                  return (
+                                    <div
+                                      key={feat.id || p.id}
+                                      onClick={() => {
+                                        handleSelectQuarry(String(feat.id || p.id || p.permitNumber));
+                                      }}
+                                      className={`p-3 transition-all cursor-pointer text-left space-y-1.5 group ${isSelected
+                                          ? 'bg-amber-50/90 dark:bg-amber-950/50 border-l-[3.5px] border-l-amber-500 shadow-sm'
+                                          : isCancelled
+                                            ? 'bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+                                            : 'bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-850/80'
+                                        }`}
+                                    >
+                                      <div className="flex items-center justify-between gap-1.5">
+                                        <span className={`font-semibold text-xs truncate ${isCancelled ? 'text-rose-900 dark:text-rose-200 line-through' : 'text-stone-900 dark:text-stone-100'}`}>
+                                          {p.name}
+                                        </span>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          <span
+                                            className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold border ${isMpp
+                                                ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800'
+                                                : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                                              }`}
+                                          >
+                                            {p.permitType}
+                                          </span>
+                                          <span
+                                            className={`text-[8.5px] font-mono px-1 py-0.5 rounded font-bold uppercase ${isCancelled
+                                                ? 'bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
+                                                : isExploration
+                                                  ? 'bg-sky-100 text-sky-800 border border-sky-300 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
+                                                  : 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                                              }`}
+                                          >
+                                            {p.status}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      <div className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
+                                        <strong>Operator:</strong> {p.operator}
+                                        {p.holder && p.holder !== p.operator && (
+                                          <span className="block text-[10px] text-stone-500 dark:text-stone-500">
+                                            <strong>Holder:</strong> {p.holder}
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 pt-0.5">
+                                        <span className="flex items-center gap-1 truncate">
+                                          <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+                                          {`${p.barangay || 'Barangay not recorded'}, `}{p.municipality}
+                                        </span>
+                                        <span className="font-mono text-stone-700 dark:text-stone-300 font-semibold shrink-0">
+                                          {p.areaHectares}
+                                        </span>
+                                      </div>
+
+                                      <div className="text-[10px] font-mono text-amber-700 dark:text-amber-400 truncate">
+                                        Permit: {p.permitNumber} • {p.commodity}
+                                      </div>
+
+                                      {p.termDates && (
+                                        <div className="text-[9.5px] text-stone-400 dark:text-stone-500 font-mono truncate">
+                                          Term: {p.termDates}
+                                        </div>
+                                      )}
+
+                                      {isCancelled && (
+                                        <div className="text-[9.5px] text-rose-700 dark:text-rose-400 font-medium pt-1 border-t border-rose-200 dark:border-rose-900/40">
+                                          Notice: Cancelled by DENR Order. Commercial extraction is unauthorized.
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* TAB 5: WEATHER & ATMOSPHERIC AIR QUALITY */}
+                        {activeLeftDrawerTab === 'weather' && (
+                          <div key="tab-weather" className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                            {/* Header */}
+                            <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2 shrink-0">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center shrink-0">
+                                    <CloudSun className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight">
+                                      Atmospheric & Weather Intelligence
+                                    </h4>
+                                    <span className="text-[10px] text-stone-500 dark:text-stone-400 block">
+                                      Open-Meteo & European CAMS Live Telemetry
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => loadAtmosphericData()}
+                                    disabled={isLoadingAtmosphere}
+                                    className="p-1.5 text-stone-500 hover:text-stone-900 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                                    title="Refresh Live Telemetry"
+                                    aria-label="Refresh Telemetry"
+                                  >
+                                    <RefreshCw className={`w-3.5 h-3.5 ${isLoadingAtmosphere ? 'animate-spin text-emerald-600' : ''}`} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleCloseDrawer}
+                                    className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                                    title="Close Weather"
+                                    aria-label="Close Weather"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* LGU Preset Chips with Horizontal Scroll Navigation */}
+                              <div className="relative flex items-center group/weather-lgu">
+                                {/* Left Scroll Button */}
+                                {canScrollWeatherLeft && (
+                                  <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pr-2 bg-gradient-to-r from-white via-white/95 to-transparent dark:from-stone-900 dark:via-stone-900/95 dark:to-transparent">
+                                    <button
+                                      type="button"
+                                      onClick={() => scrollWeatherLgu('left')}
+                                      className="w-5 h-5 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-xs hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition cursor-pointer active:scale-95 pointer-events-auto"
+                                      title="Scroll left to view previous municipalities"
+                                      aria-label="Scroll left"
+                                    >
+                                      <ChevronLeft className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+
+                                {/* Scrollport */}
+                                <div
+                                  ref={weatherLguScrollRef}
+                                  onMouseDown={handleWeatherLguMouseDown}
+                                  onMouseMove={handleWeatherLguMouseMove}
+                                  onMouseUp={handleWeatherLguMouseUp}
+                                  onMouseLeave={handleWeatherLguMouseUp}
+                                  className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 scroll-smooth overscroll-x-contain touch-pan-x cursor-grab active:cursor-grabbing select-none"
+                                  style={{ WebkitOverflowScrolling: 'touch' }}
+                                >
+                                  {RIZAL_LGU_PRESETS.map((preset) => {
+                                    const isActive = selectedWeatherLguId === preset.id;
+                                    return (
+                                      <button
+                                        key={preset.id}
+                                        data-lgu-id={preset.id}
+                                        type="button"
+                                        onClick={() => {
+                                          if (hasDraggedWeatherLgu.current) return;
+                                          handleSelectWeatherLgu(preset);
+                                        }}
+                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-medium shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${isActive
+                                            ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs font-semibold'
+                                            : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800'
+                                          }`}
+                                        title={`${preset.name} (${preset.elevation}) • ${preset.ecologicalRole}`}
+                                      >
+                                        <span>{preset.shortName}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Right Scroll Button */}
+                                {canScrollWeatherRight && (
+                                  <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pl-2 bg-gradient-to-l from-white via-white/95 to-transparent dark:from-stone-900 dark:via-stone-900/95 dark:to-transparent">
+                                    <button
+                                      type="button"
+                                      onClick={() => scrollWeatherLgu('right')}
+                                      className="w-5 h-5 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-xs hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition cursor-pointer active:scale-95 pointer-events-auto"
+                                      title="Scroll right to view more municipalities"
+                                      aria-label="Scroll right"
+                                    >
+                                      <ChevronRight className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Scrollable Weather Body */}
+                            <div className="flex-1 min-h-0 overflow-y-auto p-3.5 space-y-3 custom-scrollbar overscroll-contain">
+                              {isLoadingAtmosphere && !atmosphericData ? (
+                                <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
+                                  <div className="w-10 h-10 rounded-full border-2 border-stone-900 dark:border-stone-100 border-t-transparent animate-spin flex items-center justify-center">
+                                    <CloudSun className="w-5 h-5 text-stone-700 dark:text-stone-300" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-stone-800 dark:text-stone-200">
+                                      Connecting to Open-Meteo Telemetry Feed...
+                                    </p>
+                                    <p className="text-[10px] text-stone-400 mt-0.5">
+                                      Reading live meteorological and atmospheric CAMS models for Rizal
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : atmosphereError && !atmosphericData ? (
+                                <div className="p-4 bg-stone-100 dark:bg-stone-850 border border-stone-200 dark:border-stone-750 rounded-xl space-y-2 text-center">
+                                  <AlertTriangle className="w-6 h-6 text-rose-600 mx-auto" />
+                                  <p className="text-xs text-rose-800 dark:text-rose-300 font-semibold">{atmosphereError}</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => loadAtmosphericData()}
+                                    className="px-3 py-1 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 rounded-lg text-xs font-medium hover:bg-stone-50 transition cursor-pointer"
+                                  >
+                                    Retry Connection
+                                  </button>
+                                </div>
+                              ) : atmosphericData ? (
+                                <>
+                                  {(() => {
+                                    const activePreset = RIZAL_LGU_PRESETS.find((p) => p.id === selectedWeatherLguId) || RIZAL_LGU_PRESETS[0];
+                                    const aqiMeta = getAqiMeta(atmosphericData.airQuality.europeanAqi, atmosphericData.airQuality.pm2_5, atmosphericData.airQuality.pm10);
+                                    const windTraj = getWindFlowTrajectory(atmosphericData.weather.windDirection, atmosphericData.weather.windSpeed);
+                                    const indices = computeEmpiricalWeatherIndices(atmosphericData.weather, atmosphericData.airQuality);
+
+                                    return (
+                                      <>
+                                        {/* Active Preset Subheader */}
+                                        <div className="p-2.5 bg-stone-50 dark:bg-stone-950/60 border border-stone-200/80 dark:border-stone-800 rounded-xl flex items-center justify-between gap-2">
+                                          <div className="min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                              <MapPin className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300 shrink-0" />
+                                              <span className="font-bold text-xs text-stone-900 dark:text-stone-100 truncate">
+                                                {activePreset.name}
+                                              </span>
+                                              <span className="font-mono text-[10px] text-stone-500 dark:text-stone-400 shrink-0">
+                                                ({activePreset.elevation})
+                                              </span>
+                                            </div>
+                                            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5 truncate">
+                                              {activePreset.ecologicalRole}
+                                            </p>
+                                          </div>
+                                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-stone-200/70 dark:bg-stone-800 text-stone-600 dark:text-stone-300 shrink-0">
+                                            {new Date(atmosphericData.weather.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                          </span>
+                                        </div>
+
+                                        {/* 1. Live Meteorological Card */}
+                                        <div className="p-3.5 bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 rounded-xl shadow-2xs space-y-3">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <div className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center">
+                                                <Thermometer className="w-4 h-4 text-stone-700 dark:text-stone-300" />
+                                              </div>
+                                              <span className="text-xs font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200">
+                                                Current Weather
+                                              </span>
+                                            </div>
+                                            <span className="text-[11px] font-medium text-stone-600 dark:text-stone-300 px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700">
+                                              {atmosphericData.weather.weatherDescription}
+                                            </span>
+                                          </div>
+
+                                          <div className="flex items-baseline justify-between pt-1">
+                                            <div>
+                                              <div className="flex items-baseline gap-1.5">
+                                                <span className="font-display font-extrabold text-3xl text-stone-900 dark:text-stone-50">
+                                                  {atmosphericData.weather.temperature}°C
+                                                </span>
+                                                <span className="text-xs text-stone-500 dark:text-stone-400 font-medium">
+                                                  Feels like {atmosphericData.weather.apparentTemperature}°C
+                                                </span>
+                                              </div>
+                                              <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">
+                                                Cloud Cover: {atmosphericData.weather.cloudCover}%
+                                              </p>
+                                            </div>
+
+                                            <div className="text-right">
+                                              {windTraj.isCalm ? (
+                                                <>
+                                                  <span className="font-mono text-xs font-bold text-stone-800 dark:text-stone-200 flex items-center justify-end gap-1">
+                                                    <Wind className="w-3.5 h-3.5 text-stone-400" />
+                                                    {atmosphericData.weather.windSpeed} km/h (Calm)
+                                                  </span>
+                                                  <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-mono">
+                                                    No prevailing direction
+                                                  </span>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <span className="font-mono text-xs font-bold text-stone-800 dark:text-stone-200 flex items-center justify-end gap-1">
+                                                    <Wind className="w-3.5 h-3.5 text-stone-500" />
+                                                    {atmosphericData.weather.windSpeed} km/h from {windTraj.fromCompass}
+                                                  </span>
+                                                  <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-mono">
+                                                    &rarr; Blowing toward {windTraj.toCompass}
+                                                  </span>
+                                                </>
+                                              )}
+                                              {atmosphericData.weather.windGusts !== null && (
+                                                <span className="text-[9.5px] text-stone-400 block font-mono">
+                                                  Gusts up to {atmosphericData.weather.windGusts} km/h
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-stone-100 dark:border-stone-800/80 text-center">
+                                            <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60">
+                                              <div className="flex items-center justify-center gap-1 text-[10px] text-stone-500 dark:text-stone-400 font-medium">
+                                                <Droplets className="w-3 h-3 text-sky-500" />
+                                                <span>Humidity</span>
+                                              </div>
+                                              <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block">
+                                                {atmosphericData.weather.relativeHumidity}%
+                                              </span>
+                                            </div>
+
+                                            <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60">
+                                              <div className="flex items-center justify-center gap-1 text-[10px] text-stone-500 dark:text-stone-400 font-medium">
+                                                <CloudRain className="w-3 h-3 text-blue-500" />
+                                                <span>Rainfall</span>
+                                              </div>
+                                              <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block">
+                                                {atmosphericData.weather.precipitation} mm
+                                              </span>
+                                            </div>
+
+                                            <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60">
+                                              <div className="flex items-center justify-center gap-1 text-[10px] text-stone-500 dark:text-stone-400 font-medium">
+                                                <Compass className="w-3 h-3 text-stone-500" />
+                                                <span>Trajectory</span>
+                                              </div>
+                                              {windTraj.isCalm ? (
+                                                <>
+                                                  <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block">
+                                                    Calm
+                                                  </span>
+                                                  <span className="text-[9px] text-stone-400 block font-mono">
+                                                    &lt; 1 km/h
+                                                  </span>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block" title={windTraj.summary}>
+                                                    {windTraj.fromCompass} &rarr; {windTraj.toCompass}
+                                                  </span>
+                                                  <span className="text-[9px] text-stone-400 block font-mono">
+                                                    {windTraj.fromBearing}° origin
+                                                  </span>
+                                                </>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* 2. Atmospheric Air Quality (AQI) Card */}
+                                        <div className="p-3.5 bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 rounded-xl shadow-2xs space-y-3">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <div className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center">
+                                                <Activity className="w-4 h-4 text-stone-700 dark:text-stone-300" />
+                                              </div>
+                                              <div>
+                                                <span className="text-xs font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200 block">
+                                                  Atmospheric Air Quality
+                                                </span>
+                                                <span className="text-[10px] text-stone-400 block">
+                                                  European CAMS & Philippine Clean Air Act
+                                                </span>
+                                              </div>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-0.5">
+                                              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${aqiMeta.badgeBg} ${aqiMeta.badgeText} ${aqiMeta.badgeBorder}`}>
+                                                AQI {atmosphericData.airQuality.europeanAqi} • {aqiMeta.label}
+                                              </span>
+                                              <span className="text-[9px] font-mono text-stone-500 dark:text-stone-400">
+                                                Primary Particulate: {aqiMeta.dominantPollutant ?? 'PM2.5'}
+                                              </span>
+                                            </div>
+                                          </div>
+
+                                          <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
+                                            {aqiMeta.description}
+                                          </p>
+
+                                          <div className="grid grid-cols-4 gap-1.5 p-2 bg-stone-50 dark:bg-stone-950/60 border border-stone-200/80 dark:border-stone-800 rounded-lg text-center divide-x divide-stone-200 dark:divide-stone-800">
+                                            <div className="px-1">
+                                              <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">PM2.5 (Fine)</span>
+                                              <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+                                                {atmosphericData.airQuality.pm2_5} μg/m³
+                                              </span>
+                                            </div>
+                                            <div className="px-1">
+                                              <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">PM10 (Dust)</span>
+                                              <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+                                                {atmosphericData.airQuality.pm10} μg/m³
+                                              </span>
+                                            </div>
+                                            <div className="px-1">
+                                              <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">CO</span>
+                                              <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+                                                {atmosphericData.airQuality.carbonMonoxide ?? '—'} μg/m³
+                                              </span>
+                                            </div>
+                                            <div className="px-1">
+                                              <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Ozone</span>
+                                              <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
+                                                {atmosphericData.airQuality.ozone ?? '—'} μg/m³
+                                              </span>
+                                            </div>
+                                          </div>
+
+                                          <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60 space-y-1">
+                                            <div className="flex items-center justify-between text-[11px]">
+                                              <span className="text-stone-600 dark:text-stone-400">DENR DAO 2020-14 (Clean Air Act) Benchmark:</span>
+                                              <strong className="font-semibold text-stone-900 dark:text-stone-100">{aqiMeta.denrStatus}</strong>
+                                            </div>
+                                            <p className="text-[10.5px] text-stone-500 dark:text-stone-400 leading-snug">
+                                              {aqiMeta.healthSummary}
+                                            </p>
+                                          </div>
+
+                                          <div className="grid grid-cols-2 gap-2 text-[11px] text-stone-600 dark:text-stone-400 pt-1">
+                                            <div className="flex items-center justify-between px-2 py-1 bg-stone-50 dark:bg-stone-950/40 rounded border border-stone-200/50 dark:border-stone-800/50">
+                                              <span>US EPA AQI:</span>
+                                              <span className="font-mono font-bold text-stone-800 dark:text-stone-200">{atmosphericData.airQuality.usAqi}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between px-2 py-1 bg-stone-50 dark:bg-stone-950/40 rounded border border-stone-200/50 dark:border-stone-800/50">
+                                              <span>Nitrogen Dioxide:</span>
+                                              <span className="font-mono font-bold text-stone-800 dark:text-stone-200">{atmosphericData.airQuality.nitrogenDioxide ?? '—'} μg/m³</span>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* 3. Empirical Meteorological & Scientific Data Boundaries */}
+                                        <div className="p-3.5 bg-stone-50 dark:bg-stone-950/60 border border-stone-200/80 dark:border-stone-800 rounded-xl space-y-2.5">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                              <Scale className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                              <span className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">
+                                                Empirical Meteorological Indices
+                                              </span>
+                                            </div>
+                                            <span className="text-[10px] font-mono text-stone-500 dark:text-stone-400">
+                                              PAGASA & WMO Standards
+                                            </span>
+                                          </div>
+
+                                          <div className="space-y-2 text-xs">
+                                            {/* 1. Heat Index Card */}
+                                            <div className="p-2.5 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800/70 space-y-1.5">
+                                              <div className="flex items-center justify-between">
+                                                <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+                                                  <Thermometer className="w-3.5 h-3.5 text-amber-500" />
+                                                  <span>Heat Index (Thermal Load)</span>
+                                                </span>
+                                                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded uppercase border ${indices.heatIndex.badgeBg} ${indices.heatIndex.badgeText} ${indices.heatIndex.badgeBorder}`}>
+                                                  {indices.heatIndex.category} ({indices.heatIndex.value}°C)
+                                                </span>
+                                              </div>
+                                              <p className="text-[11px] text-stone-600 dark:text-stone-300 font-medium">
+                                                {indices.heatIndex.pagasaGuideline}
+                                              </p>
+                                              <p className="text-[10px] text-stone-400 dark:text-stone-500 leading-snug italic border-t border-stone-100 dark:border-stone-800/60 pt-1">
+                                                {indices.heatIndex.dataLimitation}
+                                              </p>
+                                            </div>
+
+                                            {/* 2. Rainfall Intensity Card */}
+                                            <div className="p-2.5 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800/70 space-y-1.5">
+                                              <div className="flex items-center justify-between">
+                                                <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+                                                  <CloudRain className="w-3.5 h-3.5 text-blue-500" />
+                                                  <span>Precipitation Rate (PAGASA Intensity Scale)</span>
+                                                </span>
+                                                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded uppercase border ${indices.rainfallIntensity.badgeBg} ${indices.rainfallIntensity.badgeText} ${indices.rainfallIntensity.badgeBorder}`}>
+                                                  {indices.rainfallIntensity.category}
+                                                </span>
+                                              </div>
+                                              <p className="text-[11px] text-stone-600 dark:text-stone-300 font-medium">
+                                                {indices.rainfallIntensity.classification}
+                                              </p>
+                                              <p className="text-[10px] text-stone-400 dark:text-stone-500 leading-snug italic border-t border-stone-100 dark:border-stone-800/60 pt-1">
+                                                {indices.rainfallIntensity.dataLimitation}
+                                              </p>
+                                            </div>
+
+                                            {/* 3. Beaufort Wind Force Card */}
+                                            <div className="p-2.5 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800/70 space-y-1.5">
+                                              <div className="flex items-center justify-between">
+                                                <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+                                                  <Wind className="w-3.5 h-3.5 text-teal-500" />
+                                                  <span>Kinetic Wind Force (WMO Beaufort Scale)</span>
+                                                </span>
+                                                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded uppercase border ${indices.windKineticForce.badgeBg} ${indices.windKineticForce.badgeText} ${indices.windKineticForce.badgeBorder}`}>
+                                                  {indices.windKineticForce.category} ({indices.windKineticForce.speed} km/h)
+                                                </span>
+                                              </div>
+                                              <p className="text-[11px] text-stone-600 dark:text-stone-300 font-medium">
+                                                {indices.windKineticForce.beaufortDescription}
+                                              </p>
+                                              <p className="text-[10px] text-stone-400 dark:text-stone-500 leading-snug italic border-t border-stone-100 dark:border-stone-800/60 pt-1">
+                                                {indices.windKineticForce.dataLimitation}
+                                              </p>
+                                            </div>
+
+                                            {/* 4. Scientific Data Sufficiency & Forecast Limitations */}
+                                            <div className="p-2.5 bg-stone-100/80 dark:bg-stone-900/80 rounded-lg border border-stone-200 dark:border-stone-800 space-y-1">
+                                              <div className="flex items-center gap-1.5 text-stone-700 dark:text-stone-300 font-bold text-[11px]">
+                                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                <span>Scientific Boundary & Data Sufficiency Notice</span>
+                                              </div>
+                                              <ul className="text-[10.5px] text-stone-500 dark:text-stone-400 space-y-0.5 list-disc list-inside">
+                                                <li>
+                                                  <strong>Scope:</strong> {indices.dataSufficiency.observationScope}
+                                                </li>
+                                                <li>
+                                                  <strong>Forecast:</strong> {indices.dataSufficiency.forecastStatus}
+                                                </li>
+                                                <li>
+                                                  <strong>Ground Events:</strong> {indices.dataSufficiency.groundEventLimitation}
+                                                </li>
+                                              </ul>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
+                                </>
+                              ) : null}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* ------------------------------------------------------- */
+                      /* SHEET MODE 2: CASE INSPECTOR & DECISION CONSOLE         */
+                      /* ------------------------------------------------------- */
+                      <div key={`dossier-mode-${selectedReport.id}`} className="flex flex-col flex-1 min-h-0 overflow-hidden animate-sheet-morph">
+                        {/* Header with Icon Back button & Reference Code */}
+                        <div className="px-3.5 py-2.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between shrink-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedReport(null);
+                                if (isSatReport) {
+                                  setActiveLeftDrawerTab('firms');
+                                  setIsSheetOpen(true);
+                                }
+                              }}
+                              className="p-1.5 rounded-lg text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition cursor-pointer flex items-center justify-center shrink-0"
+                              title={isSatReport ? 'Return to NASA FIRMS Watchdog' : activeClusterFilter ? 'Return to Cluster Queue' : 'Return to Incident Queue'}
+                              aria-label="Back to Queue"
+                            >
+                              <ArrowLeft className="w-4 h-4" />
+                            </button>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                {isSatReport && <Satellite className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />}
+                                <span className="font-mono font-bold text-xs tracking-wider text-stone-950 dark:text-stone-100 truncate">
+                                  {selectedReport.referenceCode}
+                                </span>
+                              </div>
+                              {isSatReport && (
+                                <span className="text-[9px] font-mono text-stone-400 dark:text-stone-500 block truncate">
+                                  NASA VIIRS 375m Telemetry
                                 </span>
                               )}
                             </div>
                           </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              )}
 
-              {/* TAB 2: NASA FIRMS SATELLITE WATCHDOG */}
-              {activeLeftDrawerTab === 'firms' && (
-                <div key="tab-firms" className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                  {/* FIRMS Header with Sync Satellites button */}
-                  <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-2 shrink-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center shrink-0">
-                        <Satellite className="w-4 h-4 text-stone-700 dark:text-stone-300" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight">
-                          NASA FIRMS Watchdog
-                        </h4>
-                        <span className="text-[10px] text-stone-500 dark:text-stone-400 block">
-                          VIIRS 375m Thermal Anomaly Detection
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {/* Simulation / Historical Replay Mode Toggle */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsFirmsReplayMode((prev) => {
-                            const next = !prev;
-                            setSyncSatelliteToast({
-                              message: next
-                                ? '🧪 Historical Replay: Injected 2 VIIRS 375m anomalies for live demo pitch.'
-                                : '🛰️ Live Satellite Mode: Synthetic anomalies cleared.',
-                              type: 'success',
-                            });
-                            setTimeout(() => setSyncSatelliteToast(null), 5000);
-                            return next;
-                          });
-                        }}
-                        className={`px-2 py-1.5 rounded-lg text-xs font-semibold active:scale-95 transition-all shadow-xs cursor-pointer flex items-center gap-1.5 border shrink-0 ${
-                          isFirmsReplayMode
-                            ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100'
-                            : 'bg-white hover:bg-stone-100 dark:bg-stone-900 dark:hover:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300'
-                        }`}
-                        title="Toggle Historical Replay / Anomaly Simulation (Shortcut: Shift+S)"
-                      >
-                        <FlaskConical className={`w-3.5 h-3.5 ${isFirmsReplayMode ? 'text-amber-400 dark:text-amber-600' : 'text-stone-500'}`} />
-                        <span>{isFirmsReplayMode ? 'Replay Active' : 'Demo Replay'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleSyncSatellites}
-                        disabled={isSyncingSatellites}
-                        className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-stone-900 hover:bg-black dark:bg-stone-100 dark:hover:bg-white dark:text-stone-900 active:scale-95 transition-all shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shrink-0"
-                        title="Sync NASA FIRMS VIIRS satellite thermal hotspots for Rizal Province"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
-                        <span>{isSyncingSatellites ? 'Syncing...' : 'Sync Satellites'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCloseDrawer}
-                        className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
-                        title="Close FIRMS"
-                        aria-label="Close FIRMS"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* FIRMS Telemetry Overview */}
-                  <div className="px-3 py-2 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 shrink-0">
-                    <div className="grid grid-cols-3 gap-2 text-center p-2 rounded-lg bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
-                      <div>
-                        <span className="text-[9px] font-bold uppercase text-stone-400 dark:text-stone-500 block">
-                          Active Hotspots
-                        </span>
-                        <span className="text-xs font-bold text-stone-900 dark:text-stone-100 font-mono mt-0.5 block">
-                          {satelliteReports.length}
-                        </span>
-                      </div>
-                      <div className="border-x border-stone-200 dark:border-stone-800">
-                        <span className="text-[9px] font-bold uppercase text-stone-400 dark:text-stone-500 block">
-                          Peak Radiance
-                        </span>
-                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400 font-mono mt-0.5 block">
-                          {satelliteReports.length > 0
-                            ? `${Math.max(...satelliteReports.map((r) => r.satelliteHotspot?.frp || 0)).toFixed(1)} MW`
-                            : '0.0 MW'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-bold uppercase text-stone-400 dark:text-stone-500 block">
-                          Footprint
-                        </span>
-                        <span className="text-xs font-bold text-stone-900 dark:text-stone-100 font-mono mt-0.5 block truncate">
-                          375m Ground Cell
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-stone-500 dark:text-stone-400 text-center pt-1.5 flex items-center justify-center gap-1.5">
-                      <span>Near real-time orbital feeds via NASA LANCE / EOSDIS</span>
-                      {isFirmsReplayMode && (
-                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
-                          SIMULATION MODE
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* List of Satellite Hotspots */}
-                  <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar overscroll-contain">
-                    {satelliteReports.length === 0 ? (
-                      <div className="p-8 text-center space-y-3">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center mx-auto text-amber-600 dark:text-amber-400">
-                          <Satellite className="w-6 h-6" />
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 inline-flex items-center gap-1.5 capitalize">
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${selectedReport.status === 'resolved'
+                                    ? 'bg-emerald-500'
+                                    : selectedReport.status === 'in_progress'
+                                      ? 'bg-amber-500'
+                                      : selectedReport.status === 'spam'
+                                        ? 'bg-rose-700'
+                                        : 'bg-rose-500'
+                                  }`}
+                              />
+                              {selectedReport.status.replace(/_/g, ' ')}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedReport(null);
+                                handleCloseDrawer();
+                              }}
+                              className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
+                              title="Close Inspector"
+                              aria-label="Close Inspector"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <p className="text-xs font-bold text-stone-800 dark:text-stone-200">
-                            No Active Satellite Hotspots
-                          </p>
-                          <p className="text-[11px] text-stone-500 dark:text-stone-400 max-w-xs mx-auto leading-relaxed">
-                            No thermal anomalies or forest fire hotspots currently detected by VIIRS over Rizal Province.
-                          </p>
-                        </div>
-                        <div className="flex items-center justify-center gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsFirmsReplayMode(true);
-                              setSyncSatelliteToast({
-                                message: '🧪 Historical Replay: Injected 2 VIIRS 375m anomalies for live demo pitch.',
-                                type: 'success',
-                              });
-                              setTimeout(() => setSyncSatelliteToast(null), 5000);
-                            }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition cursor-pointer shadow-xs"
-                          >
-                            <FlaskConical className="w-3.5 h-3.5" />
-                            <span>Load Demo Replay (2 Hotspots)</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleSyncSatellites}
-                            disabled={isSyncingSatellites}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-stone-900 dark:bg-stone-800 text-white hover:bg-black transition cursor-pointer"
-                          >
-                            <RefreshCw className={`w-3 h-3 ${isSyncingSatellites ? 'animate-spin' : ''}`} />
-                            <span>Sync</span>
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      satelliteReports.map((satReport) => {
-                        const coords = resolveReportCoordinates(satReport);
-                        const sat = satReport.satelliteHotspot;
-                        const frp = sat?.frp !== undefined ? sat.frp.toFixed(1) : 'N/A';
-                        const tempK = sat?.brightnessTemperature !== undefined
-                          ? sat.brightnessTemperature.toFixed(1)
-                          : sat?.brightnessTemp
-                          ? sat.brightnessTemp.toFixed(1)
-                          : '330.0';
-                        const tempC = sat?.brightnessTemperature !== undefined
-                          ? (sat.brightnessTemperature - 273.15).toFixed(1)
-                          : sat?.brightnessTemp
-                          ? (sat.brightnessTemp - 273.15).toFixed(1)
-                          : '56.9';
-                        const confidence = (sat?.confidence || 'nominal').toLowerCase();
-                        const passPht = formatFirmsPhtTime(sat?.acqDate, sat?.acqTime);
-                        const locationText = [satReport.location?.barangay, satReport.location?.municipality || 'Rizal'].filter(Boolean).join(', ');
-                        const sensorText = sat?.satellite || 'VIIRS 375m (NOAA-20 / S-NPP)';
-                        const isSelected = Boolean(selectedReport && (selectedReport as IncidentReport).id === satReport.id);
-                        const dispatchTicket = dispatchedSimIds[satReport.id];
 
-                        // Cross-check against community reports
-                        const communityReports = allReports.filter(
-                          (r) => r.source !== 'satellite_firms' && !r.id.startsWith('SAT-') && !r.satelliteHotspot && r.status !== 'spam'
-                        );
-                        const crossCheck = crossCheckFirmsWithReports(satReport, communityReports, 500);
+                        {/* Scrollable Dossier Body */}
+                        <div className="flex-1 min-h-0 overflow-y-auto p-3.5 space-y-3 custom-scrollbar overscroll-contain">
+                          {isSatReport ? (
+                            renderFirmsDossierDetail(selectedReport, true)
+                          ) : (
+                            <>
+                              {/* SPAM / QUARANTINE WARNING BANNER */}
+                              {(selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam) && (
+                                <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-900 rounded-xl space-y-2 text-xs text-rose-950 dark:text-rose-200 shadow-2xs">
+                                  <div className="flex items-start gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0 mt-0.5" />
+                                    <div className="space-y-0.5 min-w-0">
+                                      <span className="font-bold uppercase tracking-wide text-rose-900 dark:text-rose-300 block text-[11px]">
+                                        Quarantined in Spam Queue
+                                      </span>
+                                      <p className="text-[11px] text-rose-800 dark:text-rose-300/80 leading-snug">
+                                        {selectedReport.aiTriage?.authenticity?.forensicNotes ||
+                                          'Flagged as suspected troll submission or unverified incident.'}
+                                      </p>
+                                    </div>
+                                  </div>
 
-                        return (
-                          <div
-                            key={satReport.id}
-                            onClick={() => {
-                              setMapCenter({ lat: coords.lat, lng: coords.lng });
-                              setMapZoom(14);
-                              setSelectedReport(satReport);
-                              if (window.innerWidth < 640) setIsSheetOpen(false);
-                            }}
-                            className={`p-3.5 transition-all cursor-pointer text-left space-y-2 group border-b border-stone-200 dark:border-stone-800 ${
-                              isSelected
-                                ? 'bg-stone-100 dark:bg-stone-850 border-l-[3px] border-l-stone-900 dark:border-l-stone-100'
-                                : 'bg-white hover:bg-stone-50 dark:bg-stone-900 dark:hover:bg-stone-850/60 border-l-[3px] border-l-transparent'
-                            }`}
-                          >
-                            {/* Card Header: Reference Code & Radiance */}
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="font-mono text-xs font-bold text-stone-900 dark:text-stone-100">
-                                  {satReport.referenceCode}
-                                </span>
-                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 truncate">
-                                  {sensorText}
-                                </span>
-                              </div>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 font-bold border border-stone-200 dark:border-stone-700 flex items-center gap-1 shrink-0">
-                                <Flame className="w-2.5 h-2.5 text-rose-600" />
-                                {frp} MW FRP
-                              </span>
-                            </div>
-
-                            {/* Cross-Check Verdict Banner */}
-                            {crossCheck.matched ? (
-                              <div className="p-2 rounded-lg bg-stone-100 dark:bg-stone-850 border border-stone-200 dark:border-stone-750 space-y-1">
-                                <div className="flex items-center justify-between gap-1.5">
-                                  <span className="text-[10px] font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1">
-                                    <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                    <span>MATCHED: Report #{crossCheck.matchedReport?.referenceCode}</span>
-                                  </span>
-                                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-750 text-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700 shrink-0">
-                                    Auto-Escalated (Sev 5)
-                                  </span>
-                                </div>
-                                <p className="text-[10px] text-stone-600 dark:text-stone-400 leading-tight">
-                                  Corroborated {crossCheck.distanceMeters}m from citizen report. Multi-source statutory verification confirmed.
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="p-2 rounded-lg bg-stone-100 dark:bg-stone-850 border border-stone-200 dark:border-stone-750 space-y-1.5">
-                                <div className="flex items-center justify-between gap-1.5">
-                                  <span className="text-[10px] font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1">
-                                    <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                                    <span>UNREPORTED ANOMALY</span>
-                                  </span>
-                                  <span className="text-[9px] font-mono text-stone-500 dark:text-stone-400">
-                                    {(crossCheck.distanceMeters / 1000).toFixed(1)} km to nearest report
-                                  </span>
-                                </div>
-                                <div className="flex items-center justify-between gap-2 pt-0.5">
-                                  <span className="text-[10px] text-stone-600 dark:text-stone-400 truncate">
-                                    No citizen observation logged in this sector.
-                                  </span>
-                                  {dispatchTicket ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shrink-0">
-                                      <Check className="w-3 h-3" />
-                                      Ticket #{dispatchTicket}
-                                    </span>
-                                  ) : (
+                                  <div className="flex items-center gap-2 pt-1 border-t border-rose-200 dark:border-rose-900">
                                     <button
                                       type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCreateDispatchTicket(satReport);
-                                      }}
-                                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-stone-900 hover:bg-black dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900 transition shadow-xs cursor-pointer shrink-0"
+                                      onClick={handleRestoreReport}
+                                      disabled={isRestoringReport || isDeletingReport}
+                                      className="flex-1 py-1.5 px-2 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1 shadow-2xs"
                                     >
-                                      <Plus className="w-3 h-3" />
-                                      <span>+ Create Dispatch Ticket</span>
+                                      <Check className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
+                                      <span>{isRestoringReport ? 'Restoring...' : t.retrieveBtn}</span>
+                                    </button>
+
+                                    {!showDeleteConfirm ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowDeleteConfirm(true)}
+                                        disabled={isRestoringReport || isDeletingReport}
+                                        className="flex-1 py-1.5 px-2 bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1 shadow-2xs"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                        <span>{t.deletePermanentlyBtn}</span>
+                                      </button>
+                                    ) : (
+                                      <div className="flex-1 flex items-center gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={handleDeletePermanently}
+                                          disabled={isDeletingReport}
+                                          className="flex-1 py-1 px-1.5 bg-rose-900 hover:bg-black text-white font-bold text-[10px] rounded-lg transition cursor-pointer flex items-center justify-center gap-1 animate-pulse"
+                                        >
+                                          {isDeletingReport ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                                          <span>Confirm Delete</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setShowDeleteConfirm(false)}
+                                          className="py-1 px-2 border border-rose-300 dark:border-rose-800 bg-white dark:bg-stone-800 hover:bg-rose-100 dark:hover:bg-stone-700 text-rose-800 dark:text-rose-300 text-[10px] font-semibold rounded-lg transition cursor-pointer"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Citizen Evidence & Photo */}
+                              <div className="space-y-2">
+                                <div
+                                  onClick={() => photoDataUrl && setIsLightboxOpen(true)}
+                                  className={`relative rounded-lg overflow-hidden bg-stone-950 h-36 sm:h-40 flex items-center justify-center border border-stone-200 dark:border-stone-800 group ${photoDataUrl ? 'cursor-pointer' : ''
+                                    }`}
+                                  title={photoDataUrl ? t.photoExpandHint : undefined}
+                                >
+                                  {photoDataUrl ? (
+                                    <>
+                                      <img
+                                        src={photoDataUrl}
+                                        alt="Incident evidence"
+                                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                      />
+                                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                        <span className="px-2 py-1 rounded bg-black/75 text-white text-[10px] font-display font-bold uppercase tracking-wider flex items-center gap-1 shadow-md">
+                                          <ZoomIn className="w-3.5 h-3.5" />
+                                          <span>Expand</span>
+                                        </span>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="text-center p-2 text-stone-400 dark:text-stone-500 text-xs">
+                                      <Eye className="w-5 h-5 mx-auto mb-1 text-stone-500 dark:text-stone-400" />
+                                      <span className="text-[11px]">{selectedReport.rawInput.hasImage ? 'Loading photo...' : 'No photo submitted'}</span>
+                                    </div>
+                                  )}
+                                  <div className="absolute top-2 left-2 px-2 py-0.5 bg-stone-900/80 backdrop-blur-xs text-[9px] font-mono text-stone-300 rounded border border-white/10 flex items-center gap-1">
+                                    <ShieldCheck className="w-2.5 h-2.5 text-stone-400" />
+                                    <span>RA 10173 SECURED</span>
+                                  </div>
+                                </div>
+
+                                {/* Multi-Photo Evidence Deck Thumbnails */}
+                                {evidenceImages.length > 1 && (
+                                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                                    {evidenceImages.map((img, idx) => (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => {
+                                          setActivePhotoIndex(idx);
+                                          setPhotoDataUrl(img.data);
+                                        }}
+                                        className={`relative w-14 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition cursor-pointer ${activePhotoIndex === idx
+                                            ? 'border-stone-900 dark:border-emerald-500 ring-2 ring-stone-900/20 dark:ring-emerald-500/20 shadow-2xs'
+                                            : 'border-stone-200 dark:border-stone-700 opacity-70 hover:opacity-100'
+                                          }`}
+                                      >
+                                        <img src={img.data} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                                        <span className="absolute bottom-0 inset-x-0 bg-stone-950/80 text-white text-[7px] font-mono text-center py-0.2 capitalize truncate px-0.5">
+                                          {img.role.replace('_', ' ')}
+                                        </span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Forensic & Authenticity Metadata Card */}
+                                <div className="p-3 bg-stone-50 dark:bg-stone-950/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-1.5">
+                                  <div className="flex items-center justify-between text-[10px] font-display font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
+                                    <div className="flex items-center gap-1">
+                                      <ShieldAlert className="w-3 h-3 text-stone-600 dark:text-stone-400" />
+                                      <span>Forensics</span>
+                                    </div>
+                                    {selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam ? (
+                                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                        SPAM / TROLL
+                                      </span>
+                                    ) : selectedReport.rawInput.captureMethod === 'live_camera' ? (
+                                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                        LIVE CAMERA
+                                      </span>
+                                    ) : (
+                                      <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
+                                        DEVICE UPLOAD
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                                    <div className="p-1.5 bg-white dark:bg-stone-900 rounded border border-stone-200/70 dark:border-stone-800">
+                                      <span className="text-[9px] text-stone-500 dark:text-stone-400 block">Photos</span>
+                                      <span className="font-semibold text-stone-900 dark:text-stone-100 font-mono">
+                                        {selectedReport.rawInput.imageCount || (selectedReport.rawInput.hasImage ? 1 : 0)}
+                                      </span>
+                                    </div>
+                                    <div className="p-1.5 bg-white dark:bg-stone-900 rounded border border-stone-200/70 dark:border-stone-800">
+                                      <span className="text-[9px] text-stone-500 dark:text-stone-400 block">Source</span>
+                                      <span className="font-semibold text-stone-900 dark:text-stone-100 capitalize truncate block">
+                                        {selectedReport.rawInput.captureMethod ? selectedReport.rawInput.captureMethod.replace('_', ' ') : 'Single'}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {selectedReport.rawInput.exif?.cameraModel && (
+                                    <div className="text-[10px] text-stone-600 dark:text-stone-300 font-mono bg-white dark:bg-stone-900 p-1.5 rounded border border-stone-200/70 dark:border-stone-800 flex items-center justify-between">
+                                      <span className="text-stone-400 dark:text-stone-500">Device:</span>
+                                      <span className="font-semibold truncate max-w-[150px]">{selectedReport.rawInput.exif.cameraModel}</span>
+                                    </div>
+                                  )}
+
+                                  {selectedReport.aiTriage?.authenticity?.forensicNotes && (
+                                    <div className="text-[10px] text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-900 p-1.5 rounded leading-relaxed border border-stone-200/70 dark:border-stone-800">
+                                      <span className="font-semibold text-stone-800 dark:text-stone-200">AI Note: </span>
+                                      {selectedReport.aiTriage.authenticity.forensicNotes}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Citizen Description Card */}
+                                <div className="bg-stone-50 dark:bg-stone-950/60 rounded-lg p-3 border border-stone-200/80 dark:border-stone-800 space-y-1.5">
+                                  <div className="flex items-center justify-between text-[10px] font-display font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                                    <span>Citizen Report</span>
+                                    <span className="text-[9px] font-mono text-stone-500 dark:text-stone-400 bg-stone-200/70 dark:bg-stone-800 px-1.5 py-0.2 rounded border border-stone-300/60 dark:border-stone-700">
+                                      Untrusted Input
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-stone-800 dark:text-stone-200 italic leading-relaxed py-0.5">
+                                    "{selectedReport.rawInput.description}"
+                                  </p>
+                                  <div className="text-[10px] text-stone-500 dark:text-stone-400 font-mono pt-1 border-t border-stone-200/60 dark:border-stone-800 flex items-center justify-between">
+                                    <span className="truncate">
+                                      {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
+                                    </span>
+                                    <span className="shrink-0 font-mono">
+                                      GPS: {resolveReportCoordinates(selectedReport).lat.toFixed(4)}, {resolveReportCoordinates(selectedReport).lng.toFixed(4)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Gemini AI Triage Card */}
+                              <div className="p-3 bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-800 space-y-2 shadow-2xs">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-900 dark:text-stone-100">
+                                    <Sparkles className="w-3.5 h-3.5 text-stone-700 dark:text-emerald-400" />
+                                    <span>Gemini AI Triage</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    {selectedReport.status !== 'spam' && (selectedReport.aiTriage?.isSpam || (selectedReport.aiTriage?.confidence && selectedReport.aiTriage.confidence < 0.45)) && (
+                                      <button
+                                        type="button"
+                                        onClick={handleMarkAsSpam}
+                                        className="px-2 py-0.5 rounded text-[10px] font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900 transition cursor-pointer flex items-center gap-1"
+                                        title="Flag report as troll/spam and quarantine"
+                                      >
+                                        <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                                        <span>Flag as Spam</span>
+                                      </button>
+                                    )}
+                                    {selectedReport.aiTriage?.confidence && (
+                                      <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
+                                        {Math.round(selectedReport.aiTriage.confidence * 100)}% Conf
+                                      </span>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={handleRetryTriage}
+                                      disabled={isRetryingTriage}
+                                      title="Re-run AI triage on this report"
+                                      className="p-1 text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition cursor-pointer"
+                                    >
+                                      <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
+                                    </button>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-stone-800 dark:text-stone-200 leading-relaxed font-sans font-medium">
+                                  {selectedReport.aiTriage?.summary || 'AI triage assessment not available or pending.'}
+                                </p>
+
+                                {/* Collapsible AI Reasoning */}
+                                {selectedReport.aiTriage?.reasoning && (
+                                  <div className="pt-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
+                                      className="text-[10px] text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200 font-medium flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <span>{isReasoningExpanded ? 'Hide AI reasoning' : 'View AI reasoning'}</span>
+                                      <ChevronDown className={`w-3 h-3 transition-transform ${isReasoningExpanded ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    {isReasoningExpanded && (
+                                      <div className="mt-1.5 p-2 rounded-md bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 text-[10px] text-stone-600 dark:text-stone-300 leading-relaxed font-sans">
+                                        {selectedReport.aiTriage.reasoning}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* NASA Satellite Hotspot Telemetry Card */}
+                              {renderSatelliteHotspotCard(selectedReport)}
+
+                              {/* Protected Zone Alert (if applicable) */}
+                              {renderProtectedZoneBadge(
+                                selectedReport.aiTriage?.protectedZone,
+                                true
+                              )}
+
+                              {/* MGB Tenement Cadastre Compliance Card */}
+                              {renderMgbQuarryCard(selectedReport)}
+
+                              {/* Atmospheric Air Quality Card */}
+                              {renderAirQualityCard(selectedReport.aiTriage?.airQuality, selectedReport.id)}
+
+                              {/* Weather Telemetry */}
+                              {renderWeatherWidget(selectedReport.aiTriage?.weather, selectedReport.id)}
+
+                              {/* Duplicate Cluster Alert */}
+                              {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId && (
+                                <div className="p-2.5 bg-stone-50 dark:bg-stone-950/60 rounded-lg border border-stone-200 dark:border-stone-800 text-xs text-stone-700 dark:text-stone-300 flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Layers className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400 shrink-0" />
+                                    <span className="font-medium truncate">{t.duplicateClusterDetected}</span>
+                                  </div>
+                                  <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-300/60 dark:border-stone-700 shrink-0">
+                                    Cluster Detected
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Officer Decision Console */}
+                              <div className="bg-stone-50/70 dark:bg-stone-950/60 p-3.5 rounded-lg border border-stone-200 dark:border-stone-800 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold text-xs text-stone-700 dark:text-stone-300 block">
+                                    Officer Decision Console
+                                  </span>
+                                  {selectedReport.status !== 'spam' && (
+                                    <button
+                                      type="button"
+                                      onClick={handleMarkAsSpam}
+                                      className="px-2 py-0.5 rounded-md text-[11px] font-semibold text-stone-500 dark:text-stone-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-stone-200 dark:border-stone-800 transition cursor-pointer flex items-center gap-1"
+                                      title="Quarantine report to Spam Queue"
+                                    >
+                                      <AlertTriangle className="w-3 h-3 text-stone-400 dark:text-stone-500" />
+                                      <span>Flag as Spam</span>
                                     </button>
                                   )}
                                 </div>
-                              </div>
-                            )}
 
-                            {/* Raw NASA Telemetry Grid (2x2) */}
-                            <div className="grid grid-cols-2 gap-1.5 p-2 rounded-lg bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 text-[10px]">
-                              <div>
-                                <span className="text-stone-400 dark:text-stone-500 block text-[9px] font-medium">BRIGHTNESS TEMP</span>
-                                <span className="font-mono font-bold text-stone-900 dark:text-stone-100">{tempK} K ({tempC}°C)</span>
-                              </div>
-                              <div>
-                                <span className="text-stone-400 dark:text-stone-500 block text-[9px] font-medium">FIRE RADIATIVE POWER</span>
-                                <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{frp} MW</span>
-                              </div>
-                              <div>
-                                <span className="text-stone-400 dark:text-stone-500 block text-[9px] font-medium">CONFIDENCE</span>
-                                <span className="font-mono font-bold text-stone-800 dark:text-stone-200 capitalize">{confidence}</span>
-                              </div>
-                              <div>
-                                <span className="text-stone-400 dark:text-stone-500 block text-[9px] font-medium">ORBITAL PASS (PHT)</span>
-                                <span className="font-mono font-bold text-stone-800 dark:text-stone-200 truncate block">{passPht}</span>
-                              </div>
-                            </div>
-
-                            {/* Card Footer: Location & Resolution */}
-                            <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 pt-0.5">
-                              <span className="flex items-center gap-1 truncate">
-                                <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
-                                {locationText}
-                              </span>
-                              <span className="font-mono text-[9px] text-stone-400 dark:text-stone-500 shrink-0">
-                                375m Ground Cell
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 3: PROTECTED RESERVES & WATERSHEDS */}
-              {activeLeftDrawerTab === 'protected_zones' && (
-                <div key="tab-reserves" className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                  {/* Reserves Header & Search */}
-                  <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2 shrink-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center shrink-0">
-                          <ShieldAlert className="w-4 h-4 text-stone-700 dark:text-stone-300" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight">
-                            Protected Reserves & Buffers
-                          </h4>
-                          <span className="text-[10px] text-stone-500 dark:text-stone-400 block">
-                            15 Curated Ecological Zones
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 font-semibold">
-                          15 Zones
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleCloseDrawer}
-                          className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
-                          title="Close Reserves"
-                          aria-label="Close Reserves"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="relative">
-                      <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        type="text"
-                        value={protectedZoneSearchTerm}
-                        onChange={(e) => setProtectedZoneSearchTerm(e.target.value)}
-                        placeholder="Filter reserves by name or municipality..."
-                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white dark:bg-stone-950 dark:hover:bg-stone-950 dark:focus:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 focus:border-stone-900 dark:focus:border-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-stone-100 transition placeholder:text-stone-400 dark:placeholder:text-stone-600"
-                      />
-                      {protectedZoneSearchTerm && (
-                        <button
-                          type="button"
-                          onClick={() => setProtectedZoneSearchTerm('')}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 cursor-pointer"
-                          title="Clear search"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Category filter chips */}
-                  <div className="px-3 py-2 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 shrink-0">
-                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar text-xs">
-                      {[
-                        { id: 'all', label: 'All (15)' },
-                        { id: 'nipas', label: 'NIPAS (6)' },
-                        { id: 'llda_zomap', label: 'LLDA (2)' },
-                        { id: 'kba_georeserve', label: 'KBA (3)' },
-                        { id: 'local_mountain', label: 'Local (4)' },
-                      ].map((cat) => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => setActiveZoneCatFilter(cat.id as any)}
-                          className={`px-2 py-1 rounded-md text-xs font-semibold shrink-0 transition cursor-pointer whitespace-nowrap ${
-                            activeZoneCatFilter === cat.id
-                              ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs'
-                              : 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white'
-                          }`}
-                        >
-                          {cat.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Active Reserve Highlight Status Bar */}
-                  {selectedProtectedZoneId && (
-                    <div className="px-3 py-1.5 bg-stone-100 dark:bg-stone-850 border-b border-stone-200 dark:border-stone-750 flex items-center justify-between text-xs shrink-0">
-                      <span className="text-[11px] font-medium text-stone-800 dark:text-stone-200 truncate pr-2">
-                        Highlighting: <strong className="font-semibold">{selectedProtectedZone?.shortName || selectedProtectedZone?.name}</strong>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedProtectedZoneId(null)}
-                        className="text-[10px] font-semibold text-stone-900 dark:text-stone-100 hover:underline cursor-pointer shrink-0"
-                      >
-                        Show all reserves
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Interactive Zone List */}
-                  <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar overscroll-contain">
-                    {RIZAL_PROTECTED_ZONES_CATALOG
-                      .filter((zone) => activeZoneCatFilter === 'all' || zone.category === activeZoneCatFilter)
-                      .filter((zone) => {
-                        if (!protectedZoneSearchTerm.trim()) return true;
-                        const q = protectedZoneSearchTerm.toLowerCase();
-                        return (
-                          zone.name.toLowerCase().includes(q) ||
-                          zone.shortName.toLowerCase().includes(q) ||
-                          zone.municipality.toLowerCase().includes(q)
-                        );
-                      })
-                      .map((zone) => {
-                        const isSelected = selectedProtectedZoneId === zone.id;
-                        const threatReports = reportsByProtectedZone[zone.id] || [];
-                        const activeThreats = threatReports.filter((r) => r.status !== 'resolved');
-
-                        return (
-                          <div
-                            key={zone.id}
-                            onClick={() => {
-                              if (selectedProtectedZoneId === zone.id) {
-                                setSelectedProtectedZoneId(null);
-                              } else {
-                                setMapCenter({ lat: zone.lat, lng: zone.lng });
-                                setMapZoom(zone.zoom);
-                                setSelectedProtectedZoneId(zone.id);
-                                if (window.innerWidth < 640) setIsSheetOpen(false);
-                              }
-                            }}
-                            className={`p-3 transition-colors cursor-pointer text-left space-y-1.5 group ${
-                              isSelected
-                                ? 'bg-stone-100 dark:bg-stone-850 border-l-[3px] border-l-stone-900 dark:border-l-stone-100'
-                                : 'hover:bg-stone-50 dark:hover:bg-stone-850/60 bg-white dark:bg-stone-900 border-l-[3px] border-l-transparent'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="flex items-center gap-1.5 min-w-0">
-                                <span
-                                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                                  style={{ backgroundColor: zone.color }}
-                                />
-                                <span className="font-semibold text-xs text-stone-900 dark:text-stone-100 truncate">
-                                  {zone.name}
-                                </span>
-                              </span>
-                              {activeThreats.length > 0 ? (
-                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 font-bold border border-rose-300 dark:border-rose-800 shrink-0">
-                                  {activeThreats.length} Active
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-medium border border-stone-200 dark:border-stone-700 shrink-0">
-                                  Clear
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="flex items-center justify-between text-[11px] text-stone-600 dark:text-stone-400">
-                              <span className="truncate">{zone.municipality}</span>
-                              <span className="font-mono text-[10px] text-stone-500 dark:text-stone-400 shrink-0">
-                                {zone.areaHectares}
-                              </span>
-                            </div>
-
-                            {zone.legalBasis && (
-                              <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
-                                {zone.legalBasis}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 4: MGB PERMITTED QUARRIES & PROCESSING CADASTRE */}
-              {activeLeftDrawerTab === 'quarries' && (
-                <div key="tab-quarries" className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                  {/* Quarries Header & Statistics */}
-                  <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2.5 shrink-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center shrink-0">
-                          <Pickaxe className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight truncate">
-                            MGB Mining & Processing Cadastre
-                          </h4>
-                          <span className="text-[10px] text-stone-500 dark:text-stone-400 block truncate">
-                            DENR Region IV-A Authorized Concessions & Plants
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 font-bold border border-stone-200 dark:border-stone-700">
-                          {mgbQuarriesFeatures.length || 45} Total
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleCloseDrawer}
-                          className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
-                          title="Close Cadastre"
-                          aria-label="Close Cadastre"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Cadastre Metric Summary Strip */}
-                    <div className="grid grid-cols-3 gap-1.5 text-center p-1.5 bg-stone-50 dark:bg-stone-950/70 rounded-lg border border-stone-200 dark:border-stone-800">
-                      <div className="px-1">
-                        <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">MPSAs</span>
-                        <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
-                          30 (6,214 ha)
-                        </span>
-                      </div>
-                      <div className="px-1 border-x border-stone-200 dark:border-stone-800">
-                        <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">MPP Plants</span>
-                        <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
-                          15 Units
-                        </span>
-                      </div>
-                      <div className="px-1">
-                        <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Cancelled</span>
-                        <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
-                          2 Tenements
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Faceted Filter 1: Permit Category Pills */}
-                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-                      <button
-                        type="button"
-                        onClick={() => setQuarryTypeFilter('all')}
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer shrink-0 border ${
-                          quarryTypeFilter === 'all'
-                            ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs font-semibold'
-                            : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800'
-                        }`}
-                      >
-                        All ({mgbQuarriesFeatures.length || 45})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setQuarryTypeFilter('mpsa')}
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer shrink-0 border ${
-                          quarryTypeFilter === 'mpsa'
-                            ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs font-semibold'
-                            : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800'
-                        }`}
-                      >
-                        MPSA Extraction (30)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setQuarryTypeFilter('mpp')}
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer shrink-0 border ${
-                          quarryTypeFilter === 'mpp'
-                            ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs font-semibold'
-                            : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800'
-                        }`}
-                      >
-                        MPP Processing (15)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setQuarryTypeFilter('cancelled')}
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer shrink-0 border ${
-                          quarryTypeFilter === 'cancelled'
-                            ? 'bg-rose-700 text-white border-rose-700 shadow-2xs font-semibold'
-                            : 'bg-white dark:bg-stone-900 text-rose-600 dark:text-rose-400 border-stone-200 dark:border-stone-800 hover:bg-rose-50 dark:hover:bg-rose-950/30'
-                        }`}
-                      >
-                        Cancelled (2)
-                      </button>
-                    </div>
-
-                    {/* Faceted Filter 2: Municipality Chips */}
-                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 text-[10px]">
-                      {[
-                        { id: 'all', label: 'All LGUs' },
-                        { id: 'rodriguez', label: 'Rodriguez' },
-                        { id: 'antipolo', label: 'Antipolo' },
-                        { id: 'teresa', label: 'Teresa' },
-                        { id: 'angono', label: 'Angono' },
-                        { id: 'baras', label: 'Baras' },
-                        { id: 'tanay', label: 'Tanay' },
-                        { id: 'morong', label: 'Morong' },
-                        { id: 'binangonan', label: 'Binangonan' },
-                      ].map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => setQuarryMunicipalityFilter(m.id)}
-                          className={`px-2 py-0.5 rounded text-[10px] font-medium transition cursor-pointer shrink-0 border ${
-                            quarryMunicipalityFilter === m.id
-                              ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 font-semibold shadow-2xs'
-                              : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800'
-                          }`}
-                        >
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Search Input */}
-                    <div className="relative">
-                      <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        type="text"
-                        value={quarrySearchTerm}
-                        onChange={(e) => setQuarrySearchTerm(e.target.value)}
-                        placeholder="Search operator, permit no., commodity, barangay..."
-                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-stone-50 hover:bg-white focus:bg-white dark:bg-stone-950 dark:hover:bg-stone-950 dark:focus:bg-stone-950 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 focus:border-stone-900 dark:focus:border-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-stone-100 transition placeholder:text-stone-400 dark:placeholder:text-stone-600"
-                      />
-                      {quarrySearchTerm && (
-                        <button
-                          type="button"
-                          onClick={() => setQuarrySearchTerm('')}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 cursor-pointer"
-                          title="Clear search"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Regulatory Authority Notice */}
-                  <div className="px-3 py-1.5 bg-stone-50 dark:bg-stone-950 border-b border-stone-200/80 dark:border-stone-800 text-[9.5px] text-stone-600 dark:text-stone-400 flex items-center justify-between shrink-0 font-mono">
-                    <span>MGB MTMD Registries (MRMS 002A & APR-2024-MPP-2A)</span>
-                    <span className="text-stone-700 dark:text-stone-300 font-semibold">CALABARZON</span>
-                  </div>
-
-                  {/* Active Filter Map Synchronization Notice & Reset */}
-                  {(quarryTypeFilter !== 'all' || quarryMunicipalityFilter !== 'all' || !!quarrySearchTerm.trim()) && (
-                    <div className="px-3 py-1 bg-stone-100 dark:bg-stone-850 border-b border-stone-200 dark:border-stone-750 text-[10px] text-stone-700 dark:text-stone-300 flex items-center justify-between shrink-0">
-                      <span className="font-medium flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-stone-900 dark:bg-stone-100" />
-                        Map & drawer synchronized
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQuarryTypeFilter('all');
-                          setQuarryMunicipalityFilter('all');
-                          setQuarrySearchTerm('');
-                        }}
-                        className="text-stone-900 dark:text-stone-100 font-semibold hover:underline cursor-pointer"
-                      >
-                        Reset filters
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Concession Cards List */}
-                  <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/80 custom-scrollbar overscroll-contain">
-                    {(() => {
-                      const filtered = mgbQuarriesFeatures.filter((feat) => {
-                        const p = feat.properties;
-
-                        // Type filter
-                        if (quarryTypeFilter === 'mpsa' && p.permitType !== 'MPSA') return false;
-                        if (quarryTypeFilter === 'mpp' && p.permitType !== 'MPP') return false;
-                        if (quarryTypeFilter === 'cancelled' && p.status !== 'Cancelled') return false;
-
-                        // Municipality filter
-                        if (quarryMunicipalityFilter !== 'all') {
-                          const munMatch = p.municipality.toLowerCase().includes(quarryMunicipalityFilter.toLowerCase());
-                          if (!munMatch) return false;
-                        }
-
-                        // Search term filter
-                        if (quarrySearchTerm.trim()) {
-                          const q = quarrySearchTerm.toLowerCase();
-                          const match =
-                            p.name.toLowerCase().includes(q) ||
-                            p.operator.toLowerCase().includes(q) ||
-                            (p.holder && p.holder.toLowerCase().includes(q)) ||
-                            p.permitNumber.toLowerCase().includes(q) ||
-                            p.municipality.toLowerCase().includes(q) ||
-                            (p.barangay && p.barangay.toLowerCase().includes(q)) ||
-                            p.commodity.toLowerCase().includes(q);
-                          if (!match) return false;
-                        }
-
-                        return true;
-                      });
-
-                      if (filtered.length === 0) {
-                        return (
-                          <div className="py-12 px-4 text-center space-y-2">
-                            <Pickaxe className="w-8 h-8 text-stone-300 dark:text-stone-600 mx-auto" />
-                            <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">
-                              No matching concessions found
-                            </p>
-                            <p className="text-[11px] text-stone-400">
-                              Try clearing filters or search terms.
-                            </p>
-                          </div>
-                        );
-                      }
-
-                      return filtered.map((feat) => {
-                        const p = feat.properties;
-                        const isMpp = p.permitType === 'MPP';
-                        const isCancelled = p.status === 'Cancelled';
-                        const isExploration = p.status === 'Exploration';
-                        const isSelected = Boolean(selectedQuarryId && (p.id === selectedQuarryId || feat.id === selectedQuarryId || p.permitNumber === selectedQuarryId));
-
-                        return (
-                          <div
-                            key={feat.id || p.id}
-                            onClick={() => {
-                              handleSelectQuarry(String(feat.id || p.id || p.permitNumber));
-                            }}
-                            className={`p-3 transition-all cursor-pointer text-left space-y-1.5 group ${
-                              isSelected
-                                ? 'bg-amber-50/90 dark:bg-amber-950/50 border-l-[3.5px] border-l-amber-500 shadow-sm'
-                                : isCancelled
-                                ? 'bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/30'
-                                : 'bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-850/80'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-1.5">
-                              <span className={`font-semibold text-xs truncate ${isCancelled ? 'text-rose-900 dark:text-rose-200 line-through' : 'text-stone-900 dark:text-stone-100'}`}>
-                                {p.name}
-                              </span>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <span
-                                  className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold border ${
-                                    isMpp
-                                      ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800'
-                                      : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800'
-                                  }`}
-                                >
-                                  {p.permitType}
-                                </span>
-                                <span
-                                  className={`text-[8.5px] font-mono px-1 py-0.5 rounded font-bold uppercase ${
-                                    isCancelled
-                                      ? 'bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
-                                      : isExploration
-                                      ? 'bg-sky-100 text-sky-800 border border-sky-300 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
-                                      : 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
-                                  }`}
-                                >
-                                  {p.status}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
-                              <strong>Operator:</strong> {p.operator}
-                              {p.holder && p.holder !== p.operator && (
-                                <span className="block text-[10px] text-stone-500 dark:text-stone-500">
-                                  <strong>Holder:</strong> {p.holder}
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 pt-0.5">
-                              <span className="flex items-center gap-1 truncate">
-                                <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
-                                {`${p.barangay || 'Barangay not recorded'}, `}{p.municipality}
-                              </span>
-                              <span className="font-mono text-stone-700 dark:text-stone-300 font-semibold shrink-0">
-                                {p.areaHectares}
-                              </span>
-                            </div>
-
-                            <div className="text-[10px] font-mono text-amber-700 dark:text-amber-400 truncate">
-                              Permit: {p.permitNumber} • {p.commodity}
-                            </div>
-
-                            {p.termDates && (
-                              <div className="text-[9.5px] text-stone-400 dark:text-stone-500 font-mono truncate">
-                                Term: {p.termDates}
-                              </div>
-                            )}
-
-                            {isCancelled && (
-                              <div className="text-[9.5px] text-rose-700 dark:text-rose-400 font-medium pt-1 border-t border-rose-200 dark:border-rose-900/40">
-                                Notice: Cancelled by DENR Order. Commercial extraction is unauthorized.
-                              </div>
-                            )}
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 5: WEATHER & ATMOSPHERIC AIR QUALITY */}
-              {activeLeftDrawerTab === 'weather' && (
-                <div key="tab-weather" className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                  {/* Header */}
-                  <div className="p-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 space-y-2 shrink-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center shrink-0">
-                          <CloudSun className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 leading-tight">
-                            Atmospheric & Weather Intelligence
-                          </h4>
-                          <span className="text-[10px] text-stone-500 dark:text-stone-400 block">
-                            Open-Meteo & European CAMS Live Telemetry
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => loadAtmosphericData()}
-                          disabled={isLoadingAtmosphere}
-                          className="p-1.5 text-stone-500 hover:text-stone-900 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
-                          title="Refresh Live Telemetry"
-                          aria-label="Refresh Telemetry"
-                        >
-                          <RefreshCw className={`w-3.5 h-3.5 ${isLoadingAtmosphere ? 'animate-spin text-emerald-600' : ''}`} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCloseDrawer}
-                          className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
-                          title="Close Weather"
-                          aria-label="Close Weather"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* LGU Preset Chips with Horizontal Scroll Navigation */}
-                    <div className="relative flex items-center group/weather-lgu">
-                      {/* Left Scroll Button */}
-                      {canScrollWeatherLeft && (
-                        <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pr-2 bg-gradient-to-r from-white via-white/95 to-transparent dark:from-stone-900 dark:via-stone-900/95 dark:to-transparent">
-                          <button
-                            type="button"
-                            onClick={() => scrollWeatherLgu('left')}
-                            className="w-5 h-5 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-xs hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition cursor-pointer active:scale-95 pointer-events-auto"
-                            title="Scroll left to view previous municipalities"
-                            aria-label="Scroll left"
-                          >
-                            <ChevronLeft className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Scrollport */}
-                      <div
-                        ref={weatherLguScrollRef}
-                        onMouseDown={handleWeatherLguMouseDown}
-                        onMouseMove={handleWeatherLguMouseMove}
-                        onMouseUp={handleWeatherLguMouseUp}
-                        onMouseLeave={handleWeatherLguMouseUp}
-                        className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 scroll-smooth overscroll-x-contain touch-pan-x cursor-grab active:cursor-grabbing select-none"
-                        style={{ WebkitOverflowScrolling: 'touch' }}
-                      >
-                        {RIZAL_LGU_PRESETS.map((preset) => {
-                          const isActive = selectedWeatherLguId === preset.id;
-                          return (
-                            <button
-                              key={preset.id}
-                              data-lgu-id={preset.id}
-                              type="button"
-                              onClick={() => {
-                                if (hasDraggedWeatherLgu.current) return;
-                                handleSelectWeatherLgu(preset);
-                              }}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium shrink-0 transition flex items-center gap-1.5 cursor-pointer border ${
-                                isActive
-                                  ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs font-semibold'
-                                  : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800'
-                              }`}
-                              title={`${preset.name} (${preset.elevation}) • ${preset.ecologicalRole}`}
-                            >
-                              <span>{preset.shortName}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Right Scroll Button */}
-                      {canScrollWeatherRight && (
-                        <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pl-2 bg-gradient-to-l from-white via-white/95 to-transparent dark:from-stone-900 dark:via-stone-900/95 dark:to-transparent">
-                          <button
-                            type="button"
-                            onClick={() => scrollWeatherLgu('right')}
-                            className="w-5 h-5 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-xs hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition cursor-pointer active:scale-95 pointer-events-auto"
-                            title="Scroll right to view more municipalities"
-                            aria-label="Scroll right"
-                          >
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Scrollable Weather Body */}
-                  <div className="flex-1 min-h-0 overflow-y-auto p-3.5 space-y-3 custom-scrollbar overscroll-contain">
-                    {isLoadingAtmosphere && !atmosphericData ? (
-                      <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
-                        <div className="w-10 h-10 rounded-full border-2 border-stone-900 dark:border-stone-100 border-t-transparent animate-spin flex items-center justify-center">
-                          <CloudSun className="w-5 h-5 text-stone-700 dark:text-stone-300" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-stone-800 dark:text-stone-200">
-                            Connecting to Open-Meteo Telemetry Feed...
-                          </p>
-                          <p className="text-[10px] text-stone-400 mt-0.5">
-                            Reading live meteorological and atmospheric CAMS models for Rizal
-                          </p>
-                        </div>
-                      </div>
-                    ) : atmosphereError && !atmosphericData ? (
-                      <div className="p-4 bg-stone-100 dark:bg-stone-850 border border-stone-200 dark:border-stone-750 rounded-xl space-y-2 text-center">
-                        <AlertTriangle className="w-6 h-6 text-rose-600 mx-auto" />
-                        <p className="text-xs text-rose-800 dark:text-rose-300 font-semibold">{atmosphereError}</p>
-                        <button
-                          type="button"
-                          onClick={() => loadAtmosphericData()}
-                          className="px-3 py-1 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 rounded-lg text-xs font-medium hover:bg-stone-50 transition cursor-pointer"
-                        >
-                          Retry Connection
-                        </button>
-                      </div>
-                    ) : atmosphericData ? (
-                      <>
-                        {(() => {
-                          const activePreset = RIZAL_LGU_PRESETS.find((p) => p.id === selectedWeatherLguId) || RIZAL_LGU_PRESETS[0];
-                          const aqiMeta = getAqiMeta(atmosphericData.airQuality.europeanAqi, atmosphericData.airQuality.pm2_5, atmosphericData.airQuality.pm10);
-                          const windTraj = getWindFlowTrajectory(atmosphericData.weather.windDirection, atmosphericData.weather.windSpeed);
-                          const indices = computeEmpiricalWeatherIndices(atmosphericData.weather, atmosphericData.airQuality);
-
-                          return (
-                            <>
-                              {/* Active Preset Subheader */}
-                              <div className="p-2.5 bg-stone-50 dark:bg-stone-950/60 border border-stone-200/80 dark:border-stone-800 rounded-xl flex items-center justify-between gap-2">
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <MapPin className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300 shrink-0" />
-                                    <span className="font-bold text-xs text-stone-900 dark:text-stone-100 truncate">
-                                      {activePreset.name}
-                                    </span>
-                                    <span className="font-mono text-[10px] text-stone-500 dark:text-stone-400 shrink-0">
-                                      ({activePreset.elevation})
-                                    </span>
+                                {/* Operational Status Selector */}
+                                <div>
+                                  <label className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 block mb-1">
+                                    Operational Status
+                                  </label>
+                                  <div className="grid grid-cols-3 gap-1 bg-stone-100 dark:bg-stone-900 p-1 rounded-lg text-xs font-medium">
+                                    {(['pending', 'in_progress', 'resolved'] as ReportStatus[]).map((status) => {
+                                      const isActive = newStatus === status;
+                                      return (
+                                        <button
+                                          key={status}
+                                          type="button"
+                                          onClick={() => setNewStatus(status)}
+                                          className={`py-1.5 px-2 rounded-md text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5 ${isActive
+                                              ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs font-semibold'
+                                              : 'text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100'
+                                            }`}
+                                        >
+                                          <span
+                                            className={`w-1.5 h-1.5 rounded-full ${status === 'resolved'
+                                                ? 'bg-emerald-500'
+                                                : status === 'in_progress'
+                                                  ? 'bg-amber-500'
+                                                  : 'bg-rose-500'
+                                              }`}
+                                          />
+                                          <span className="capitalize">{status.replace(/_/g, ' ')}</span>
+                                        </button>
+                                      );
+                                    })}
                                   </div>
-                                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5 truncate">
-                                    {activePreset.ecologicalRole}
-                                  </p>
-                                </div>
-                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-stone-200/70 dark:bg-stone-800 text-stone-600 dark:text-stone-300 shrink-0">
-                                  {new Date(atmosphericData.weather.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              </div>
-
-                              {/* 1. Live Meteorological Card */}
-                              <div className="p-3.5 bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 rounded-xl shadow-2xs space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center">
-                                      <Thermometer className="w-4 h-4 text-stone-700 dark:text-stone-300" />
-                                    </div>
-                                    <span className="text-xs font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200">
-                                      Current Weather
-                                    </span>
-                                  </div>
-                                  <span className="text-[11px] font-medium text-stone-600 dark:text-stone-300 px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700">
-                                    {atmosphericData.weather.weatherDescription}
-                                  </span>
                                 </div>
 
-                                <div className="flex items-baseline justify-between pt-1">
+                                {/* Category & Severity Override Dropdowns */}
+                                <div className="grid grid-cols-2 gap-2">
                                   <div>
-                                    <div className="flex items-baseline gap-1.5">
-                                      <span className="font-display font-extrabold text-3xl text-stone-900 dark:text-stone-50">
-                                        {atmosphericData.weather.temperature}°C
-                                      </span>
-                                      <span className="text-xs text-stone-500 dark:text-stone-400 font-medium">
-                                        Feels like {atmosphericData.weather.apparentTemperature}°C
-                                      </span>
-                                    </div>
-                                    <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">
-                                      Cloud Cover: {atmosphericData.weather.cloudCover}%
-                                    </p>
+                                    <label className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 block mb-0.5">
+                                      Category
+                                    </label>
+                                    <select
+                                      value={overrideCategory}
+                                      onChange={(e) => setOverrideCategory(e.target.value as any)}
+                                      className="w-full text-xs font-semibold px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 truncate"
+                                    >
+                                      {Object.entries(CATEGORIES).map(([key, cat]) => (
+                                        <option key={key} value={key}>
+                                          {lang === 'fil' ? cat.labelFil : cat.labelEn}
+                                        </option>
+                                      ))}
+                                    </select>
                                   </div>
+                                  <div>
+                                    <label className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 block mb-0.5">
+                                      Severity
+                                    </label>
+                                    <select
+                                      value={overrideSeverity}
+                                      onChange={(e) => setOverrideSeverity(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)}
+                                      className="w-full text-xs font-semibold px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 truncate"
+                                    >
+                                      {Object.entries(SEVERITY_LEVELS).map(([lvl, meta]) => (
+                                        <option key={lvl} value={lvl}>
+                                          {lvl} - {lang === 'fil' ? meta.labelFil : meta.labelEn}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
 
-                                  <div className="text-right">
-                                    {windTraj.isCalm ? (
+                                {/* Action Directives / Notes */}
+                                <div>
+                                  <label className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 block mb-0.5">
+                                    Action Directives / Notes
+                                  </label>
+                                  <textarea
+                                    rows={2}
+                                    value={officerNotes}
+                                    onChange={(e) => setOfficerNotes(e.target.value)}
+                                    placeholder="Action directives, dispatch instructions, or closure remarks..."
+                                    className="w-full text-xs px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 placeholder:text-stone-400 dark:placeholder:text-stone-600 resize-none font-sans"
+                                  />
+                                </div>
+
+                                {/* Unified Save CTA */}
+                                <div>
+                                  <button
+                                    type="button"
+                                    onClick={handleSaveUnifiedAction}
+                                    disabled={isSavingUnified}
+                                    className={`w-full py-2 px-3 rounded-lg text-xs font-semibold text-white transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${unifiedSuccess
+                                        ? 'bg-emerald-600 hover:bg-emerald-700'
+                                        : 'bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-700 disabled:bg-stone-300 dark:disabled:bg-stone-800 active:scale-[0.99]'
+                                      }`}
+                                  >
+                                    {isSavingUnified ? (
                                       <>
-                                        <span className="font-mono text-xs font-bold text-stone-800 dark:text-stone-200 flex items-center justify-end gap-1">
-                                          <Wind className="w-3.5 h-3.5 text-stone-400" />
-                                          {atmosphericData.weather.windSpeed} km/h (Calm)
-                                        </span>
-                                        <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-mono">
-                                          No prevailing direction
-                                        </span>
+                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                        <span>Saving...</span>
+                                      </>
+                                    ) : unifiedSuccess ? (
+                                      <>
+                                        <Check className="w-4 h-4 text-emerald-100" />
+                                        <span>{t.saveSuccessMsg}</span>
                                       </>
                                     ) : (
                                       <>
-                                        <span className="font-mono text-xs font-bold text-stone-800 dark:text-stone-200 flex items-center justify-end gap-1">
-                                          <Wind className="w-3.5 h-3.5 text-stone-500" />
-                                          {atmosphericData.weather.windSpeed} km/h from {windTraj.fromCompass}
-                                        </span>
-                                        <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-mono">
-                                          &rarr; Blowing toward {windTraj.toCompass}
-                                        </span>
+                                        <Edit3 className="w-3.5 h-3.5" />
+                                        <span>{t.saveAndApplyBtn}</span>
                                       </>
                                     )}
-                                    {atmosphericData.weather.windGusts !== null && (
-                                      <span className="text-[9.5px] text-stone-400 block font-mono">
-                                        Gusts up to {atmosphericData.weather.windGusts} km/h
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
+                                  </button>
 
-                                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-stone-100 dark:border-stone-800/80 text-center">
-                                  <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60">
-                                    <div className="flex items-center justify-center gap-1 text-[10px] text-stone-500 dark:text-stone-400 font-medium">
-                                      <Droplets className="w-3 h-3 text-sky-500" />
-                                      <span>Humidity</span>
-                                    </div>
-                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block">
-                                      {atmosphericData.weather.relativeHumidity}%
-                                    </span>
-                                  </div>
-
-                                  <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60">
-                                    <div className="flex items-center justify-center gap-1 text-[10px] text-stone-500 dark:text-stone-400 font-medium">
-                                      <CloudRain className="w-3 h-3 text-blue-500" />
-                                      <span>Rainfall</span>
-                                    </div>
-                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block">
-                                      {atmosphericData.weather.precipitation} mm
-                                    </span>
-                                  </div>
-
-                                  <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60">
-                                    <div className="flex items-center justify-center gap-1 text-[10px] text-stone-500 dark:text-stone-400 font-medium">
-                                      <Compass className="w-3 h-3 text-stone-500" />
-                                      <span>Trajectory</span>
-                                    </div>
-                                    {windTraj.isCalm ? (
-                                      <>
-                                        <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block">
-                                          Calm
-                                        </span>
-                                        <span className="text-[9px] text-stone-400 block font-mono">
-                                          &lt; 1 km/h
-                                        </span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100 mt-0.5 block" title={windTraj.summary}>
-                                          {windTraj.fromCompass} &rarr; {windTraj.toCompass}
-                                        </span>
-                                        <span className="text-[9px] text-stone-400 block font-mono">
-                                          {windTraj.fromBearing}° origin
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* 2. Atmospheric Air Quality (AQI) Card */}
-                              <div className="p-3.5 bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 rounded-xl shadow-2xs space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center">
-                                      <Activity className="w-4 h-4 text-stone-700 dark:text-stone-300" />
-                                    </div>
-                                    <div>
-                                      <span className="text-xs font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200 block">
-                                        Atmospheric Air Quality
-                                      </span>
-                                      <span className="text-[10px] text-stone-400 block">
-                                        European CAMS & Philippine Clean Air Act
+                                  {/* Audit Log / Reviewer Timestamp */}
+                                  {selectedReport.final?.reviewedAt && (
+                                    <div className="text-[10px] text-stone-500 dark:text-stone-400 font-mono flex items-center justify-between pt-1">
+                                      <span>Reviewed: {new Date(selectedReport.final.reviewedAt).toLocaleDateString()}</span>
+                                      <span className="text-stone-700 dark:text-stone-300 font-medium flex items-center gap-1">
+                                        <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                        Assessment Logged
                                       </span>
                                     </div>
-                                  </div>
-                                  <div className="flex flex-col items-end gap-0.5">
-                                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${aqiMeta.badgeBg} ${aqiMeta.badgeText} ${aqiMeta.badgeBorder}`}>
-                                      AQI {atmosphericData.airQuality.europeanAqi} • {aqiMeta.label}
-                                    </span>
-                                    <span className="text-[9px] font-mono text-stone-500 dark:text-stone-400">
-                                      Primary Particulate: {aqiMeta.dominantPollutant ?? 'PM2.5'}
-                                    </span>
-                                  </div>
-                                </div>
+                                  )}
 
-                                <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
-                                  {aqiMeta.description}
-                                </p>
-
-                                <div className="grid grid-cols-4 gap-1.5 p-2 bg-stone-50 dark:bg-stone-950/60 border border-stone-200/80 dark:border-stone-800 rounded-lg text-center divide-x divide-stone-200 dark:divide-stone-800">
-                                  <div className="px-1">
-                                    <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">PM2.5 (Fine)</span>
-                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
-                                      {atmosphericData.airQuality.pm2_5} μg/m³
-                                    </span>
-                                  </div>
-                                  <div className="px-1">
-                                    <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">PM10 (Dust)</span>
-                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
-                                      {atmosphericData.airQuality.pm10} μg/m³
-                                    </span>
-                                  </div>
-                                  <div className="px-1">
-                                    <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">CO</span>
-                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
-                                      {atmosphericData.airQuality.carbonMonoxide ?? '—'} μg/m³
-                                    </span>
-                                  </div>
-                                  <div className="px-1">
-                                    <span className="text-[9px] text-stone-500 dark:text-stone-400 font-medium block">Ozone</span>
-                                    <span className="font-mono font-bold text-xs text-stone-900 dark:text-stone-100">
-                                      {atmosphericData.airQuality.ozone ?? '—'} μg/m³
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <div className="p-2 bg-stone-50 dark:bg-stone-950/50 rounded-lg border border-stone-200/60 dark:border-stone-800/60 space-y-1">
-                                  <div className="flex items-center justify-between text-[11px]">
-                                    <span className="text-stone-600 dark:text-stone-400">DENR DAO 2020-14 (Clean Air Act) Benchmark:</span>
-                                    <strong className="font-semibold text-stone-900 dark:text-stone-100">{aqiMeta.denrStatus}</strong>
-                                  </div>
-                                  <p className="text-[10.5px] text-stone-500 dark:text-stone-400 leading-snug">
-                                    {aqiMeta.healthSummary}
-                                  </p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2 text-[11px] text-stone-600 dark:text-stone-400 pt-1">
-                                  <div className="flex items-center justify-between px-2 py-1 bg-stone-50 dark:bg-stone-950/40 rounded border border-stone-200/50 dark:border-stone-800/50">
-                                    <span>US EPA AQI:</span>
-                                    <span className="font-mono font-bold text-stone-800 dark:text-stone-200">{atmosphericData.airQuality.usAqi}</span>
-                                  </div>
-                                  <div className="flex items-center justify-between px-2 py-1 bg-stone-50 dark:bg-stone-950/40 rounded border border-stone-200/50 dark:border-stone-800/50">
-                                    <span>Nitrogen Dioxide:</span>
-                                    <span className="font-mono font-bold text-stone-800 dark:text-stone-200">{atmosphericData.airQuality.nitrogenDioxide ?? '—'} μg/m³</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* 3. Empirical Meteorological & Scientific Data Boundaries */}
-                              <div className="p-3.5 bg-stone-50 dark:bg-stone-950/60 border border-stone-200/80 dark:border-stone-800 rounded-xl space-y-2.5">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-1.5">
-                                    <Scale className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                    <span className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">
-                                      Empirical Meteorological Indices
-                                    </span>
-                                  </div>
-                                  <span className="text-[10px] font-mono text-stone-500 dark:text-stone-400">
-                                    PAGASA & WMO Standards
-                                  </span>
-                                </div>
-
-                                <div className="space-y-2 text-xs">
-                                  {/* 1. Heat Index Card */}
-                                  <div className="p-2.5 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800/70 space-y-1.5">
-                                    <div className="flex items-center justify-between">
-                                      <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
-                                        <Thermometer className="w-3.5 h-3.5 text-amber-500" />
-                                        <span>Heat Index (Thermal Load)</span>
-                                      </span>
-                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded uppercase border ${indices.heatIndex.badgeBg} ${indices.heatIndex.badgeText} ${indices.heatIndex.badgeBorder}`}>
-                                        {indices.heatIndex.category} ({indices.heatIndex.value}°C)
-                                      </span>
-                                    </div>
-                                    <p className="text-[11px] text-stone-600 dark:text-stone-300 font-medium">
-                                      {indices.heatIndex.pagasaGuideline}
-                                    </p>
-                                    <p className="text-[10px] text-stone-400 dark:text-stone-500 leading-snug italic border-t border-stone-100 dark:border-stone-800/60 pt-1">
-                                      {indices.heatIndex.dataLimitation}
-                                    </p>
-                                  </div>
-
-                                  {/* 2. Rainfall Intensity Card */}
-                                  <div className="p-2.5 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800/70 space-y-1.5">
-                                    <div className="flex items-center justify-between">
-                                      <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
-                                        <CloudRain className="w-3.5 h-3.5 text-blue-500" />
-                                        <span>Precipitation Rate (PAGASA Intensity Scale)</span>
-                                      </span>
-                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded uppercase border ${indices.rainfallIntensity.badgeBg} ${indices.rainfallIntensity.badgeText} ${indices.rainfallIntensity.badgeBorder}`}>
-                                        {indices.rainfallIntensity.category}
-                                      </span>
-                                    </div>
-                                    <p className="text-[11px] text-stone-600 dark:text-stone-300 font-medium">
-                                      {indices.rainfallIntensity.classification}
-                                    </p>
-                                    <p className="text-[10px] text-stone-400 dark:text-stone-500 leading-snug italic border-t border-stone-100 dark:border-stone-800/60 pt-1">
-                                      {indices.rainfallIntensity.dataLimitation}
-                                    </p>
-                                  </div>
-
-                                  {/* 3. Beaufort Wind Force Card */}
-                                  <div className="p-2.5 bg-white dark:bg-stone-900 rounded-lg border border-stone-200/70 dark:border-stone-800/70 space-y-1.5">
-                                    <div className="flex items-center justify-between">
-                                      <span className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
-                                        <Wind className="w-3.5 h-3.5 text-teal-500" />
-                                        <span>Kinetic Wind Force (WMO Beaufort Scale)</span>
-                                      </span>
-                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded uppercase border ${indices.windKineticForce.badgeBg} ${indices.windKineticForce.badgeText} ${indices.windKineticForce.badgeBorder}`}>
-                                        {indices.windKineticForce.category} ({indices.windKineticForce.speed} km/h)
-                                      </span>
-                                    </div>
-                                    <p className="text-[11px] text-stone-600 dark:text-stone-300 font-medium">
-                                      {indices.windKineticForce.beaufortDescription}
-                                    </p>
-                                    <p className="text-[10px] text-stone-400 dark:text-stone-500 leading-snug italic border-t border-stone-100 dark:border-stone-800/60 pt-1">
-                                      {indices.windKineticForce.dataLimitation}
-                                    </p>
-                                  </div>
-
-                                  {/* 4. Scientific Data Sufficiency & Forecast Limitations */}
-                                  <div className="p-2.5 bg-stone-100/80 dark:bg-stone-900/80 rounded-lg border border-stone-200 dark:border-stone-800 space-y-1">
-                                    <div className="flex items-center gap-1.5 text-stone-700 dark:text-stone-300 font-bold text-[11px]">
-                                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                      <span>Scientific Boundary & Data Sufficiency Notice</span>
-                                    </div>
-                                    <ul className="text-[10.5px] text-stone-500 dark:text-stone-400 space-y-0.5 list-disc list-inside">
-                                      <li>
-                                        <strong>Scope:</strong> {indices.dataSufficiency.observationScope}
-                                      </li>
-                                      <li>
-                                        <strong>Forecast:</strong> {indices.dataSufficiency.forecastStatus}
-                                      </li>
-                                      <li>
-                                        <strong>Ground Events:</strong> {indices.dataSufficiency.groundEventLimitation}
-                                      </li>
-                                    </ul>
+                                  {/* Field Dispatch & Inspection Order */}
+                                  <div className="pt-2 border-t border-stone-200 dark:border-stone-800">
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsInspectionModalOpen(true)}
+                                      className="w-full py-2 px-3 bg-stone-900 hover:bg-black active:bg-stone-950 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg transition flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-stone-800 dark:border-emerald-500"
+                                      title="Generate official printable on-site worksheet and Viber/SMS dispatch"
+                                    >
+                                      <FileText className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-100 shrink-0" />
+                                      <span>Field Inspection Worksheet</span>
+                                    </button>
                                   </div>
                                 </div>
                               </div>
                             </>
-                          );
-                        })()}
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-                /* ------------------------------------------------------- */
-                /* SHEET MODE 2: CASE INSPECTOR & DECISION CONSOLE         */
-                /* ------------------------------------------------------- */
-                <div key={`dossier-mode-${selectedReport.id}`} className="flex flex-col flex-1 min-h-0 overflow-hidden animate-sheet-morph">
-                  {/* Header with Icon Back button & Reference Code */}
-                  <div className="px-3.5 py-2.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedReport(null);
-                          if (isSatReport) {
-                            setActiveLeftDrawerTab('firms');
-                            setIsSheetOpen(true);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition cursor-pointer flex items-center justify-center shrink-0"
-                        title={isSatReport ? 'Return to NASA FIRMS Watchdog' : activeClusterFilter ? 'Return to Cluster Queue' : 'Return to Incident Queue'}
-                        aria-label="Back to Queue"
-                      >
-                        <ArrowLeft className="w-4 h-4" />
-                      </button>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          {isSatReport && <Satellite className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />}
-                          <span className="font-mono font-bold text-xs tracking-wider text-stone-950 dark:text-stone-100 truncate">
-                            {selectedReport.referenceCode}
-                          </span>
-                        </div>
-                        {isSatReport && (
-                          <span className="text-[9px] font-mono text-stone-400 dark:text-stone-500 block truncate">
-                            NASA VIIRS 375m Telemetry
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 inline-flex items-center gap-1.5 capitalize">
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            selectedReport.status === 'resolved'
-                              ? 'bg-emerald-500'
-                              : selectedReport.status === 'in_progress'
-                              ? 'bg-amber-500'
-                              : selectedReport.status === 'spam'
-                              ? 'bg-rose-700'
-                              : 'bg-rose-500'
-                          }`}
-                        />
-                        {selectedReport.status.replace(/_/g, ' ')}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedReport(null);
-                          handleCloseDrawer();
-                        }}
-                        className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:text-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
-                        title="Close Inspector"
-                        aria-label="Close Inspector"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Scrollable Dossier Body */}
-                  <div className="flex-1 min-h-0 overflow-y-auto p-3.5 space-y-3 custom-scrollbar overscroll-contain">
-                    {isSatReport ? (
-                      renderFirmsDossierDetail(selectedReport, true)
-                    ) : (
-                      <>
-                        {/* SPAM / QUARANTINE WARNING BANNER */}
-                    {(selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam) && (
-                      <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-900 rounded-xl space-y-2 text-xs text-rose-950 dark:text-rose-200 shadow-2xs">
-                        <div className="flex items-start gap-2">
-                          <AlertTriangle className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0 mt-0.5" />
-                          <div className="space-y-0.5 min-w-0">
-                            <span className="font-bold uppercase tracking-wide text-rose-900 dark:text-rose-300 block text-[11px]">
-                              Quarantined in Spam Queue
-                            </span>
-                            <p className="text-[11px] text-rose-800 dark:text-rose-300/80 leading-snug">
-                              {selectedReport.aiTriage?.authenticity?.forensicNotes ||
-                                'Flagged as suspected troll submission or unverified incident.'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 pt-1 border-t border-rose-200 dark:border-rose-900">
-                          <button
-                            type="button"
-                            onClick={handleRestoreReport}
-                            disabled={isRestoringReport || isDeletingReport}
-                            className="flex-1 py-1.5 px-2 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1 shadow-2xs"
-                          >
-                            <Check className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
-                            <span>{isRestoringReport ? 'Restoring...' : t.retrieveBtn}</span>
-                          </button>
-
-                          {!showDeleteConfirm ? (
-                            <button
-                              type="button"
-                              onClick={() => setShowDeleteConfirm(true)}
-                              disabled={isRestoringReport || isDeletingReport}
-                              className="flex-1 py-1.5 px-2 bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1 shadow-2xs"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              <span>{t.deletePermanentlyBtn}</span>
-                            </button>
-                          ) : (
-                            <div className="flex-1 flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={handleDeletePermanently}
-                                disabled={isDeletingReport}
-                                className="flex-1 py-1 px-1.5 bg-rose-900 hover:bg-black text-white font-bold text-[10px] rounded-lg transition cursor-pointer flex items-center justify-center gap-1 animate-pulse"
-                              >
-                                {isDeletingReport ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                                <span>Confirm Delete</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setShowDeleteConfirm(false)}
-                                className="py-1 px-2 border border-rose-300 dark:border-rose-800 bg-white dark:bg-stone-800 hover:bg-rose-100 dark:hover:bg-stone-700 text-rose-800 dark:text-rose-300 text-[10px] font-semibold rounded-lg transition cursor-pointer"
-                              >
-                                Cancel
-                              </button>
-                            </div>
                           )}
                         </div>
                       </div>
                     )}
-
-                    {/* Citizen Evidence & Photo */}
-                    <div className="space-y-2">
-                      <div
-                        onClick={() => photoDataUrl && setIsLightboxOpen(true)}
-                        className={`relative rounded-lg overflow-hidden bg-stone-950 h-36 sm:h-40 flex items-center justify-center border border-stone-200 dark:border-stone-800 group ${
-                          photoDataUrl ? 'cursor-pointer' : ''
-                        }`}
-                        title={photoDataUrl ? t.photoExpandHint : undefined}
-                      >
-                        {photoDataUrl ? (
-                          <>
-                            <img
-                              src={photoDataUrl}
-                              alt="Incident evidence"
-                              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                            />
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                              <span className="px-2 py-1 rounded bg-black/75 text-white text-[10px] font-display font-bold uppercase tracking-wider flex items-center gap-1 shadow-md">
-                                <ZoomIn className="w-3.5 h-3.5" />
-                                <span>Expand</span>
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-center p-2 text-stone-400 dark:text-stone-500 text-xs">
-                            <Eye className="w-5 h-5 mx-auto mb-1 text-stone-500 dark:text-stone-400" />
-                            <span className="text-[11px]">{selectedReport.rawInput.hasImage ? 'Loading photo...' : 'No photo submitted'}</span>
-                          </div>
-                        )}
-                        <div className="absolute top-2 left-2 px-2 py-0.5 bg-stone-900/80 backdrop-blur-xs text-[9px] font-mono text-stone-300 rounded border border-white/10 flex items-center gap-1">
-                          <ShieldCheck className="w-2.5 h-2.5 text-stone-400" />
-                          <span>RA 10173 SECURED</span>
-                        </div>
-                      </div>
-
-                      {/* Multi-Photo Evidence Deck Thumbnails */}
-                      {evidenceImages.length > 1 && (
-                        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-                          {evidenceImages.map((img, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => {
-                                setActivePhotoIndex(idx);
-                                setPhotoDataUrl(img.data);
-                              }}
-                              className={`relative w-14 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition cursor-pointer ${
-                                activePhotoIndex === idx
-                                  ? 'border-stone-900 dark:border-emerald-500 ring-2 ring-stone-900/20 dark:ring-emerald-500/20 shadow-2xs'
-                                  : 'border-stone-200 dark:border-stone-700 opacity-70 hover:opacity-100'
-                              }`}
-                            >
-                              <img src={img.data} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
-                              <span className="absolute bottom-0 inset-x-0 bg-stone-950/80 text-white text-[7px] font-mono text-center py-0.2 capitalize truncate px-0.5">
-                                {img.role.replace('_', ' ')}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Forensic & Authenticity Metadata Card */}
-                      <div className="p-3 bg-stone-50 dark:bg-stone-950/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-1.5">
-                        <div className="flex items-center justify-between text-[10px] font-display font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
-                          <div className="flex items-center gap-1">
-                            <ShieldAlert className="w-3 h-3 text-stone-600 dark:text-stone-400" />
-                            <span>Forensics</span>
-                          </div>
-                          {selectedReport.status === 'spam' || selectedReport.aiTriage?.isSpam ? (
-                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
-                              SPAM / TROLL
-                            </span>
-                          ) : selectedReport.rawInput.captureMethod === 'live_camera' ? (
-                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                              LIVE CAMERA
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
-                              DEVICE UPLOAD
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                          <div className="p-1.5 bg-white dark:bg-stone-900 rounded border border-stone-200/70 dark:border-stone-800">
-                            <span className="text-[9px] text-stone-500 dark:text-stone-400 block">Photos</span>
-                            <span className="font-semibold text-stone-900 dark:text-stone-100 font-mono">
-                              {selectedReport.rawInput.imageCount || (selectedReport.rawInput.hasImage ? 1 : 0)}
-                            </span>
-                          </div>
-                          <div className="p-1.5 bg-white dark:bg-stone-900 rounded border border-stone-200/70 dark:border-stone-800">
-                            <span className="text-[9px] text-stone-500 dark:text-stone-400 block">Source</span>
-                            <span className="font-semibold text-stone-900 dark:text-stone-100 capitalize truncate block">
-                              {selectedReport.rawInput.captureMethod ? selectedReport.rawInput.captureMethod.replace('_', ' ') : 'Single'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {selectedReport.rawInput.exif?.cameraModel && (
-                          <div className="text-[10px] text-stone-600 dark:text-stone-300 font-mono bg-white dark:bg-stone-900 p-1.5 rounded border border-stone-200/70 dark:border-stone-800 flex items-center justify-between">
-                            <span className="text-stone-400 dark:text-stone-500">Device:</span>
-                            <span className="font-semibold truncate max-w-[150px]">{selectedReport.rawInput.exif.cameraModel}</span>
-                          </div>
-                        )}
-
-                        {selectedReport.aiTriage?.authenticity?.forensicNotes && (
-                          <div className="text-[10px] text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-900 p-1.5 rounded leading-relaxed border border-stone-200/70 dark:border-stone-800">
-                            <span className="font-semibold text-stone-800 dark:text-stone-200">AI Note: </span>
-                            {selectedReport.aiTriage.authenticity.forensicNotes}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Citizen Description Card */}
-                      <div className="bg-stone-50 dark:bg-stone-950/60 rounded-lg p-3 border border-stone-200/80 dark:border-stone-800 space-y-1.5">
-                        <div className="flex items-center justify-between text-[10px] font-display font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-                          <span>Citizen Report</span>
-                          <span className="text-[9px] font-mono text-stone-500 dark:text-stone-400 bg-stone-200/70 dark:bg-stone-800 px-1.5 py-0.2 rounded border border-stone-300/60 dark:border-stone-700">
-                            Untrusted Input
-                          </span>
-                        </div>
-                        <p className="text-xs text-stone-800 dark:text-stone-200 italic leading-relaxed py-0.5">
-                          "{selectedReport.rawInput.description}"
-                        </p>
-                        <div className="text-[10px] text-stone-500 dark:text-stone-400 font-mono pt-1 border-t border-stone-200/60 dark:border-stone-800 flex items-center justify-between">
-                          <span className="truncate">
-                            {[selectedReport.location.barangay, selectedReport.location.municipality || 'Rizal'].filter(Boolean).join(', ')}
-                          </span>
-                          <span className="shrink-0 font-mono">
-                            GPS: {resolveReportCoordinates(selectedReport).lat.toFixed(4)}, {resolveReportCoordinates(selectedReport).lng.toFixed(4)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Gemini AI Triage Card */}
-                    <div className="p-3 bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-800 space-y-2 shadow-2xs">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-900 dark:text-stone-100">
-                          <Sparkles className="w-3.5 h-3.5 text-stone-700 dark:text-emerald-400" />
-                          <span>Gemini AI Triage</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          {selectedReport.status !== 'spam' && (selectedReport.aiTriage?.isSpam || (selectedReport.aiTriage?.confidence && selectedReport.aiTriage.confidence < 0.45)) && (
-                            <button
-                              type="button"
-                              onClick={handleMarkAsSpam}
-                              className="px-2 py-0.5 rounded text-[10px] font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900 transition cursor-pointer flex items-center gap-1"
-                              title="Flag report as troll/spam and quarantine"
-                            >
-                              <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
-                              <span>Flag as Spam</span>
-                            </button>
-                          )}
-                          {selectedReport.aiTriage?.confidence && (
-                            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
-                              {Math.round(selectedReport.aiTriage.confidence * 100)}% Conf
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={handleRetryTriage}
-                            disabled={isRetryingTriage}
-                            title="Re-run AI triage on this report"
-                            className="p-1 text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition cursor-pointer"
-                          >
-                            <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-xs text-stone-800 dark:text-stone-200 leading-relaxed font-sans font-medium">
-                        {selectedReport.aiTriage?.summary || 'AI triage assessment not available or pending.'}
-                      </p>
-
-                      {/* Collapsible AI Reasoning */}
-                      {selectedReport.aiTriage?.reasoning && (
-                        <div className="pt-1">
-                          <button
-                            type="button"
-                            onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
-                            className="text-[10px] text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200 font-medium flex items-center gap-1 cursor-pointer"
-                          >
-                            <span>{isReasoningExpanded ? 'Hide AI reasoning' : 'View AI reasoning'}</span>
-                            <ChevronDown className={`w-3 h-3 transition-transform ${isReasoningExpanded ? 'rotate-180' : ''}`} />
-                          </button>
-                          {isReasoningExpanded && (
-                            <div className="mt-1.5 p-2 rounded-md bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 text-[10px] text-stone-600 dark:text-stone-300 leading-relaxed font-sans">
-                              {selectedReport.aiTriage.reasoning}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* NASA Satellite Hotspot Telemetry Card */}
-                    {renderSatelliteHotspotCard(selectedReport)}
-
-                    {/* Protected Zone Alert (if applicable) */}
-                    {renderProtectedZoneBadge(
-                      selectedReport.aiTriage?.protectedZone,
-                      true
-                    )}
-
-                    {/* MGB Tenement Cadastre Compliance Card */}
-                    {renderMgbQuarryCard(selectedReport)}
-
-                    {/* Atmospheric Air Quality Card */}
-                    {renderAirQualityCard(selectedReport.aiTriage?.airQuality, selectedReport.id)}
-
-                    {/* Weather Telemetry */}
-                    {renderWeatherWidget(selectedReport.aiTriage?.weather, selectedReport.id)}
-
-                    {/* Duplicate Cluster Alert */}
-                    {clusteredReports.find((r) => r.id === selectedReport.id)?.duplicateClusterId && (
-                      <div className="p-2.5 bg-stone-50 dark:bg-stone-950/60 rounded-lg border border-stone-200 dark:border-stone-800 text-xs text-stone-700 dark:text-stone-300 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Layers className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400 shrink-0" />
-                          <span className="font-medium truncate">{t.duplicateClusterDetected}</span>
-                        </div>
-                        <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-300/60 dark:border-stone-700 shrink-0">
-                          Cluster Detected
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Officer Decision Console */}
-                    <div className="bg-stone-50/70 dark:bg-stone-950/60 p-3.5 rounded-lg border border-stone-200 dark:border-stone-800 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-xs text-stone-700 dark:text-stone-300 block">
-                          Officer Decision Console
-                        </span>
-                        {selectedReport.status !== 'spam' && (
-                          <button
-                            type="button"
-                            onClick={handleMarkAsSpam}
-                            className="px-2 py-0.5 rounded-md text-[11px] font-semibold text-stone-500 dark:text-stone-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-stone-200 dark:border-stone-800 transition cursor-pointer flex items-center gap-1"
-                            title="Quarantine report to Spam Queue"
-                          >
-                            <AlertTriangle className="w-3 h-3 text-stone-400 dark:text-stone-500" />
-                            <span>Flag as Spam</span>
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Operational Status Selector */}
-                      <div>
-                        <label className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 block mb-1">
-                          Operational Status
-                        </label>
-                        <div className="grid grid-cols-3 gap-1 bg-stone-100 dark:bg-stone-900 p-1 rounded-lg text-xs font-medium">
-                          {(['pending', 'in_progress', 'resolved'] as ReportStatus[]).map((status) => {
-                            const isActive = newStatus === status;
-                            return (
-                              <button
-                                key={status}
-                                type="button"
-                                onClick={() => setNewStatus(status)}
-                                className={`py-1.5 px-2 rounded-md text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5 ${
-                                  isActive
-                                    ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-xs font-semibold'
-                                    : 'text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100'
-                                }`}
-                              >
-                                <span
-                                  className={`w-1.5 h-1.5 rounded-full ${
-                                    status === 'resolved'
-                                      ? 'bg-emerald-500'
-                                      : status === 'in_progress'
-                                      ? 'bg-amber-500'
-                                      : 'bg-rose-500'
-                                  }`}
-                                />
-                                <span className="capitalize">{status.replace(/_/g, ' ')}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Category & Severity Override Dropdowns */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 block mb-0.5">
-                            Category
-                          </label>
-                          <select
-                            value={overrideCategory}
-                            onChange={(e) => setOverrideCategory(e.target.value as any)}
-                            className="w-full text-xs font-semibold px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 truncate"
-                          >
-                            {Object.entries(CATEGORIES).map(([key, cat]) => (
-                              <option key={key} value={key}>
-                                {lang === 'fil' ? cat.labelFil : cat.labelEn}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 block mb-0.5">
-                            Severity
-                          </label>
-                          <select
-                            value={overrideSeverity}
-                            onChange={(e) => setOverrideSeverity(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)}
-                            className="w-full text-xs font-semibold px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 truncate"
-                          >
-                            {Object.entries(SEVERITY_LEVELS).map(([lvl, meta]) => (
-                              <option key={lvl} value={lvl}>
-                                {lvl} - {lang === 'fil' ? meta.labelFil : meta.labelEn}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Action Directives / Notes */}
-                      <div>
-                        <label className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 block mb-0.5">
-                          Action Directives / Notes
-                        </label>
-                        <textarea
-                          rows={2}
-                          value={officerNotes}
-                          onChange={(e) => setOfficerNotes(e.target.value)}
-                          placeholder="Action directives, dispatch instructions, or closure remarks..."
-                          className="w-full text-xs px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 placeholder:text-stone-400 dark:placeholder:text-stone-600 resize-none font-sans"
-                        />
-                      </div>
-
-                      {/* Unified Save CTA */}
-                      <div>
-                        <button
-                          type="button"
-                          onClick={handleSaveUnifiedAction}
-                          disabled={isSavingUnified}
-                          className={`w-full py-2 px-3 rounded-lg text-xs font-semibold text-white transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
-                            unifiedSuccess
-                              ? 'bg-emerald-600 hover:bg-emerald-700'
-                              : 'bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-700 disabled:bg-stone-300 dark:disabled:bg-stone-800 active:scale-[0.99]'
-                          }`}
-                        >
-                          {isSavingUnified ? (
-                            <>
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                              <span>Saving...</span>
-                            </>
-                          ) : unifiedSuccess ? (
-                            <>
-                              <Check className="w-4 h-4 text-emerald-100" />
-                              <span>{t.saveSuccessMsg}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Edit3 className="w-3.5 h-3.5" />
-                              <span>{t.saveAndApplyBtn}</span>
-                            </>
-                          )}
-                        </button>
-
-                        {/* Audit Log / Reviewer Timestamp */}
-                        {selectedReport.final?.reviewedAt && (
-                          <div className="text-[10px] text-stone-500 dark:text-stone-400 font-mono flex items-center justify-between pt-1">
-                            <span>Reviewed: {new Date(selectedReport.final.reviewedAt).toLocaleDateString()}</span>
-                            <span className="text-stone-700 dark:text-stone-300 font-medium flex items-center gap-1">
-                              <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                              Assessment Logged
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Field Dispatch & Inspection Order */}
-                        <div className="pt-2 border-t border-stone-200 dark:border-stone-800">
-                          <button
-                            type="button"
-                            onClick={() => setIsInspectionModalOpen(true)}
-                            className="w-full py-2 px-3 bg-stone-900 hover:bg-black active:bg-stone-950 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg transition flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-stone-800 dark:border-emerald-500"
-                            title="Generate official printable on-site worksheet and Viber/SMS dispatch"
-                          >
-                            <FileText className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-100 shrink-0" />
-                            <span>Field Inspection Worksheet</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
                   </div>
                 </motion.div>
               )}
@@ -6852,11 +6803,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                   return (
                     <div className="space-y-2">
-                      <div className={`p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/60 space-y-2.5 ${
-                        activeThreats.length > 0
+                      <div className={`p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/60 space-y-2.5 ${activeThreats.length > 0
                           ? 'border-l-[3px] border-l-rose-600'
                           : 'border-l-[3px] border-l-emerald-600'
-                      }`}>
+                        }`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             {activeThreats.length > 0 ? (
@@ -6896,62 +6846,61 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               })}
                             </div>
 
-                              {/* Interactive Zone Incidents Stream */}
-                              <div className="space-y-1.5 pt-1.5 border-t border-stone-200 dark:border-stone-800">
-                                <div className="flex items-center justify-between text-[10px]">
-                                  <span className="font-semibold uppercase tracking-wider text-stone-700 dark:text-stone-300">
-                                    Zone Incidents ({activeThreats.length})
-                                  </span>
-                                  <span className="text-stone-400 dark:text-stone-500 font-medium">
-                                    Click to inspect
-                                  </span>
-                                </div>
-                                <div className="space-y-1.5 max-h-52 overflow-y-auto no-scrollbar overscroll-contain pr-0.5">
-                                  {activeThreats.map((rep) => {
-                                    const c = rep.final?.category || rep.aiTriage?.category;
-                                    const catLabel = (CATEGORIES as any)[c || '']?.labelEn || c || 'Incident';
-                                    const sev = rep.final?.severity || rep.aiTriage?.severity || 0;
-                                    return (
-                                      <button
-                                        key={rep.id}
-                                        type="button"
-                                        onClick={() => {
-                                          setSelectedReport(rep);
-                                          setIsSheetOpen(true);
-                                          const coords = resolveReportCoordinates(rep);
-                                          setMapCenter(coords);
-                                          setMapZoom(15);
-                                        }}
-                                        className="w-full text-left p-2 rounded-xl bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 border border-stone-200 dark:border-stone-800 shadow-2xs transition-all cursor-pointer group flex items-center justify-between gap-2.5 active:scale-[0.99]"
-                                        title={`Inspect report ${rep.referenceCode}`}
-                                      >
-                                        <div className="min-w-0 flex-1">
-                                          <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900 dark:text-stone-100 group-hover:text-stone-700 dark:group-hover:text-stone-300 transition-colors">
-                                            <span className="font-mono text-[10px] text-stone-400 dark:text-stone-500 font-semibold">{rep.referenceCode}</span>
-                                            <span className="text-stone-300 dark:text-stone-600">•</span>
-                                            <span className="truncate">{catLabel}</span>
-                                          </div>
-                                          <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate mt-0.5 flex items-center gap-1">
-                                            <MapPin className="w-2.5 h-2.5 shrink-0 text-stone-400" />
-                                            <span className="truncate">{rep.location.barangay ? `${rep.location.barangay}, ` : ''}{rep.location.municipality}</span>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 shrink-0">
-                                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
-                                            sev >= 4
-                                              ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                                              : 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
-                                          }`}>
-                                            Sev {sev}
-                                          </span>
-                                          <ChevronRight className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-300 group-hover:translate-x-0.5 transition-all" />
-                                        </div>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
+                            {/* Interactive Zone Incidents Stream */}
+                            <div className="space-y-1.5 pt-1.5 border-t border-stone-200 dark:border-stone-800">
+                              <div className="flex items-center justify-between text-[10px]">
+                                <span className="font-semibold uppercase tracking-wider text-stone-700 dark:text-stone-300">
+                                  Zone Incidents ({activeThreats.length})
+                                </span>
+                                <span className="text-stone-400 dark:text-stone-500 font-medium">
+                                  Click to inspect
+                                </span>
                               </div>
-                            </>
+                              <div className="space-y-1.5 max-h-52 overflow-y-auto no-scrollbar overscroll-contain pr-0.5">
+                                {activeThreats.map((rep) => {
+                                  const c = rep.final?.category || rep.aiTriage?.category;
+                                  const catLabel = (CATEGORIES as any)[c || '']?.labelEn || c || 'Incident';
+                                  const sev = rep.final?.severity || rep.aiTriage?.severity || 0;
+                                  return (
+                                    <button
+                                      key={rep.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedReport(rep);
+                                        setIsSheetOpen(true);
+                                        const coords = resolveReportCoordinates(rep);
+                                        setMapCenter(coords);
+                                        setMapZoom(15);
+                                      }}
+                                      className="w-full text-left p-2 rounded-xl bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 border border-stone-200 dark:border-stone-800 shadow-2xs transition-all cursor-pointer group flex items-center justify-between gap-2.5 active:scale-[0.99]"
+                                      title={`Inspect report ${rep.referenceCode}`}
+                                    >
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900 dark:text-stone-100 group-hover:text-stone-700 dark:group-hover:text-stone-300 transition-colors">
+                                          <span className="font-mono text-[10px] text-stone-400 dark:text-stone-500 font-semibold">{rep.referenceCode}</span>
+                                          <span className="text-stone-300 dark:text-stone-600">•</span>
+                                          <span className="truncate">{catLabel}</span>
+                                        </div>
+                                        <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate mt-0.5 flex items-center gap-1">
+                                          <MapPin className="w-2.5 h-2.5 shrink-0 text-stone-400" />
+                                          <span className="truncate">{rep.location.barangay ? `${rep.location.barangay}, ` : ''}{rep.location.municipality}</span>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${sev >= 4
+                                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                            : 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
+                                          }`}>
+                                          Sev {sev}
+                                        </span>
+                                        <ChevronRight className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-300 group-hover:translate-x-0.5 transition-all" />
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </>
                         ) : (
                           <div className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">
                             Zero active citizen violation reports are mapped within this reserve's polygon.
@@ -7091,22 +7040,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <div className="p-3.5 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 shrink-0 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md border ${
-                        isMpp
+                      <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md border ${isMpp
                           ? 'bg-indigo-50 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
                           : 'bg-amber-50 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border-amber-200 dark:border-amber-800'
-                      }`}>
+                        }`}>
                         {isMpp ? <Factory className="w-3 h-3 text-indigo-600 dark:text-indigo-400" /> : <Pickaxe className="w-3 h-3 text-amber-600 dark:text-amber-400" />}
                         {isMpp ? 'MINERAL PROCESSING (MPP)' : 'MGB EXTRACTION CONCESSION'}
                       </span>
 
-                      <span className={`text-[8.5px] font-mono px-1.5 py-0.5 rounded font-bold uppercase border ${
-                        isCancelled
+                      <span className={`text-[8.5px] font-mono px-1.5 py-0.5 rounded font-bold uppercase border ${isCancelled
                           ? 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
                           : isExploration
-                          ? 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
-                          : 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
-                      }`}>
+                            ? 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
+                            : 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                        }`}>
                         {qp.status}
                       </span>
 
@@ -7214,11 +7161,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* 3. Spaceborne & Environmental Threat Correlation HUD */}
-                  <div className={`p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/60 space-y-2.5 ${
-                    nearbyHotspots.length > 0 || nearbyCitizenIncidents.length > 0
+                  <div className={`p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/60 space-y-2.5 ${nearbyHotspots.length > 0 || nearbyCitizenIncidents.length > 0
                       ? 'border-l-[3px] border-l-rose-600'
                       : 'border-l-[3px] border-l-emerald-600'
-                  }`}>
+                    }`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         {nearbyHotspots.length > 0 || nearbyCitizenIncidents.length > 0 ? (
@@ -7230,8 +7176,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           {nearbyHotspots.length > 0
                             ? 'Thermal Hotspot in Immediate Sector'
                             : nearbyCitizenIncidents.length > 0
-                            ? `${nearbyCitizenIncidents.length} Active Local Incident ${nearbyCitizenIncidents.length === 1 ? 'Report' : 'Reports'}`
-                            : 'Environmental Baseline Nominal'}
+                              ? `${nearbyCitizenIncidents.length} Active Local Incident ${nearbyCitizenIncidents.length === 1 ? 'Report' : 'Reports'}`
+                              : 'Environmental Baseline Nominal'}
                         </span>
                       </div>
 
@@ -7292,11 +7238,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-1.5 shrink-0">
-                                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
-                                    sev >= 4
+                                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${sev >= 4
                                       ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                                       : 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border border-stone-200 dark:border-stone-700'
-                                  }`}>
+                                    }`}>
                                     Sev {sev}
                                   </span>
                                   <ChevronRight className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-300 group-hover:translate-x-0.5 transition-all" />
@@ -7406,11 +7351,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <button
                       type="button"
                       onClick={() => setBasemapMode('street')}
-                      className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition cursor-pointer text-center ${
-                        basemapMode === 'street'
+                      className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition cursor-pointer text-center ${basemapMode === 'street'
                           ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-xs'
                           : 'bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800'
-                      }`}
+                        }`}
                       title="Standard road network & LGU cartography"
                     >
                       <MapIcon className={`w-4 h-4 mb-1 ${basemapMode === 'street' ? 'text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400'}`} />
@@ -7424,11 +7368,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <button
                       type="button"
                       onClick={() => setBasemapMode('satellite')}
-                      className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition cursor-pointer text-center ${
-                        basemapMode === 'satellite'
+                      className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition cursor-pointer text-center ${basemapMode === 'satellite'
                           ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-xs'
                           : 'bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800'
-                      }`}
+                        }`}
                       title="High-resolution aerial satellite photography"
                     >
                       <Globe className={`w-4 h-4 mb-1 ${basemapMode === 'satellite' ? 'text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400'}`} />
@@ -7442,11 +7385,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <button
                       type="button"
                       onClick={() => setBasemapMode('terrain')}
-                      className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition cursor-pointer text-center ${
-                        basemapMode === 'terrain'
+                      className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition cursor-pointer text-center ${basemapMode === 'terrain'
                           ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-xs'
                           : 'bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800'
-                      }`}
+                        }`}
                       title="Topographic elevation & mountain contours"
                     >
                       <Mountain className={`w-4 h-4 mb-1 ${basemapMode === 'terrain' ? 'text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400'}`} />
@@ -7470,11 +7412,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         setMapLayerMode('boundaries');
                         setShowMgbQuarries(false);
                       }}
-                      className={`py-1.5 px-2 rounded-lg text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5 ${
-                        mapLayerMode === 'boundaries'
+                      className={`py-1.5 px-2 rounded-lg text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5 ${mapLayerMode === 'boundaries'
                           ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs'
                           : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
-                      }`}
+                        }`}
                       title="14 Municipal administrative borders"
                     >
                       <MapPin className="w-3.5 h-3.5" />
@@ -7486,11 +7427,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         setMapLayerMode('choropleth');
                         setShowMgbQuarries(false);
                       }}
-                      className={`py-1.5 px-2 rounded-lg text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5 ${
-                        mapLayerMode === 'choropleth'
+                      className={`py-1.5 px-2 rounded-lg text-center transition cursor-pointer text-xs font-medium flex items-center justify-center gap-1.5 ${mapLayerMode === 'choropleth'
                           ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs'
                           : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
-                      }`}
+                        }`}
                       title="Incident volume density heatmap"
                     >
                       <Activity className="w-3.5 h-3.5" />
@@ -7506,9 +7446,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   title="Dim surrounding regions to spotlight Rizal jurisdiction"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${
-                      isMaskActive ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
-                    }`}>
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${isMaskActive ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                      }`}>
                       <Crosshair className="w-3.5 h-3.5" />
                     </div>
                     <div>
@@ -7523,14 +7462,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                   {/* Smooth Apple / iOS Sliding Toggle Switch */}
                   <div
-                    className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${
-                      isMaskActive ? 'bg-stone-900 dark:bg-stone-100' : 'bg-stone-300 dark:bg-stone-700'
-                    }`}
+                    className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${isMaskActive ? 'bg-stone-900 dark:bg-stone-100' : 'bg-stone-300 dark:bg-stone-700'
+                      }`}
                   >
                     <div
-                      className={`w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${
-                        isMaskActive ? 'translate-x-4 bg-white dark:bg-stone-900' : 'translate-x-0 bg-white'
-                      }`}
+                      className={`w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${isMaskActive ? 'translate-x-4 bg-white dark:bg-stone-900' : 'translate-x-0 bg-white'
+                        }`}
                     />
                   </div>
                 </div>
@@ -7548,9 +7485,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     title="Live Doppler precipitation radar from open-source RainViewer API"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${
-                        showRainRadar ? 'bg-blue-600 text-white' : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
-                      }`}>
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${showRainRadar ? 'bg-blue-600 text-white' : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                        }`}>
                         <CloudRain className="w-3.5 h-3.5" />
                       </div>
                       <div>
@@ -7565,14 +7501,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                     {/* Sliding Toggle */}
                     <div
-                      className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${
-                        showRainRadar ? 'bg-blue-600' : 'bg-stone-300 dark:bg-stone-700'
-                      }`}
+                      className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${showRainRadar ? 'bg-blue-600' : 'bg-stone-300 dark:bg-stone-700'
+                        }`}
                     >
                       <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${
-                          showRainRadar ? 'translate-x-4' : 'translate-x-0'
-                        }`}
+                        className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${showRainRadar ? 'translate-x-4' : 'translate-x-0'
+                          }`}
                       />
                     </div>
                   </div>
@@ -7594,9 +7528,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     title="Live Open-Meteo temperature, air quality score & wind vectors across Rizal LGUs"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${
-                        showWeatherMarkers ? 'bg-emerald-600 text-white' : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
-                      }`}>
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${showWeatherMarkers ? 'bg-emerald-600 text-white' : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                        }`}>
                         <Wind className="w-3.5 h-3.5" />
                       </div>
                       <div>
@@ -7611,14 +7544,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                     {/* Sliding Toggle */}
                     <div
-                      className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${
-                        showWeatherMarkers ? 'bg-emerald-600' : 'bg-stone-300 dark:bg-stone-700'
-                      }`}
+                      className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${showWeatherMarkers ? 'bg-emerald-600' : 'bg-stone-300 dark:bg-stone-700'
+                        }`}
                     >
                       <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${
-                          showWeatherMarkers ? 'translate-x-4' : 'translate-x-0'
-                        }`}
+                        className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${showWeatherMarkers ? 'translate-x-4' : 'translate-x-0'
+                          }`}
                       />
                     </div>
                   </div>
@@ -7695,11 +7626,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <button
                 type="button"
                 onClick={() => setIsLayersPanelOpen(!isLayersPanelOpen)}
-                className={`w-9 h-9 rounded-xl flex items-center justify-center transition cursor-pointer ${
-                  isLayersPanelOpen
+                className={`w-9 h-9 rounded-xl flex items-center justify-center transition cursor-pointer ${isLayersPanelOpen
                     ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs'
                     : 'text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
-                }`}
+                  }`}
                 title="Toggle Map Layers & Overlays"
                 aria-label="Map Layers"
               >

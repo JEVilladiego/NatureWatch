@@ -185,9 +185,11 @@ export const FieldInspectionModal: React.FC<FieldInspectionModalProps> = ({
           {/* Official Provincial Header */}
           <div className="print-avoid-break border-b-2 border-stone-900 pb-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-full border-2 border-stone-900 flex items-center justify-center font-serif font-black text-stone-900 text-lg bg-stone-100 shrink-0">
-                PGR
-              </div>
+              <img
+                src="/naturewatch_logo.png"
+                alt="NatureWatch Logo"
+                className="w-12 h-12 rounded-lg object-contain shrink-0"
+              />
               <div>
                 <p className="text-[10px] sm:text-xs font-bold tracking-widest uppercase text-stone-600 font-mono">
                   Republic of the Philippines • Province of Rizal

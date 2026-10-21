@@ -4,6 +4,7 @@ const STATIC_ASSETS = [
   '/index.html',
   '/manifest.webmanifest',
   '/icon.svg',
+  '/naturewatch_logo.png',
 ];
 
 self.addEventListener('install', (event) => {

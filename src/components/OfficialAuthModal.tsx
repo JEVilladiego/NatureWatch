@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ShieldCheck, Lock, Mail, X, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Lock, Mail, X, AlertCircle } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { checkOfficialStatus } from '../lib/auth';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -57,9 +57,11 @@ export const OfficialAuthModal: React.FC<OfficialAuthModalProps> = ({
         </button>
 
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center text-tagapo-800 dark:text-emerald-400">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
+          <img
+            src="/naturewatch_logo.png"
+            alt="NatureWatch Logo"
+            className="w-10 h-10 rounded-lg object-contain shrink-0"
+          />
           <div>
             <h2 className="font-bold text-lg text-stone-900 dark:text-white tracking-tight">PG-ENRO / MENRO Login</h2>
             <p className="text-xs text-stone-500 dark:text-stone-400">Provincial Government of Rizal</p>
