@@ -653,8 +653,8 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             className="hidden"
           />
 
-          {/* 3 Structured Evidence Slots */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          {/* 3 Structured Evidence Slots (Compact Side-by-Side Boxes on Mobile) */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1">
             {(
               [
                 {
@@ -687,7 +687,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               return (
                 <div
                   key={slotDef.role}
-                  className={`rounded-lg border transition p-3 flex flex-col justify-between ${
+                  className={`rounded-lg border transition p-2 sm:p-3 flex flex-col justify-between ${
                     slotData
                       ? 'border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 shadow-2xs'
                       : slotDef.role === 'primary' && description.trim()
@@ -696,30 +696,30 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   }`}
                 >
                   {/* Slot Header */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-semibold text-xs text-stone-900 dark:text-stone-100 leading-tight">
+                  <div className="space-y-0.5 sm:space-y-1">
+                    <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-1">
+                      <span className="font-semibold text-[11px] sm:text-xs text-stone-900 dark:text-stone-100 leading-tight truncate">
                         {slotDef.title}
                       </span>
-                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-medium shrink-0 ${slotDef.badgeClass}`}>
+                      <span className={`text-[9px] sm:text-[10px] font-mono px-1 sm:px-1.5 py-0.5 rounded font-medium shrink-0 ${slotDef.badgeClass}`}>
                         {slotDef.badge}
                       </span>
                     </div>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug hidden sm:block">
                       {slotDef.desc}
                     </p>
                   </div>
 
                   {/* Slot Content: Empty State vs Loaded Preview */}
-                  <div className="mt-3">
+                  <div className="mt-1.5 sm:mt-3">
                     {isCompressingThis ? (
-                      <div className="h-32 flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-stone-400 text-xs rounded-md bg-stone-100 dark:bg-stone-800 animate-pulse">
-                        <RefreshCw className="w-4 h-4 animate-spin text-stone-700 dark:text-stone-300" />
-                        <span>{t.compressing}</span>
+                      <div className="h-20 sm:h-32 flex flex-col items-center justify-center gap-1 sm:gap-2 text-stone-500 dark:text-stone-400 text-[10px] sm:text-xs rounded-md bg-stone-100 dark:bg-stone-800 animate-pulse">
+                        <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin text-stone-700 dark:text-stone-300" />
+                        <span className="text-center px-1 truncate max-w-full">{t.compressing}</span>
                       </div>
                     ) : slotData ? (
-                      <div className="space-y-2">
-                        <div className="relative rounded-md overflow-hidden bg-stone-900 aspect-4/3 group">
+                      <div className="space-y-1 sm:space-y-2">
+                        <div className="relative rounded-md overflow-hidden bg-stone-900 aspect-square sm:aspect-4/3 group">
                           <img
                             src={slotData.previewUrl}
                             alt={slotDef.title}
@@ -729,66 +729,61 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                             type="button"
                             onClick={() => handleRemoveSlot(slotDef.role)}
                             title="Remove photo"
-                            className="absolute top-1.5 right-1.5 p-1 bg-black/60 hover:bg-black/90 text-white rounded-md transition cursor-pointer backdrop-blur-xs"
+                            className="absolute top-1 right-1 p-0.5 sm:p-1 bg-black/60 hover:bg-black/90 text-white rounded-md transition cursor-pointer backdrop-blur-xs"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           </button>
 
-                          <div className="absolute bottom-1.5 left-1.5">
+                          <div className="absolute bottom-1 left-1">
                             {slotData.captureMethod === 'live_camera' ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-100/95 dark:text-emerald-300 dark:bg-emerald-950/90 backdrop-blur-xs px-1.5 py-0.5 rounded shadow-2xs">
-                                <Camera className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
-                                {t.liveCameraBadge}
+                              <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-semibold text-emerald-800 bg-emerald-100/95 dark:text-emerald-300 dark:bg-emerald-950/90 backdrop-blur-xs px-1 sm:px-1.5 py-0.5 rounded shadow-2xs">
+                                <Camera className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-700 dark:text-emerald-400" />
+                                <span className="hidden xs:inline">{t.liveCameraBadge}</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-stone-700 bg-white/95 dark:text-stone-300 dark:bg-stone-850/90 backdrop-blur-xs px-1.5 py-0.5 rounded shadow-2xs">
-                                <Upload className="w-3 h-3 text-stone-500 dark:text-stone-400" />
-                                {t.galleryBadge}
+                              <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-medium text-stone-700 bg-white/95 dark:text-stone-300 dark:bg-stone-850/90 backdrop-blur-xs px-1 sm:px-1.5 py-0.5 rounded shadow-2xs">
+                                <Upload className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-stone-500 dark:text-stone-400" />
+                                <span className="hidden xs:inline">{t.galleryBadge}</span>
                               </span>
                             )}
                           </div>
                         </div>
 
                         {/* EXIF / File telemetry pill */}
-                        <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 font-mono">
+                        <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-stone-500 dark:text-stone-400 font-mono">
                           <span>{(slotData.compressedSize / 1024).toFixed(0)} KB</span>
-                          {slotData.exif?.cameraModel && (
-                            <span className="truncate max-w-[110px]" title={slotData.exif.cameraModel}>
-                              {slotData.exif.cameraModel}
-                            </span>
-                          )}
                           {slotData.exif?.distanceFromReportKm !== null && slotData.exif?.distanceFromReportKm !== undefined && (
-                            <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
+                            <span className="text-emerald-700 dark:text-emerald-400 font-semibold truncate">
                               GPS: {slotData.exif.distanceFromReportKm}km
                             </span>
                           )}
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-1.5">
+                      <div className="space-y-1 sm:space-y-1.5">
                         <button
                           type="button"
                           onClick={() => handleTriggerCapture(slotDef.role, 'live_camera')}
-                          className="w-full py-2 px-2.5 bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
+                          className="w-full py-1.5 px-1 sm:py-2 sm:px-2.5 bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white rounded text-[10px] sm:text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer shadow-2xs"
                         >
-                          <Camera className="w-3.5 h-3.5" />
-                          <span>{t.cameraBtn}</span>
+                          <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                          <span className="truncate">{t.cameraBtn}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleTriggerCapture(slotDef.role, 'gallery')}
-                          className="w-full py-1.5 px-2 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 rounded-md text-[11px] font-medium flex items-center justify-center gap-1.5 transition cursor-pointer"
+                          className="w-full py-1 px-1 sm:py-1.5 sm:px-2 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 rounded text-[9.5px] sm:text-[11px] font-medium flex items-center justify-center gap-1 transition cursor-pointer"
                         >
-                          <Upload className="w-3 h-3 text-stone-500 dark:text-stone-400" />
-                          <span>{t.galleryBtn}</span>
+                          <Upload className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-stone-500 shrink-0" />
+                          <span className="truncate">{t.galleryBtn}</span>
                         </button>
                       </div>
                     )}
 
                     {errorThis && (
-                      <div className="mt-1.5 flex items-center gap-1 text-[11px] text-rose-700 dark:text-rose-400">
+                      <div className="mt-1 flex items-center gap-1 text-[10px] text-rose-700 dark:text-rose-400">
                         <AlertCircle className="w-3 h-3 text-rose-600 dark:text-rose-400 shrink-0" />
-                        <span>{errorThis}</span>
+                        <span className="truncate">{errorThis}</span>
                       </div>
                     )}
                   </div>
@@ -825,18 +820,23 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             </div>
           </div>
 
-          {/* GPS Action Bar & Status */}
-          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-stone-50/80 dark:bg-stone-900/60 rounded-lg border border-stone-200 dark:border-stone-800">
-            <div className="flex items-center gap-2 text-xs">
-              <Navigation className="w-4 h-4 text-stone-500 dark:text-stone-400 shrink-0" />
-              <span className="text-stone-600 dark:text-stone-300 font-medium">
+          {/* GPS Action Bar & Status (Ultra-Compact Single-Row on Mobile) */}
+          <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-stone-50/80 dark:bg-stone-900/60 rounded-lg border border-stone-200 dark:border-stone-800">
+            <div className="flex items-center gap-1.5 text-xs min-w-0 flex-1">
+              <Navigation className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 shrink-0" />
+              <span className="text-stone-700 dark:text-stone-300 font-medium truncate text-xs">
                 {locationSource === 'gps' && selectedBarangay && selectedMunicipality
                   ? `Brgy. ${selectedBarangay}, ${selectedMunicipality}`
                   : locationSource === 'gps'
                   ? 'Rizal Province (GPS)'
                   : selectedBarangay && selectedMunicipality
                   ? `Brgy. ${selectedBarangay}, ${selectedMunicipality}`
-                  : (lang === 'fil' ? 'Pumili sa ibaba o gamitin ang GPS' : 'Choose below or use device GPS')}
+                  : (
+                    <>
+                      <span className="sm:hidden">{t.chooseOrGpsMobile}</span>
+                      <span className="hidden sm:inline">{lang === 'fil' ? 'Pumili sa ibaba o gamitin ang GPS' : 'Choose below or use device GPS'}</span>
+                    </>
+                  )}
               </span>
             </div>
 
@@ -844,14 +844,26 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               type="button"
               onClick={acquireGpsLocation}
               disabled={isLocating}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-2xs ${
+              className={`shrink-0 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer shadow-2xs ${
                 locationSource === 'gps'
                   ? 'bg-white hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700'
                   : 'bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white'
               }`}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
-              <span>{locationSource === 'gps' ? t.resyncGpsBtn : t.useCurrentLocationBtn}</span>
+              <RefreshCw className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
+              <span>
+                {locationSource === 'gps' ? (
+                  <>
+                    <span className="sm:hidden">{t.resyncGpsMobileBtn}</span>
+                    <span className="hidden sm:inline">{t.resyncGpsBtn}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="sm:hidden">{t.useGpsMobileBtn}</span>
+                    <span className="hidden sm:inline">{t.useCurrentLocationBtn}</span>
+                  </>
+                )}
+              </span>
             </button>
           </div>
 
