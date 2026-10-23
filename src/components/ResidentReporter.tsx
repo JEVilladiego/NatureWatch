@@ -90,10 +90,10 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   const mountTimeRef = useRef<number>(Date.now());
 
   // Location states
-  const [locationTab, setLocationTab] = useState<'gps' | 'manual'>('gps');
+  const [gpsStatus, setGpsStatus] = useState<'idle' | 'locating' | 'success' | 'denied' | 'unavailable'>('idle');
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number }>(RIZAL_COORDS);
   const [accuracyMeters, setAccuracyMeters] = useState<number | null>(null);
-  const [locationSource, setLocationSource] = useState<'gps' | 'manual_pin'>('gps');
+  const [locationSource, setLocationSource] = useState<'gps' | 'manual_pin'>('manual_pin');
   const [selectedMunicipality, setSelectedMunicipality] = useState<string>('');
   const [selectedBarangay, setSelectedBarangay] = useState<string>('');
   const [isLocating, setIsLocating] = useState<boolean>(false);
@@ -132,7 +132,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   }, []);
 
   // Checks spatial jurisdiction against Rizal boundary and auto-detects municipality via Ray-Casting PIP
-  const checkJurisdictionAndMunicipality = async (lat: number, lng: number) => {
+  const checkJurisdictionAndMunicipality = async (lat: number, lng: number, autoDetectAdmin = true) => {
     try {
       const inRizal = await isPointInRizal(lat, lng);
       setIsOutOfJurisdiction(!inRizal);
@@ -142,27 +142,29 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           .then((zone) => setDetectedProtectedZone(zone))
           .catch(() => setDetectedProtectedZone(null));
 
-        const detectedMun = await findMunicipalityByPoint(lat, lng);
-        if (detectedMun) {
-          const matchedMun =
-            RIZAL_MUNICIPALITIES.find(
-              (m) =>
-                m === detectedMun ||
-                m.toLowerCase().includes(detectedMun.toLowerCase()) ||
-                detectedMun.toLowerCase().includes(m.toLowerCase())
-            ) || detectedMun;
+        if (autoDetectAdmin) {
+          const detectedMun = await findMunicipalityByPoint(lat, lng);
+          if (detectedMun) {
+            const matchedMun =
+              RIZAL_MUNICIPALITIES.find(
+                (m) =>
+                  m === detectedMun ||
+                  m.toLowerCase().includes(detectedMun.toLowerCase()) ||
+                  detectedMun.toLowerCase().includes(m.toLowerCase())
+              ) || detectedMun;
 
-          setSelectedMunicipality(matchedMun);
+            setSelectedMunicipality(matchedMun);
 
-          const nearest = findNearestBarangay(lat, lng);
-          if (nearest && nearest.municipality === matchedMun) {
-            setSelectedBarangay(nearest.barangay);
-          }
-        } else {
-          const nearest = findNearestBarangay(lat, lng);
-          if (nearest) {
-            setSelectedMunicipality(nearest.municipality);
-            setSelectedBarangay(nearest.barangay);
+            const nearest = findNearestBarangay(lat, lng);
+            if (nearest && nearest.municipality === matchedMun) {
+              setSelectedBarangay(nearest.barangay);
+            }
+          } else {
+            const nearest = findNearestBarangay(lat, lng);
+            if (nearest) {
+              setSelectedMunicipality(nearest.municipality);
+              setSelectedBarangay(nearest.barangay);
+            }
           }
         }
       }
@@ -173,12 +175,15 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
 
   const acquireGpsLocation = () => {
     if (!('geolocation' in navigator)) {
-      setLocationError(t.gpsFallbackNotice);
-      setLocationTab('manual');
+      setGpsStatus('unavailable');
+      setLocationError(t.gpsUnavailableNotice);
+      setLocationSource('manual_pin');
+      setAccuracyMeters(null);
       return;
     }
 
     setIsLocating(true);
+    setGpsStatus('locating');
     setLocationError(null);
 
     navigator.geolocation.getCurrentPosition(
@@ -187,27 +192,28 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         setCoordinates({ lat: latitude, lng: longitude });
         setAccuracyMeters(Math.round(accuracy));
         setLocationSource('gps');
+        setGpsStatus('success');
         setIsLocating(false);
+        setLocationError(null);
 
         // High-precision Point-in-Polygon & geofence verification
-        checkJurisdictionAndMunicipality(latitude, longitude);
+        checkJurisdictionAndMunicipality(latitude, longitude, true);
       },
       (error) => {
         console.warn('Geolocation error:', error.message);
         setIsLocating(false);
-        setLocationError(t.gpsFallbackNotice);
-        // Automatic gentle fallback to manual picking
-        setLocationTab('manual');
+        if (error.code === error.PERMISSION_DENIED) {
+          setGpsStatus('denied');
+          setLocationError(t.gpsDeniedNotice);
+        } else {
+          setGpsStatus('unavailable');
+          setLocationError(t.gpsUnavailableNotice);
+        }
+        setLocationSource('manual_pin');
+        setAccuracyMeters(null);
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
     );
-  };
-
-  const handleTabSwitch = (tab: 'gps' | 'manual') => {
-    setLocationTab(tab);
-    if (tab === 'gps') {
-      acquireGpsLocation();
-    }
   };
 
   const handleTriggerCapture = (role: EvidenceSlotRole, method: 'live_camera' | 'gallery') => {
@@ -248,12 +254,14 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         notes: exifData.notes,
       };
 
-      // If photo has authentic camera hardware GPS and citizen has not manually dragged a custom pin,
-      // intelligently lock the report to the true physical location of the incident:
-      if (exifData.hardwareGps && locationSource !== 'gps') {
+      // If photo has authentic camera hardware GPS and citizen has not manually chosen a municipality,
+      // lock the report coordinates to the true physical location of the incident:
+      if (exifData.hardwareGps && locationSource !== 'gps' && !selectedMunicipality) {
         setCoordinates(exifData.hardwareGps);
         setLocationSource('gps');
-        checkJurisdictionAndMunicipality(exifData.hardwareGps.lat, exifData.hardwareGps.lng);
+        setGpsStatus('success');
+        setLocationError(null);
+        checkJurisdictionAndMunicipality(exifData.hardwareGps.lat, exifData.hardwareGps.lng, true);
       }
 
       setSlots((prev) => ({
@@ -404,7 +412,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
         location: {
           lat: coordinates.lat,
           lng: coordinates.lng,
-          accuracyMeters,
+          accuracyMeters: locationSource === 'gps' ? accuracyMeters : null,
           geohash,
           source: locationSource,
           municipality: selectedMunicipality || 'Rizal Province',
@@ -779,332 +787,259 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               </h2>
             </div>
 
-            {/* Segmented Mode Switcher */}
-            <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-900 p-1 rounded-lg self-start sm:self-auto border border-transparent dark:border-stone-800">
-              <button
-                type="button"
-                onClick={() => handleTabSwitch('gps')}
-                className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
-                  locationTab === 'gps'
-                    ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-white shadow-2xs'
-                    : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
-                }`}
-              >
-                <Navigation className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />
-                <span>{t.locationTabGps}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleTabSwitch('manual')}
-                className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
-                  locationTab === 'manual'
-                    ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-white shadow-2xs'
-                    : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
-                }`}
-              >
-                <Map className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />
-                <span>{t.locationTabManual}</span>
-              </button>
+            {/* Location Source Status Pill */}
+            <div className="flex items-center gap-2">
+              {locationSource === 'gps' && accuracyMeters !== null ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shadow-2xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span>{t.gpsVerifiedBadge} (±{accuracyMeters}m)</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
+                  <MapPin className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
+                  <span>{t.manualPinBadge}</span>
+                </div>
+              )}
             </div>
           </div>
 
+          {/* GPS Action Bar & Status */}
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-stone-50/80 dark:bg-stone-900/60 rounded-lg border border-stone-200 dark:border-stone-800">
+            <div className="flex items-center gap-2 text-xs">
+              <Navigation className="w-4 h-4 text-stone-500 dark:text-stone-400 shrink-0" />
+              <span className="text-stone-600 dark:text-stone-300 font-medium">
+                {locationSource === 'gps' && selectedBarangay && selectedMunicipality
+                  ? `Brgy. ${selectedBarangay}, ${selectedMunicipality}`
+                  : locationSource === 'gps'
+                  ? 'Rizal Province (GPS)'
+                  : selectedBarangay && selectedMunicipality
+                  ? `Brgy. ${selectedBarangay}, ${selectedMunicipality}`
+                  : (lang === 'fil' ? 'Pumili sa ibaba o gamitin ang GPS' : 'Choose below or use device GPS')}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={acquireGpsLocation}
+              disabled={isLocating}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-2xs ${
+                locationSource === 'gps'
+                  ? 'bg-white hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700'
+                  : 'bg-stone-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white'
+              }`}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
+              <span>{locationSource === 'gps' ? t.resyncGpsBtn : t.useCurrentLocationBtn}</span>
+            </button>
+          </div>
+
+          {/* Inline GPS Error/Notice Banner (if permission denied or unavailable) */}
           {locationError && (
-            <div className="p-2.5 rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/40 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2">
+            <div className="p-2.5 rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/40 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <span>{locationError}</span>
+              <div className="space-y-0.5">
+                <span className="font-semibold block">
+                  {gpsStatus === 'denied' ? 'GPS Permission Blocked' : 'GPS Offline / Unavailable'}
+                </span>
+                <span>{locationError}</span>
+              </div>
             </div>
           )}
 
-          {/* TAB 1: GPS */}
-          {locationTab === 'gps' && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between py-1 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                  <span className="font-semibold text-stone-900 dark:text-stone-100">
-                    {selectedBarangay && selectedMunicipality
-                      ? `Brgy. ${selectedBarangay}, ${selectedMunicipality}`
-                      : 'Rizal Province'}
-                  </span>
-                  {accuracyMeters !== null && (
-                    <span className="text-stone-400 dark:text-stone-500 font-mono text-[11px]">
-                      (±{accuracyMeters}m)
-                    </span>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={acquireGpsLocation}
-                  disabled={isLocating}
-                  className="text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white font-semibold text-xs flex items-center gap-1 cursor-pointer"
-                >
-                  <RefreshCw className={`w-3 h-3 ${isLocating ? 'animate-spin' : ''}`} />
-                  <span>Sync GPS</span>
-                </button>
-              </div>
-
-              {isOutOfJurisdiction && (
-                <div className="text-xs text-amber-900 dark:text-amber-300 py-1 space-y-0.5">
-                  <div className="flex items-center gap-1.5 font-semibold text-amber-950 dark:text-amber-200">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                    <span>{lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}</span>
-                  </div>
-                  <p className="text-stone-600 dark:text-stone-400 pl-5 leading-normal">
-                    {lang === 'fil'
-                      ? 'Ang napiling lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal (PG-ENRO). Pakisuyong ilagay ang pin sa loob ng Rizal.'
-                      : 'The selected location is outside the jurisdiction of Rizal Province (PG-ENRO). Please place the pin inside Rizal.'}
-                  </p>
-                </div>
-              )}
-
-              {detectedProtectedZone && !isOutOfJurisdiction && (
-                <div className="p-2.5 bg-stone-50 dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 text-xs flex items-start gap-2 shadow-2xs">
-                  <ShieldCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
-                  <div className="space-y-1 min-w-0 w-full">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-semibold text-stone-900 dark:text-stone-100 block leading-tight truncate">
-                        {t.protectedZoneNoticeResident}: {detectedProtectedZone.shortName}
-                      </span>
-                      {detectedProtectedZone.category && (
-                        <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-stone-200/80 dark:bg-stone-800 text-stone-700 dark:text-stone-300 shrink-0">
-                          {detectedProtectedZone.category.replace(/_/g, ' ')}
-                        </span>
-                      )}
-                    </div>
-                    {detectedProtectedZone.legalBasis && (
-                      <div className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">
-                        {detectedProtectedZone.legalBasis}
-                      </div>
-                    )}
-                    <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
-                      {detectedProtectedZone.legalNote}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pb-1">
-                <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">Map View</span>
-                <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-900 p-0.5 rounded-md text-[11px] font-semibold border border-transparent dark:border-stone-800">
-                  <button
-                    type="button"
-                    onClick={() => setBasemapMode('street')}
-                    className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                      basemapMode === 'street'
-                        ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
-                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
-                    }`}
-                  >
-                    Street
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBasemapMode('satellite')}
-                    className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                      basemapMode === 'satellite'
-                        ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
-                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
-                    }`}
-                  >
-                    Satellite
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBasemapMode('terrain')}
-                    className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                      basemapMode === 'terrain'
-                        ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
-                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
-                    }`}
-                  >
-                    Terrain
-                  </button>
-                </div>
-              </div>
-
-              <div className="relative isolate z-0 rounded-lg overflow-hidden border border-stone-200 dark:border-stone-800">
-                <LeafletMap
-                  mode="picker"
-                  center={coordinates}
-                  zoom={15}
-                  accuracyMeters={accuracyMeters}
-                  layerMode="boundaries"
-                  basemap={basemapMode}
-                  activeMunicipality={selectedMunicipality}
-                  onLocationChange={(lat, lng) => {
-                    setCoordinates({ lat, lng });
+          {/* Municipality & Barangay Dropdowns */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1">
+                {t.manualMunicipalityLabel}
+              </label>
+              <select
+                value={selectedMunicipality}
+                onChange={(e) => {
+                  const mun = e.target.value;
+                  setSelectedMunicipality(mun);
+                  setSelectedBarangay('');
+                  if (mun && MUNICIPALITY_COORDINATES[mun]) {
+                    setCoordinates(MUNICIPALITY_COORDINATES[mun]);
                     setLocationSource('manual_pin');
-                    checkJurisdictionAndMunicipality(lat, lng);
-                  }}
-                  className="h-56 sm:h-64 w-full"
-                />
-                {isLocating && (
-                  <div className="absolute inset-0 bg-white/80 dark:bg-stone-950/80 backdrop-blur-xs flex items-center justify-center text-xs font-semibold text-stone-900 dark:text-white gap-2 z-10">
-                    <RefreshCw className="w-4 h-4 animate-spin text-stone-700 dark:text-emerald-400" />
-                    <span>{t.locating}</span>
-                  </div>
-                )}
-              </div>
+                    setAccuracyMeters(null);
+                    checkJurisdictionAndMunicipality(MUNICIPALITY_COORDINATES[mun].lat, MUNICIPALITY_COORDINATES[mun].lng, false);
+                  }
+                }}
+                className="w-full text-xs font-medium px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg text-stone-900 dark:text-white focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 focus:outline-none"
+              >
+                <option value="">{t.selectMunicipality}</option>
+                {RIZAL_MUNICIPALITIES.map((mun) => (
+                  <option key={mun} value={mun}>
+                    {mun}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
 
-          {/* TAB 2: Manual */}
-          {locationTab === 'manual' && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1">
-                    {t.manualMunicipalityLabel}
-                  </label>
-                  <select
-                    value={selectedMunicipality}
-                    onChange={(e) => {
-                      const mun = e.target.value;
-                      setSelectedMunicipality(mun);
-                      setSelectedBarangay('');
-                      if (mun && MUNICIPALITY_COORDINATES[mun]) {
-                        setCoordinates(MUNICIPALITY_COORDINATES[mun]);
-                        setLocationSource('manual_pin');
-                      }
-                    }}
-                    className="w-full text-xs font-medium px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg text-stone-900 dark:text-white focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 focus:outline-none"
-                  >
-                    <option value="">{t.selectMunicipality}</option>
-                    {RIZAL_MUNICIPALITIES.map((mun) => (
-                      <option key={mun} value={mun}>
-                        {mun}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1">
-                    {t.manualBarangayLabel}
-                  </label>
-                  <select
-                    value={selectedBarangay}
-                    onChange={(e) => {
-                      const brgy = e.target.value;
-                      setSelectedBarangay(brgy);
-                      if (selectedMunicipality && brgy) {
-                        const brgyCoords = getBarangayCoordinates(selectedMunicipality, brgy);
-                        if (brgyCoords) {
-                          setCoordinates(brgyCoords);
-                          setLocationSource('manual_pin');
-                        }
-                      } else if (selectedMunicipality && MUNICIPALITY_COORDINATES[selectedMunicipality]) {
-                        setCoordinates(MUNICIPALITY_COORDINATES[selectedMunicipality]);
-                        setLocationSource('manual_pin');
-                      }
-                    }}
-                    disabled={!selectedMunicipality}
-                    className="w-full text-xs font-medium px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg text-stone-900 dark:text-white focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 focus:outline-none disabled:bg-stone-50 dark:disabled:bg-stone-950 disabled:text-stone-400 dark:disabled:text-stone-600"
-                  >
-                    <option value="">
-                      {selectedMunicipality ? t.selectBarangayActive : t.selectBarangay}
-                    </option>
-                    {selectedMunicipality && RIZAL_BARANGAY_AREAS[selectedMunicipality]
-                      ? RIZAL_BARANGAY_AREAS[selectedMunicipality].map((area) => (
-                          <optgroup key={area.label} label={area.label}>
-                            {area.barangays.map((brgy) => (
-                              <option key={brgy} value={brgy}>
-                                Brgy. {brgy}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))
-                      : selectedMunicipality &&
-                        RIZAL_LGUS[selectedMunicipality]?.map((brgy) => (
+            <div>
+              <label className="block text-xs font-semibold text-stone-600 dark:text-stone-300 mb-1">
+                {t.manualBarangayLabel}
+              </label>
+              <select
+                value={selectedBarangay}
+                onChange={(e) => {
+                  const brgy = e.target.value;
+                  setSelectedBarangay(brgy);
+                  if (selectedMunicipality && brgy) {
+                    const brgyCoords = getBarangayCoordinates(selectedMunicipality, brgy);
+                    if (brgyCoords) {
+                      setCoordinates(brgyCoords);
+                      setLocationSource('manual_pin');
+                      setAccuracyMeters(null);
+                      checkJurisdictionAndMunicipality(brgyCoords.lat, brgyCoords.lng, false);
+                    }
+                  } else if (selectedMunicipality && MUNICIPALITY_COORDINATES[selectedMunicipality]) {
+                    setCoordinates(MUNICIPALITY_COORDINATES[selectedMunicipality]);
+                    setLocationSource('manual_pin');
+                    setAccuracyMeters(null);
+                    checkJurisdictionAndMunicipality(MUNICIPALITY_COORDINATES[selectedMunicipality].lat, MUNICIPALITY_COORDINATES[selectedMunicipality].lng, false);
+                  }
+                }}
+                disabled={!selectedMunicipality}
+                className="w-full text-xs font-medium px-3 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg text-stone-900 dark:text-white focus:ring-1 focus:ring-stone-900 dark:focus:ring-emerald-500 focus:outline-none disabled:bg-stone-50 dark:disabled:bg-stone-950 disabled:text-stone-400 dark:disabled:text-stone-600"
+              >
+                <option value="">
+                  {selectedMunicipality ? t.selectBarangayActive : t.selectBarangay}
+                </option>
+                {selectedMunicipality && RIZAL_BARANGAY_AREAS[selectedMunicipality]
+                  ? RIZAL_BARANGAY_AREAS[selectedMunicipality].map((area) => (
+                      <optgroup key={area.label} label={area.label}>
+                        {area.barangays.map((brgy) => (
                           <option key={brgy} value={brgy}>
                             Brgy. {brgy}
                           </option>
                         ))}
-                  </select>
-                </div>
+                      </optgroup>
+                    ))
+                  : selectedMunicipality &&
+                    RIZAL_LGUS[selectedMunicipality]?.map((brgy) => (
+                      <option key={brgy} value={brgy}>
+                        Brgy. {brgy}
+                      </option>
+                    ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Environmental Jurisdiction and Protected Zone Notices */}
+          {isOutOfJurisdiction && (
+            <div className="text-xs text-amber-900 dark:text-amber-300 py-1 space-y-0.5">
+              <div className="flex items-center gap-1.5 font-semibold text-amber-950 dark:text-amber-200">
+                <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>{lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}</span>
               </div>
+              <p className="text-stone-600 dark:text-stone-400 pl-5 leading-normal">
+                {lang === 'fil'
+                  ? 'Ang napiling lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal (PG-ENRO). Pakisuyong ilagay ang pin sa loob ng Rizal.'
+                  : 'The selected location is outside the jurisdiction of Rizal Province (PG-ENRO). Please place the pin inside Rizal.'}
+              </p>
+            </div>
+          )}
 
-              {isOutOfJurisdiction && (
-                <div className="text-xs text-amber-900 dark:text-amber-300 py-1 space-y-0.5">
-                  <div className="flex items-center gap-1.5 font-semibold text-amber-950 dark:text-amber-200">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                    <span>{lang === 'fil' ? 'Labas ng Hurisdiksyon ng Rizal' : 'Outside Rizal Province Jurisdiction'}</span>
-                  </div>
-                  <p className="text-stone-600 dark:text-stone-400 pl-5 leading-normal">
-                    {lang === 'fil'
-                      ? 'Ang napiling lokasyon ay nasa labas ng hurisdiksyon ng Lalawigan ng Rizal (PG-ENRO). Pakisuyong ilagay ang pin sa loob ng Rizal.'
-                      : 'The selected location is outside the jurisdiction of Rizal Province (PG-ENRO). Please place the pin inside Rizal.'}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
-                <span className="flex items-center gap-1 text-[11px] text-stone-600 dark:text-stone-400">
-                  <MapPin className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 shrink-0" />
-                  {t.tapToPinHint}
-                </span>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-0.5 bg-stone-100 dark:bg-stone-900 p-0.5 rounded-md text-[11px] font-semibold border border-transparent dark:border-stone-800">
-                    <button
-                      type="button"
-                      onClick={() => setBasemapMode('street')}
-                      className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                        basemapMode === 'street'
-                          ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
-                          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
-                      }`}
-                    >
-                      Street
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBasemapMode('satellite')}
-                      className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                        basemapMode === 'satellite'
-                          ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
-                          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
-                      }`}
-                    >
-                      Satellite
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBasemapMode('terrain')}
-                      className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                        basemapMode === 'terrain'
-                          ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
-                          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
-                      }`}
-                    >
-                      Terrain
-                    </button>
-                  </div>
-                  <span className="text-[11px] text-stone-400 dark:text-stone-500 font-mono">
-                    {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
+          {detectedProtectedZone && !isOutOfJurisdiction && (
+            <div className="p-2.5 bg-stone-50 dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 text-xs flex items-start gap-2 shadow-2xs">
+              <ShieldCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
+              <div className="space-y-1 min-w-0 w-full">
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="font-semibold text-stone-900 dark:text-stone-100 block leading-tight truncate">
+                    {t.protectedZoneNoticeResident}: {detectedProtectedZone.shortName}
                   </span>
+                  {detectedProtectedZone.category && (
+                    <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-stone-200/80 dark:bg-stone-800 text-stone-700 dark:text-stone-300 shrink-0">
+                      {detectedProtectedZone.category.replace(/_/g, ' ')}
+                    </span>
+                  )}
                 </div>
-              </div>
-
-              <div className="relative isolate z-0 rounded-lg overflow-hidden border border-stone-200 dark:border-stone-800">
-                <LeafletMap
-                  mode="picker"
-                  center={coordinates}
-                  zoom={14}
-                  accuracyMeters={null}
-                  layerMode="boundaries"
-                  basemap={basemapMode}
-                  activeMunicipality={selectedMunicipality}
-                  onLocationChange={(lat, lng) => {
-                    setCoordinates({ lat, lng });
-                    setLocationSource('manual_pin');
-                    checkJurisdictionAndMunicipality(lat, lng);
-                  }}
-                  className="h-64 sm:h-72 w-full cursor-crosshair"
-                />
+                {detectedProtectedZone.legalBasis && (
+                  <div className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">
+                    {detectedProtectedZone.legalBasis}
+                  </div>
+                )}
+                <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-snug">
+                  {detectedProtectedZone.legalNote}
+                </p>
               </div>
             </div>
           )}
+
+          {/* Map Controls Header */}
+          <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+            <span className="flex items-center gap-1 text-[11px] text-stone-600 dark:text-stone-400">
+              <MapPin className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 shrink-0" />
+              {t.tapToPinHint}
+            </span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5 bg-stone-100 dark:bg-stone-900 p-0.5 rounded-md text-[11px] font-semibold border border-transparent dark:border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => setBasemapMode('street')}
+                  className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                    basemapMode === 'street'
+                      ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
+                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                  }`}
+                >
+                  Street
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBasemapMode('satellite')}
+                  className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                    basemapMode === 'satellite'
+                      ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
+                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                  }`}
+                >
+                  Satellite
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBasemapMode('terrain')}
+                  className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                    basemapMode === 'terrain'
+                      ? 'bg-stone-900 dark:bg-emerald-600 text-white shadow-2xs'
+                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                  }`}
+                >
+                  Terrain
+                </button>
+              </div>
+              <span className="text-[11px] text-stone-400 dark:text-stone-500 font-mono">
+                {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
+              </span>
+            </div>
+          </div>
+
+          {/* Single Unified Leaflet Map */}
+          <div className="relative isolate z-0 rounded-lg overflow-hidden border border-stone-200 dark:border-stone-800">
+            <LeafletMap
+              mode="picker"
+              center={coordinates}
+              zoom={15}
+              accuracyMeters={locationSource === 'gps' ? accuracyMeters : null}
+              layerMode="boundaries"
+              basemap={basemapMode}
+              activeMunicipality={selectedMunicipality}
+              onLocationChange={(lat, lng) => {
+                setCoordinates({ lat, lng });
+                setLocationSource('manual_pin');
+                setAccuracyMeters(null);
+                checkJurisdictionAndMunicipality(lat, lng, true);
+              }}
+              className="h-64 sm:h-72 w-full"
+            />
+            {isLocating && (
+              <div className="absolute inset-0 bg-white/80 dark:bg-stone-950/80 backdrop-blur-xs flex items-center justify-center text-xs font-semibold text-stone-900 dark:text-white gap-2 z-10">
+                <RefreshCw className="w-4 h-4 animate-spin text-stone-700 dark:text-emerald-400" />
+                <span>{t.locating}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Step 3: Description */}
