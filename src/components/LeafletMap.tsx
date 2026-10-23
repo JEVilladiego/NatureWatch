@@ -177,8 +177,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const [mgbQuarriesData, setMgbQuarriesData] = useState<GeoJSONFeatureCollection<MgbQuarryFeatureProperties> | null>(null);
   const [showTwoFingerToast, setShowTwoFingerToast] = useState(false);
   const twoFingerTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const touchMovedRef = useRef<boolean>(false);
+  const isMultiTouchRef = useRef<boolean>(false);
 
   const shouldMask = maskNonRizal !== undefined ? maskNonRizal : mode === 'dashboard';
 
@@ -2068,60 +2069,100 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     if (!container || mode !== 'picker' || isFullscreen || !enableCooperativeGestures) return;
 
     const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        touchMovedRef.current = false;
-        touchStartPosRef.current = {
-          x: e.touches[0].clientX,
-          y: e.touches[0].clientY,
-        };
-        // Disable map dragging so single-finger swipes scroll the webpage naturally
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.dragging.disable();
-        }
-      } else if (e.touches.length >= 2) {
-        // Two or more fingers: enable map dragging for pan and pinch-zoom
+      if (e.touches.length >= 2) {
+        // Multi-touch gesture initiated: enable map dragging for pan and pinch-zoom
+        isMultiTouchRef.current = true;
         touchMovedRef.current = true;
+        // Instantly dismiss any single-finger guidance toast
+        setShowTwoFingerToast(false);
+        if (twoFingerTimerRef.current) clearTimeout(twoFingerTimerRef.current);
         if (mapInstanceRef.current) {
           mapInstanceRef.current.dragging.enable();
+        }
+      } else if (e.touches.length === 1) {
+        if (!isMultiTouchRef.current) {
+          touchMovedRef.current = false;
+          touchStartPosRef.current = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY,
+            time: Date.now(),
+          };
+          // Disable map dragging so single-finger swipes scroll the webpage naturally
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.dragging.disable();
+          }
         }
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      // If two or more touches are active, multi-touch is in progress
+      if (e.touches.length >= 2) {
+        isMultiTouchRef.current = true;
+        setShowTwoFingerToast(false);
+        if (twoFingerTimerRef.current) clearTimeout(twoFingerTimerRef.current);
+        if (mapInstanceRef.current && !mapInstanceRef.current.dragging.enabled()) {
+          mapInstanceRef.current.dragging.enable();
+        }
+        return;
+      }
+
+      // If this interaction was part of a multi-touch gesture, ignore trailing single finger
+      if (isMultiTouchRef.current) {
+        return;
+      }
+
+      // Strictly single finger touching and moving
       if (e.touches.length === 1 && touchStartPosRef.current) {
         const dx = Math.abs(e.touches[0].clientX - touchStartPosRef.current.x);
         const dy = Math.abs(e.touches[0].clientY - touchStartPosRef.current.y);
-        // If finger moved noticeably, user is scrolling the page
-        if (dx > 8 || dy > 8) {
+        const elapsed = Date.now() - touchStartPosRef.current.time;
+
+        // User is intentionally dragging/scrolling with ONE finger only:
+        // Movement threshold (> 16px) and micro-delay (> 60ms) ensure a second finger wasn't merely landing
+        if ((dx > 16 || dy > 16) && elapsed > 60) {
           touchMovedRef.current = true;
-          // Show brief two-finger guidance toast
           setShowTwoFingerToast(true);
           if (twoFingerTimerRef.current) clearTimeout(twoFingerTimerRef.current);
           twoFingerTimerRef.current = setTimeout(() => {
             setShowTwoFingerToast(false);
-          }, 1600);
+          }, 1200);
         }
       }
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
       if (e.touches.length === 0) {
+        // All fingers lifted: reset multi-touch session
+        isMultiTouchRef.current = false;
+        touchStartPosRef.current = null;
         // Re-enable dragging for desktop mouse pointers
         if (mapInstanceRef.current) {
           mapInstanceRef.current.dragging.enable();
         }
-        touchStartPosRef.current = null;
+        // Rapidly clear the toast once finger is lifted
+        if (twoFingerTimerRef.current) clearTimeout(twoFingerTimerRef.current);
+        twoFingerTimerRef.current = setTimeout(() => {
+          setShowTwoFingerToast(false);
+        }, 350);
+      } else if (e.touches.length === 1 && isMultiTouchRef.current) {
+        // One finger remains from a multi-touch gesture: keep dragging enabled until fully lifted
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.dragging.enable();
+        }
       }
     };
 
     container.addEventListener('touchstart', handleTouchStart, { passive: true });
     container.addEventListener('touchmove', handleTouchMove, { passive: true });
     container.addEventListener('touchend', handleTouchEnd, { passive: true });
+    container.addEventListener('touchcancel', handleTouchEnd, { passive: true });
 
     return () => {
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('touchcancel', handleTouchEnd);
       if (twoFingerTimerRef.current) clearTimeout(twoFingerTimerRef.current);
     };
   }, [mode, isFullscreen, enableCooperativeGestures]);

@@ -3128,9 +3128,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Right: Search, Popover Filter Chips, and Quick Actions */}
-            <div className="flex items-center gap-1.5 flex-wrap ml-auto">
+            <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto sm:ml-auto">
               {/* Search Bar */}
-              <div className="relative w-44 sm:w-56 lg:w-60">
+              <div className="relative w-full sm:w-48 lg:w-60">
                 <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-2" />
                 <input
                   type="text"
@@ -3151,26 +3151,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* Popover Filter Chips */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
                 {/* Municipality Popover */}
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setOpenFilterPopover(openFilterPopover === 'municipality' ? null : 'municipality')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${municipalityFilter !== 'all'
+                    className={`px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium transition cursor-pointer flex items-center gap-1 sm:gap-1.5 border ${municipalityFilter !== 'all'
                         ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100 font-semibold'
                         : 'bg-stone-50 dark:bg-stone-950 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-850'
                       }`}
                   >
                     <MapPin className="w-3 h-3 shrink-0 opacity-70" />
-                    <span className="max-w-[90px] truncate">
+                    <span className="max-w-[75px] sm:max-w-[90px] truncate">
                       {municipalityFilter === 'all' ? (lang === 'fil' ? 'Bayan' : 'Municipality') : municipalityFilter}
                     </span>
                     <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${openFilterPopover === 'municipality' ? 'rotate-180' : ''}`} />
                   </button>
 
                   {openFilterPopover === 'municipality' && (
-                    <div className="absolute right-0 top-full mt-1.5 z-40 w-52 max-h-64 overflow-y-auto bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-lg p-1 space-y-0.5">
+                    <div className="absolute left-0 top-full mt-1.5 z-40 w-52 max-h-64 overflow-y-auto bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-lg p-1 space-y-0.5">
                       <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
                         {t.allMunicipalitiesFilter}
                       </div>
@@ -3220,7 +3220,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setOpenFilterPopover(openFilterPopover === 'severity' ? null : 'severity')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${severityFilter !== 'all'
+                    className={`px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium transition cursor-pointer flex items-center gap-1 sm:gap-1.5 border ${severityFilter !== 'all'
                         ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100 font-semibold'
                         : 'bg-stone-50 dark:bg-stone-950 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-850'
                       }`}
@@ -3236,7 +3236,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </button>
 
                   {openFilterPopover === 'severity' && (
-                    <div className="absolute right-0 top-full mt-1.5 z-40 w-48 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-lg p-1 space-y-0.5">
+                    <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1.5 z-40 w-48 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-lg p-1 space-y-0.5">
                       <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
                         {lang === 'fil' ? 'Antas ng Panganib' : 'Hazard Severity'}
                       </div>
@@ -3274,12 +3274,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setOpenFilterPopover(openFilterPopover === 'category' ? null : 'category')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${categoryFilter !== 'all'
+                    className={`px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium transition cursor-pointer flex items-center gap-1 sm:gap-1.5 border ${categoryFilter !== 'all'
                         ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100 font-semibold'
                         : 'bg-stone-50 dark:bg-stone-950 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-850'
                       }`}
                   >
-                    <span className="max-w-[85px] truncate">
+                    <span className="max-w-[75px] sm:max-w-[85px] truncate">
                       {categoryFilter === 'all'
                         ? (lang === 'fil' ? 'Kategorya' : 'Category')
                         : (lang === 'fil' ? CATEGORIES[categoryFilter as IncidentCategory]?.labelFil : CATEGORIES[categoryFilter as IncidentCategory]?.labelEn) || categoryFilter}
@@ -3332,12 +3332,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setOpenFilterPopover(openFilterPopover === 'status' ? null : 'status')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 border ${statusFilter !== 'all'
+                    className={`px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium transition cursor-pointer flex items-center gap-1 sm:gap-1.5 border ${statusFilter !== 'all'
                         ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100 font-semibold'
                         : 'bg-stone-50 dark:bg-stone-950 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-850'
                       }`}
                   >
-                    <span className="max-w-[80px] truncate capitalize">
+                    <span className="max-w-[70px] sm:max-w-[80px] truncate capitalize">
                       {statusFilter === 'all'
                         ? (lang === 'fil' ? 'Katayuan' : 'Status')
                         : statusFilter.replace('_', ' ')}
@@ -3403,28 +3403,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {/* Separator */}
               <div className="h-4 w-px bg-stone-200 dark:bg-stone-800 mx-0.5 hidden sm:block" />
 
-              {/* Re-run AI Triage Button */}
-              <button
-                type="button"
-                onClick={handleRetryTriage}
-                disabled={isRetryingTriage || !selectedReport}
-                title={selectedReport ? "Re-run AI triage on selected incident" : "Select an incident to re-run triage"}
-                className="px-2.5 py-1 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 border border-stone-200 dark:border-stone-700 disabled:opacity-40 text-stone-700 dark:text-stone-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{isRetryingTriage ? 'Triaging...' : 'AI Triage'}</span>
-              </button>
+              {/* Quick Actions Container */}
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                {/* Re-run AI Triage Button */}
+                <button
+                  type="button"
+                  onClick={handleRetryTriage}
+                  disabled={isRetryingTriage || !selectedReport}
+                  title={selectedReport ? "Re-run AI triage on selected incident" : "Select an incident to re-run triage"}
+                  className="px-2 sm:px-2.5 py-1 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 border border-stone-200 dark:border-stone-700 disabled:opacity-40 text-stone-700 dark:text-stone-200 rounded-lg text-[11px] sm:text-xs font-medium flex items-center gap-1 sm:gap-1.5 transition cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRetryingTriage ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">{isRetryingTriage ? 'Triaging...' : 'AI Triage'}</span>
+                </button>
 
-              {/* Maximize to Full Map Button */}
-              <button
-                type="button"
-                onClick={() => handleViewModeChange('full_map')}
-                title="Expand to Full Map Canvas"
-                className="px-2.5 py-1 bg-stone-900 hover:bg-black dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Full Map</span>
-              </button>
+                {/* Maximize to Full Map Button */}
+                <button
+                  type="button"
+                  onClick={() => handleViewModeChange('full_map')}
+                  title="Expand to Full Map Canvas"
+                  className="px-2 sm:px-2.5 py-1 bg-stone-900 hover:bg-black dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-1.5 transition cursor-pointer shadow-2xs"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Full Map</span>
+                </button>
+              </div>
             </div>
           </div>
 
