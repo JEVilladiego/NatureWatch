@@ -2222,8 +2222,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       {/* Two-finger pan notice overlay for mobile touch */}
       {showTwoFingerToast && (
         <div className="absolute inset-0 z-[500] pointer-events-none flex items-center justify-center p-4 bg-stone-950/30 backdrop-blur-[1.5px] transition-all animate-fade-in">
-          <div className="px-3.5 py-2 rounded-lg bg-stone-900/95 dark:bg-stone-950/95 text-white text-xs font-semibold shadow-xl border border-stone-700/80 flex items-center gap-2">
-            <span className="text-base leading-none">✌️</span>
+          <div className="px-3.5 py-2 rounded-lg bg-stone-900/95 dark:bg-stone-950/95 text-white text-xs font-semibold shadow-xl border border-stone-700/80">
             <span>{twoFingerNoticeText || 'Gamitin ang 2 daliri upang igalaw ang mapa'}</span>
           </div>
         </div>
