@@ -286,6 +286,12 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
     setSlotErrors((prev) => ({ ...prev, [role]: undefined }));
   };
 
+  const filledSlots = (['primary', 'wide_scene', 'landmark'] as EvidenceSlotRole[])
+    .map((role) => ({ role, item: slots[role] }))
+    .filter((s): s is { role: EvidenceSlotRole; item: EvidenceSlotItem } => s.item !== null);
+
+  const hasRequiredPhoto = slots.primary !== null || filledSlots.length > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -326,11 +332,19 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
       return;
     }
 
-    const filledSlots = (['primary', 'wide_scene', 'landmark'] as EvidenceSlotRole[])
-      .map((role) => ({ role, item: slots[role] }))
-      .filter((s): s is { role: EvidenceSlotRole; item: EvidenceSlotItem } => s.item !== null);
+    if (!description.trim()) {
+      setSubmitError(
+        lang === 'fil'
+          ? 'Pakisulat ang paglalarawan ng insidente bago magsumite.'
+          : 'Please provide a description of the incident before sending.'
+      );
+      return;
+    }
 
-    if (!description.trim() && filledSlots.length === 0) return;
+    if (!hasRequiredPhoto) {
+      setSubmitError(t.photoRequiredError);
+      return;
+    }
 
     if (isOutOfJurisdiction) {
       setSubmitError(
@@ -617,21 +631,21 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   role: 'primary' as EvidenceSlotRole,
                   title: t.slotPrimaryTitle,
                   desc: t.slotPrimaryDesc,
-                  badge: 'Required',
+                  badge: t.slotBadgeRequired,
                   badgeClass: 'bg-stone-900 text-white dark:bg-emerald-700 dark:text-white',
                 },
                 {
                   role: 'wide_scene' as EvidenceSlotRole,
                   title: t.slotWideTitle,
                   desc: t.slotWideDesc,
-                  badge: 'Recommended',
+                  badge: t.slotBadgeRecommended,
                   badgeClass: 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300',
                 },
                 {
                   role: 'landmark' as EvidenceSlotRole,
                   title: t.slotLandmarkTitle,
                   desc: t.slotLandmarkDesc,
-                  badge: 'Optional',
+                  badge: t.slotBadgeOptional,
                   badgeClass: 'bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400',
                 },
               ] as const
@@ -646,6 +660,8 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   className={`rounded-lg border transition p-3 flex flex-col justify-between ${
                     slotData
                       ? 'border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 shadow-2xs'
+                      : slotDef.role === 'primary' && description.trim()
+                      ? 'border-dashed border-amber-300 dark:border-amber-700/70 bg-amber-50/40 dark:bg-amber-950/20 hover:bg-amber-50/60 dark:hover:bg-amber-950/40'
                       : 'border-dashed border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-900/40 hover:bg-stone-50 dark:hover:bg-stone-900/70'
                   }`}
                 >
@@ -1182,12 +1198,20 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
             </div>
           )}
 
+          {!hasRequiredPhoto && description.trim() && !submitError && (
+            <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400 py-2 px-3 rounded-md bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50">
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span className="leading-snug">{t.photoRequiredHelper}</span>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={
               isSubmitting ||
               !!compressingSlot ||
               !description.trim() ||
+              !hasRequiredPhoto ||
               isOutOfJurisdiction ||
               !rateLimitInfo.allowed
             }

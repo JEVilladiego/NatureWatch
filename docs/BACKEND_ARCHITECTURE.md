@@ -78,7 +78,7 @@ The system consists of four primary infrastructure layers:
 3. **Context Gathering**:
    - Queries OpenWeatherMap for current atmospheric readings (wind speed, rain, humidity).
    - Checks whether the coordinates fall within known protected landscapes or watershed zones (e.g., Upper Marikina River Basin, Pamitinan, Kaliwa Watershed, Masungi Georeserve).
-4. **Gemini API Call**: Passes the photo, description, weather parameters, and protected area status to Gemini 2.5 Flash.
+4. **Gemini API Call**: Ingests the entire photographic evidence deck (Primary close-up, Wide scene context, and Landmark orientation), resident description, atmospheric telemetry, and protected area directives into Gemini 2.5 Flash for composite multi-photo cross-verification.
 5. **Schema Validation (Zod)**: Validates structured output containing:
    - `category`: One of 9 environmental categories.
    - `severity`: Integer rating from 1 (minor) to 5 (critical).
@@ -256,6 +256,9 @@ If an AI evaluation call fails, the report is marked as `triageStatus: 'failed'`
 
 #### How are non-environmental or duplicate submissions filtered?
 Gemini evaluates submissions against 9 environmental categories and flags non-environmental submissions or potential spam. On the dashboard, reports located within ~100 meters of each other in the same category are grouped under a cluster identifier to help officers detect duplicate complaints.
+
+#### How does the AI handle multiple submitted photos?
+When residents attach multiple photos (up to 3 slots: Primary, Wide Scene, and Landmark), the serverless function feeds all images simultaneously into Gemini's multimodal context window. The system instruction directs the model to cross-correlate all viewpoints—for example, preventing false emergency escalations if an isolated close-up looks like an active fire but wide-scene imagery reveals a benign domestic cookstove or non-hazardous environment.
 
 #### How does the system cross-reference quarry reports with legal permits?
 The application includes GeoJSON boundaries of official MGB Region IV-A mining tenements. When reviewing a quarry incident, the system calculates distance from official permit zones, showing whether the coordinates fall inside an active permit, within a 500-meter buffer, or in an unauthorized area.
