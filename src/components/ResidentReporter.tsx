@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Camera,
   Upload,
@@ -8,6 +9,7 @@ import {
   Info,
   Clock,
   ArrowRight,
+  ArrowLeft,
   RefreshCw,
   FileText,
   Navigation,
@@ -17,6 +19,7 @@ import {
   AlertCircle,
   Trash2,
   Lock,
+  Maximize2,
 } from 'lucide-react';
 import {
   IncidentCategory,
@@ -100,6 +103,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isOutOfJurisdiction, setIsOutOfJurisdiction] = useState<boolean>(false);
   const [detectedProtectedZone, setDetectedProtectedZone] = useState<ProtectedZoneFeatureProperties | null>(null);
+  const [isMapFullscreen, setIsMapFullscreen] = useState<boolean>(false);
 
   // Input states
   const [description, setDescription] = useState<string>('');
@@ -117,6 +121,24 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Lock body scroll and handle Escape key when map is fullscreen
+  useEffect(() => {
+    if (isMapFullscreen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setIsMapFullscreen(false);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = prevOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isMapFullscreen]);
 
   // Auto-acquire GPS on mount
   useEffect(() => {
@@ -968,12 +990,23 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
           )}
 
           {/* Map Controls Header */}
-          <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+          <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs text-stone-500 dark:text-stone-400">
             <span className="flex items-center gap-1 text-[11px] text-stone-600 dark:text-stone-400">
               <MapPin className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 shrink-0" />
               {t.tapToPinHint}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-auto">
+              {/* Expand Fullscreen Button */}
+              <button
+                type="button"
+                onClick={() => setIsMapFullscreen(true)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-stone-100 hover:bg-stone-200 dark:bg-stone-850 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 transition cursor-pointer shadow-2xs"
+                title={t.expandMapBtn}
+              >
+                <Maximize2 className="w-3 h-3 text-stone-500 dark:text-stone-400" />
+                <span className="hidden xs:inline">{t.expandMapBtn}</span>
+              </button>
+
               <div className="flex items-center gap-0.5 bg-stone-100 dark:bg-stone-900 p-0.5 rounded-md text-[11px] font-semibold border border-transparent dark:border-stone-800">
                 <button
                   type="button"
@@ -1009,7 +1042,7 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                   Terrain
                 </button>
               </div>
-              <span className="text-[11px] text-stone-400 dark:text-stone-500 font-mono">
+              <span className="text-[11px] text-stone-400 dark:text-stone-500 font-mono hidden sm:inline">
                 {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
               </span>
             </div>
@@ -1031,6 +1064,10 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
                 setAccuracyMeters(null);
                 checkJurisdictionAndMunicipality(lat, lng, true);
               }}
+              enableCooperativeGestures={true}
+              twoFingerNoticeText={t.twoFingerPanNotice}
+              recenterButtonLabel={t.recenterPinBtn}
+              onToggleFullscreen={() => setIsMapFullscreen(true)}
               className="h-64 sm:h-72 w-full"
             />
             {isLocating && (
@@ -1040,6 +1077,141 @@ export const ResidentReporter: React.FC<ResidentReporterProps> = ({
               </div>
             )}
           </div>
+
+          {/* Fullscreen Mobile Location Picker Modal */}
+          {isMapFullscreen &&
+            createPortal(
+              <div className="fixed inset-0 z-[9999] flex flex-col bg-stone-900 text-stone-100 select-none">
+                {/* Top Header Bar */}
+                <div className="px-3.5 py-2.5 bg-stone-900/95 border-b border-stone-800 flex items-center justify-between gap-2 shrink-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsMapFullscreen(false)}
+                      className="p-1.5 rounded-lg hover:bg-stone-800 text-stone-300 hover:text-white transition cursor-pointer shrink-0"
+                      title={t.closeMapBtn}
+                      aria-label={t.closeMapBtn}
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-white truncate flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>
+                          {selectedBarangay && selectedMunicipality
+                            ? `Brgy. ${selectedBarangay}, ${selectedMunicipality}`
+                            : selectedMunicipality || 'Rizal Province'}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-stone-400 font-mono">
+                        {coordinates.lat.toFixed(5)}, {coordinates.lng.toFixed(5)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Basemap Switcher */}
+                  <div className="flex items-center gap-0.5 bg-stone-800 p-0.5 rounded-md text-[11px] font-semibold border border-stone-750 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setBasemapMode('street')}
+                      className={`px-2 py-1 rounded transition cursor-pointer ${
+                        basemapMode === 'street' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-stone-400 hover:text-white'
+                      }`}
+                    >
+                      Street
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBasemapMode('satellite')}
+                      className={`px-2 py-1 rounded transition cursor-pointer ${
+                        basemapMode === 'satellite' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-stone-400 hover:text-white'
+                      }`}
+                    >
+                      Satellite
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBasemapMode('terrain')}
+                      className={`px-2 py-1 rounded transition cursor-pointer ${
+                        basemapMode === 'terrain' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-stone-400 hover:text-white'
+                      }`}
+                    >
+                      Terrain
+                    </button>
+                  </div>
+                </div>
+
+                {/* Fullscreen Map Canvas */}
+                <div className="relative flex-1 w-full h-full isolate">
+                  <LeafletMap
+                    mode="picker"
+                    center={coordinates}
+                    zoom={16}
+                    accuracyMeters={locationSource === 'gps' ? accuracyMeters : null}
+                    layerMode="boundaries"
+                    basemap={basemapMode}
+                    activeMunicipality={selectedMunicipality}
+                    onLocationChange={(lat, lng) => {
+                      setCoordinates({ lat, lng });
+                      setLocationSource('manual_pin');
+                      setAccuracyMeters(null);
+                      checkJurisdictionAndMunicipality(lat, lng, true);
+                    }}
+                    enableCooperativeGestures={false}
+                    isFullscreen={true}
+                    onToggleFullscreen={() => setIsMapFullscreen(false)}
+                    recenterButtonLabel={t.recenterPinBtn}
+                    className="w-full h-full"
+                  />
+
+                  {/* Floating Instruction Banner */}
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400] pointer-events-none max-w-[90%]">
+                    <div className="px-3 py-1.5 rounded-full bg-stone-900/90 text-stone-200 text-xs font-medium shadow-lg border border-stone-700/80 backdrop-blur-xs flex items-center gap-1.5 truncate">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span className="truncate">{t.fullscreenPinHint}</span>
+                    </div>
+                  </div>
+
+                  {/* Re-sync GPS quick button inside modal */}
+                  <div className="absolute top-3 right-3 z-[400]">
+                    <button
+                      type="button"
+                      onClick={acquireGpsLocation}
+                      disabled={isLocating}
+                      className="px-3 py-1.5 rounded-lg bg-stone-900/95 text-stone-200 hover:text-white border border-stone-700/80 shadow-lg backdrop-blur-xs flex items-center gap-1.5 text-xs font-semibold transition active:scale-95 cursor-pointer"
+                      title={t.resyncGpsBtn}
+                    >
+                      <Navigation className={`w-3.5 h-3.5 text-emerald-400 ${isLocating ? 'animate-spin' : ''}`} />
+                      <span className="hidden sm:inline">{t.resyncGpsBtn}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Bottom Action Footer */}
+                <div className="p-3 bg-stone-900/95 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0">
+                  <div className="text-xs text-stone-400 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>
+                      {detectedProtectedZone
+                        ? `${t.protectedZoneNoticeResident}: ${detectedProtectedZone.shortName}`
+                        : isOutOfJurisdiction
+                        ? (lang === 'fil' ? 'Nasa labas ng hurisdiksyon ng Rizal' : 'Outside Rizal Province jurisdiction')
+                        : (lang === 'fil' ? 'Nasa loob ng hurisdiksyon ng Rizal' : 'Within Rizal Province jurisdiction')}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsMapFullscreen(false)}
+                    className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>{t.confirmLocationBtn}</span>
+                  </button>
+                </div>
+              </div>,
+              document.body
+            )}
         </div>
 
         {/* Step 3: Description */}

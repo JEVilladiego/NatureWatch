@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+import { Crosshair, Maximize2, Minimize2, Plus, Minus } from 'lucide-react';
 import { IncidentReport } from '../types/report';
 import { resolveReportCoordinates } from '../lib/barangayCoordinates';
 import {
@@ -108,6 +109,12 @@ interface LeafletMapProps {
   weatherTelemetry?: Record<string, FullAtmosphericData>;
   onWeatherMarkerClick?: (presetId: string) => void;
   showFirmsMarkers?: boolean;
+  // Mobile / Touch enhancements
+  enableCooperativeGestures?: boolean;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  twoFingerNoticeText?: string;
+  recenterButtonLabel?: string;
 }
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
@@ -141,6 +148,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   weatherTelemetry = {},
   onWeatherMarkerClick,
   showFirmsMarkers = true,
+  enableCooperativeGestures = true,
+  isFullscreen = false,
+  onToggleFullscreen,
+  twoFingerNoticeText,
+  recenterButtonLabel,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -163,6 +175,10 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const [protectedMaskData, setProtectedMaskData] = useState<GeoJSONFeature | null>(null);
   const [protectedZonesData, setProtectedZonesData] = useState<GeoJSONFeatureCollection<ProtectedZoneFeatureProperties> | null>(null);
   const [mgbQuarriesData, setMgbQuarriesData] = useState<GeoJSONFeatureCollection<MgbQuarryFeatureProperties> | null>(null);
+  const [showTwoFingerToast, setShowTwoFingerToast] = useState(false);
+  const twoFingerTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const touchMovedRef = useRef<boolean>(false);
 
   const shouldMask = maskNonRizal !== undefined ? maskNonRizal : mode === 'dashboard';
 
@@ -249,7 +265,10 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       maxBoundsViscosity: 1.0,       // 100% solid barrier: impossible to drag outside the Philippines
     });
 
-    L.control.zoom({ position: 'topright' }).addTo(map);
+    // Use standard Leaflet zoom control only in dashboard mode; picker mode uses modern thumb-friendly floating controls
+    if (mode === 'dashboard') {
+      L.control.zoom({ position: 'topright' }).addTo(map);
+    }
 
     // Dedicated non-Rizal mask pane: above base tiles (zIndex: 200), below vectors (zIndex: 400)
     const maskPane = map.createPane('maskPane');
@@ -1177,6 +1196,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     // Map click-to-pin listener
     const handleMapClick = (e: L.LeafletMouseEvent) => {
+      // If a touch interaction was a scroll or swipe rather than a deliberate tap, suppress pin drop
+      if (touchMovedRef.current) {
+        touchMovedRef.current = false;
+        return;
+      }
       const { lat, lng } = e.latlng;
       if (pickerMarkerRef.current) {
         pickerMarkerRef.current.setLatLng([lat, lng]);
@@ -2038,5 +2062,172 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     };
   }, [mode, showWeatherMarkers, weatherTelemetry, onWeatherMarkerClick]);
 
-  return <div ref={mapContainerRef} className={`relative isolate z-0 ${className || ''}`} />;
+  // Cooperative Touch Gesture Handling (Avoids trapping vertical page scroll on touchscreens)
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container || mode !== 'picker' || isFullscreen || !enableCooperativeGestures) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        touchMovedRef.current = false;
+        touchStartPosRef.current = {
+          x: e.touches[0].clientX,
+          y: e.touches[0].clientY,
+        };
+        // Disable map dragging so single-finger swipes scroll the webpage naturally
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.dragging.disable();
+        }
+      } else if (e.touches.length >= 2) {
+        // Two or more fingers: enable map dragging for pan and pinch-zoom
+        touchMovedRef.current = true;
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.dragging.enable();
+        }
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1 && touchStartPosRef.current) {
+        const dx = Math.abs(e.touches[0].clientX - touchStartPosRef.current.x);
+        const dy = Math.abs(e.touches[0].clientY - touchStartPosRef.current.y);
+        // If finger moved noticeably, user is scrolling the page
+        if (dx > 8 || dy > 8) {
+          touchMovedRef.current = true;
+          // Show brief two-finger guidance toast
+          setShowTwoFingerToast(true);
+          if (twoFingerTimerRef.current) clearTimeout(twoFingerTimerRef.current);
+          twoFingerTimerRef.current = setTimeout(() => {
+            setShowTwoFingerToast(false);
+          }, 1600);
+        }
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length === 0) {
+        // Re-enable dragging for desktop mouse pointers
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.dragging.enable();
+        }
+        touchStartPosRef.current = null;
+      }
+    };
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: true });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      if (twoFingerTimerRef.current) clearTimeout(twoFingerTimerRef.current);
+    };
+  }, [mode, isFullscreen, enableCooperativeGestures]);
+
+  // Recalculate tile sizes when entering or exiting fullscreen
+  useEffect(() => {
+    if (mapInstanceRef.current) {
+      const timer1 = setTimeout(() => {
+        mapInstanceRef.current?.invalidateSize();
+      }, 50);
+      const timer2 = setTimeout(() => {
+        mapInstanceRef.current?.invalidateSize();
+      }, 250);
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
+    }
+  }, [isFullscreen]);
+
+  const handleRecenter = () => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setView([center.lat, center.lng], 15, { animate: true });
+    }
+  };
+
+  const handleZoomIn = () => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.zoomIn();
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.zoomOut();
+    }
+  };
+
+  return (
+    <div className={`relative isolate z-0 overflow-hidden ${className || ''}`}>
+      <div ref={mapContainerRef} className="w-full h-full" />
+
+      {/* Mode Picker Controls (Zoom In/Out, Re-center, Fullscreen) */}
+      {mode === 'picker' && (
+        <div className="absolute bottom-3 right-3 z-[400] flex flex-col gap-1.5 pointer-events-auto">
+          {/* Re-center on pin */}
+          <button
+            type="button"
+            onClick={handleRecenter}
+            className="w-9 h-9 bg-white/95 hover:bg-white dark:bg-stone-900/95 dark:hover:bg-stone-900 text-stone-700 dark:text-stone-200 rounded-lg shadow-md border border-stone-200 dark:border-stone-700 flex items-center justify-center transition active:scale-95 cursor-pointer backdrop-blur-xs"
+            title={recenterButtonLabel || 'Center on Pin'}
+            aria-label={recenterButtonLabel || 'Center on Pin'}
+          >
+            <Crosshair className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+          </button>
+
+          {/* Fullscreen toggle button if provided */}
+          {onToggleFullscreen && (
+            <button
+              type="button"
+              onClick={onToggleFullscreen}
+              className="w-9 h-9 bg-white/95 hover:bg-white dark:bg-stone-900/95 dark:hover:bg-stone-900 text-stone-700 dark:text-stone-200 rounded-lg shadow-md border border-stone-200 dark:border-stone-700 flex items-center justify-center transition active:scale-95 cursor-pointer backdrop-blur-xs"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Expand Map'}
+              aria-label={isFullscreen ? 'Exit Fullscreen' : 'Expand Map'}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="w-4 h-4 text-stone-600 dark:text-stone-300" />
+              ) : (
+                <Maximize2 className="w-4 h-4 text-stone-600 dark:text-stone-300" />
+              )}
+            </button>
+          )}
+
+          {/* Zoom controls */}
+          <div className="flex flex-col bg-white/95 dark:bg-stone-900/95 rounded-lg shadow-md border border-stone-200 dark:border-stone-700 overflow-hidden backdrop-blur-xs">
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              className="w-9 h-9 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center justify-center transition active:scale-95 cursor-pointer border-b border-stone-200 dark:border-stone-800"
+              title="Zoom In"
+              aria-label="Zoom In"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              className="w-9 h-9 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center justify-center transition active:scale-95 cursor-pointer"
+              title="Zoom Out"
+              aria-label="Zoom Out"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Two-finger pan notice overlay for mobile touch */}
+      {showTwoFingerToast && (
+        <div className="absolute inset-0 z-[500] pointer-events-none flex items-center justify-center p-4 bg-stone-950/30 backdrop-blur-[1.5px] transition-all animate-fade-in">
+          <div className="px-3.5 py-2 rounded-lg bg-stone-900/95 dark:bg-stone-950/95 text-white text-xs font-semibold shadow-xl border border-stone-700/80 flex items-center gap-2">
+            <span className="text-base leading-none">✌️</span>
+            <span>{twoFingerNoticeText || 'Gamitin ang 2 daliri upang igalaw ang mapa'}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
